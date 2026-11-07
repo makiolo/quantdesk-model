@@ -1,0 +1,1 @@
+segment_id,provider,account_alias,sprint,phase,rail,task,level,role,model,effort,speed,billing,start_utc,end_utc,new_input,cache_read,cache_write,cache_write_1h,output_billed,tariff_id,api_tools_usd,api_equivalent_usd,billed_usd,coverage,request_set_hash,evidence_ref,level_scheme

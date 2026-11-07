@@ -1,0 +1,1 @@
+tariff_id,as_of_date,provider,model,speed,region,prompt_tier,input_usd_m,cache_read_usd_m,cache_write_usd_m,cache_write_1h_usd_m,output_usd_m,source

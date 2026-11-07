@@ -1,0 +1,17 @@
+# Estado local de relevos y vigía de caché
+.sprint-runtime/
+# Entornos
+.venv/
+venv/
+__pycache__/
+*.pyc
+# Datos y artefactos grandes (van al almacén de artefactos, no a git)
+data/
+runs/
+artifacts/
+*.parquet
+*.safetensors
+*.ckpt
+*.pt
+# Herramientas
+graphify-out/
