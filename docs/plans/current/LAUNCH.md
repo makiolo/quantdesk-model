@@ -24,9 +24,9 @@ Preparado el 2026-11-07 al activar el sprint. Escribirlo no lanza nada: el usuar
 | Revisores | modelo distinto del autor (preferible otro proveedor) | high | Reciben ficha + diff, nunca el informe del autor |
 
 - Orden de suscripciones: Claude (cuota semanal compartida con quantdesk SPRINT-02), después Codex. **IA local
-  activada** (usuario, 2026-11-07; SPRINT_PROJECT §6): autor local por grado (`haiku` L1–L2, `sonnet` hasta L4,
-  `opus` desde L5; desde L7 sólo suscripción), ficha con `ficha-local.md`, revisión siempre en la nube, y antes de
-  lanzarlo `sprint_db.py local-busy --tier <grado>` (GPU compartida con los otros tres proyectos). Sin gratuitos de
+  activada** según el criterio global `~/.claude/skills/sprint/references/niveles-y-modelos.md` (tabla L10…L1 y escalera A17:
+  nivel vigente único, empieza en L4), ficha con `ficha-local.md`, revisión siempre en la nube; `claude-local`
+  reserva ranura de GPU obligatoriamente (compartida con los otros tres proyectos). Sin gratuitos de
   OpenRouter. **Sin API de pago**: sin ruta → `BLOQUEADO_PRESUPUESTO` y parar.
 - Cupo: raíz + **3** descendientes activos, contando revisores, nietos y autores locales.
 - Esquema de dificultad: `difficulty-v3-10` (L1–L10); los niveles del plan (L3–L6) se usan tal cual.

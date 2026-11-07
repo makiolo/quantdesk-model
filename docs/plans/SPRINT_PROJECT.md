@@ -81,18 +81,9 @@ Reglas de separación (backlog §1, decididas por el usuario el 2026-11-07):
 - Herramientas de cuota/ruta: ninguna propia.
 - Cupo por defecto: raíz + 3 descendientes activos.
 
-- **IA local activada (usuario, 2026-11-07), la misma regla en los cuatro proyectos** (referencia: `quantdesk`
-  `EXECUTION_POLICY.md` A16). Primero se gasta la cuota de las suscripciones; el modelo local (Qwen vía
-  `claude-local` / `claude-or relay --models local:<grado>`) se queda con lo que no exige un modelo de pago: autoría
-  elegible por nivel, revisión previa de fichas, lecturas acotadas y resúmenes para la raíz.
-  - Grados: `haiku` L1–L2, `sonnet` hasta L4, `opus` desde L5 y como respaldo tras dos fallos; desde L7, sólo
-    suscripción salvo decisión del usuario. Siempre con grado (nunca `--models local` a secas ni `lms load` a mano).
-  - Ficha con el bloque de `~/.claude/skills/sprint/references/ficha-local.md` y comprobador mecánico.
-  - **Revisión siempre en la nube** (suscripción, otro modelo); sin revisión no se cierra. Sin exención por holgura.
-  - **GPU compartida por los cuatro proyectos** (ASUS: `opus`, 2 ranuras; Sapphire: `sonnet`/`haiku`, 2 ranuras).
-    Antes de lanzar un autor local: `python -X utf8 "$HOME/.claude/skills/sprint/scripts/sprint_db.py" local-busy
-    --tier <grado>`; si no hay hueco, esperar o usar suscripción. Cada intento (ejecución o revisión, local o
-    suscripción) se registra con `sprint_db.py attempt start/end` (BDD de sprints, `references/sprint-db.md`).
+- **Niveles, modelos, IA local y arenas: criterio global** (usuario, 2026-11-07) en `~/.claude/skills/sprint/references/niveles-y-modelos.md`: tabla L10…L1,
+  escalera adaptativa A17 de la IA local (nivel vigente único para los cuatro proyectos, empieza en L4, sin tope
+  fijo), revisión siempre en la nube, ranuras de GPU obligatorias y arenas de L9/L10. Este proyecto no lo redefine.
 - Esquema de dificultad: **`difficulty-v3-10` (L1–L10)**, el mismo en los cuatro proyectos (usuario, 2026-11-07);
   la dificultad no se deduce del modelo ni baja al partir una tarea.
 
