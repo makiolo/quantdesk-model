@@ -9,6 +9,6 @@ Eres la raíz nueva tras una interrupción. Nadie escribe en el repo por la raí
    protocolo normal; lo que quedó a medias se conserva y se relanza el ID desde su ficha con la salida parcial
    como contexto. Nunca descartes WIP sin mirarlo. El WIP de otras sesiones vivas no es tuyo.
 4. Reconstruye en un HANDOFF nuevo:
-   `python -X utf8 {tool} handoff new {file} --from-session {session}`,
+   `{python} -X utf8 {tool} handoff new {file} --from-session {session}`,
    rellénalo con el estado reconstruido, commit, y después `handoff accept {file}`.
 5. Sigue con su «Siguiente paso».
