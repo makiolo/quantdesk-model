@@ -34,7 +34,7 @@ comprobaciones previas en [backlog §2.1](../backlog/README.md#21-comprobaciones
 |---|---|---|---|---|---|
 | 1 | **LAB-00-ENV** | — | `.venv` propio (Python 3.12) con las ruedas de `quantdesk` construidas desde un commit fijo (GAP-03: `quantdesk`, `data-py`, `market-py` y las que el banco importe), `pyarrow`, `ml_dtypes`, `arch`, `MetaTrader5`, `torch` (CPU) y `chronos-forecasting`; `requirements.lock`; almacén `E:/quantdesk-lab/` creado y `HF_HOME`/`PIP_CACHE_DIR` apuntando a él (GAP-02) | `pip install -r requirements.lock` en un venv limpio reproduce el entorno; ninguna caché ni descarga escribe en C:; prueba de humo importa todo y repite la comprobación HMM de §2.1 (calibrar + `open_stream`) en el `.venv`; la versión del motor queda registrada. Nada se instala en el venv de `quantdesk` | — |
 | 2 | **TI-01-INV** | L3 | Ejecutar `scripts/inventario_options_chain.py` (hecho) y extenderlo al resto de topics `market.*` | Informe con cifras y consultas reproducibles por topic (instrumentos, profundidad, frecuencia, huecos, calidad); GPU en los nodos de la flota | — (**puerta de usuario:** ejecutarlo con su token `QN_TOKEN`) |
-| 3 | **TI-09-ARCH** (parte laboratorio) | L5, urgente | Instantánea diaria de `market.options.chain` desde el lago al almacén del laboratorio, cruda y limpia (mid, filtro de arbitraje de mariposa y calendario), con hash; aviso si falta un día hábil | Instantánea diaria con hash y filtro documentado; aviso de día hábil ausente probado. Mientras no exista OC-03 (captura al cierre, backend): última captura de cada día con su hora; sin spot en la fila, subyacente del OHLCV diario. La cobertura ≥ 98 % del plan se mide en el mes siguiente (SPRINT-02) | TI-01-INV |
+| 3 | **TI-09-ARCH** (parte laboratorio) | L5 | Lector bajo demanda de `market.options.chain` desde el lago (Iceberg en S3, sin retención: decisión 12-A), que produce la instantánea por día hábil cruda y limpia (mid, filtro de arbitraje de mariposa y calendario) para un rango de fechas, y la congela con hash en el almacén del laboratorio al cortar cada dataset. Sin tarea programada ni copia diaria propia | Dos lecturas del mismo rango y corte dan el mismo hash; filtro documentado; informe de días hábiles sin datos en el lago (huecos de origen). Mientras no exista OC-03 (captura al cierre, backend): última captura de cada día con su hora; sin spot en la fila, subyacente del OHLCV diario. La cobertura ≥ 98 % del plan se mide en el mes siguiente (SPRINT-02) | TI-01-INV |
 | 4 | **TI-12-MT5** | L6 | Extractor MetaTrader 5 de solo lectura: inventario de símbolos y profundidad por periodo, descarga incremental y reanudable 1 m/5 m (ticks si hay), hora del servidor a UTC, sufijos, huecos de fin de semana, mid frente a bid/ask y spread como serie | Inventario publicado; dos descargas del mismo rango dan el mismo hash; velas de 1 m agregadas a diario cuadran con otra fuente diaria dentro de tolerancia; el extractor nunca envía órdenes. Credenciales fuera del repo y del chat | LAB-00-ENV (el plan cita TI-03-FMT: aquí la procedencia va en fichero adjunto hasta SPRINT-03) |
 | 5 | **TI-13-PUB** | L5 | Ingesta pública: corpus genéricos con licencia (Chronos, LOTSA…), Yahoo/Stooq, FRED, cripto; filtro de fugas D-11; sólo subconjuntos dentro del presupuesto de disco (100 GB, GAP-02) | Tabla de licencias (en el laboratorio hasta TI-00-ADR, SPRINT-03); datasets con hash; validación disjunta de entrenamiento; informe del filtro (series excluidas o cortadas) | LAB-00-ENV |
 | 6 | **TI-02-DATA** | L6 | Exportador a `engine.market-history/v1` (pyarrow según `data_py.table_schemas_json()`, validado con `data_py.dataset_describe_json`) desde el lago y las fuentes de TI-12/TI-13; universos con sesgo de supervivencia declarado (D-07) | El dataset congelado carga en `quant-data` sin violaciones de look-ahead; dos exportaciones con el mismo corte dan el mismo hash | TI-01-INV, LAB-00-ENV; TI-12/TI-13 a medida que lleguen |
@@ -52,12 +52,12 @@ Dependencias de tarea (DEPENDENCIAS.md «Dependencias de tarea», decididas por 
 | Tarea local | Espera a | Mientras tanto |
 |---|---|---|
 | TI-09-ARCH, captura al cierre con spot | quantdesk-backend SPRINT-02 OC-03-CLOSE (tras quantdesk-network SPRINT-01 OCS-01) | Última captura de cada día con su hora; subyacente del OHLCV diario |
-| TI-09-ARCH, aviso en origen | quantdesk-backend SPRINT-01 OC-01-FAIL, OC-02-ALERT (urgentes, primeras de su sprint) | El aviso de día hábil ausente del laboratorio es la única alarma |
-| TI-09-ARCH, duración y retención | quantdesk-backend SPRINT-02 OC-04, OC-05 | Retención sin verificar: el archivo del laboratorio es la copia que no caduca |
+| TI-09-ARCH, aviso en origen | quantdesk-backend SPRINT-01 OC-01-FAIL, OC-02-ALERT (urgentes, primeras de su sprint) | El informe de huecos del laboratorio es la única señal, y llega tarde |
+| TI-09-ARCH, lectura bajo demanda | quantdesk-network SPRINT-01 OCS-02 (garantía de S3 sin retención) | Se lee del lago igualmente; hasta OCS-02 la no-caducidad es una revisión de código, no una garantía |
 
-El backend adelanta OC-01 y OC-02 a su SPRINT-01 y deja OC-03, OC-04 y OC-05 para su SPRINT-02 (usuario,
-2026-11-07). Lo de SPRINT-02 llegará casi seguro después de cerrar este sprint: esa parte de TI-09-ARCH se
-planifica en el modo «mientras tanto».
+Decisión 12-A (usuario, 2026-11-07): todo lo que pasa por qn acaba en S3 sin retención, así que el laboratorio no
+copia a diario; lo irrecuperable es lo que el scraper no captura (OC-01/OC-02). El backend adelanta OC-01 y OC-02 a
+su SPRINT-01 y deja OC-03 para su SPRINT-02, que llegará casi seguro después de cerrar este sprint.
 
 Al cerrar cada OC en el backend, TI-09-ARCH cambia de modo (dentro de este sprint si llega a tiempo; si no, en
 SPRINT-02). El cierre de SPRINT-01 no espera a los OC: lo que falte queda como arrastre.
@@ -83,7 +83,7 @@ SPRINT-02). El cierre de SPRINT-01 no espera a los OC: lo que falte queda como a
 ## 7. Orden, carriles y mutex
 
 - **LAB-00-ENV primero**: barrera para todo lo que importe paquetes nuevos.
-- Carril datos: TI-01-INV → TI-09-ARCH (diaria desde que exista, cada día perdido es irrecuperable);
+- Carril datos: TI-01-INV → TI-09-ARCH (lectura bajo demanda del lago; sin urgencia diaria tras la decisión 12-A);
   TI-12-MT5 y TI-13-PUB en paralelo → TI-02-DATA (exporta primero el lago y añade fuentes al llegar).
 - Carril banco: TS-00-PREC en paralelo desde LAB-00-ENV; TS-00-BENCH tras el primer dataset congelado de TI-02-DATA;
   TS-00-OBJ al final.

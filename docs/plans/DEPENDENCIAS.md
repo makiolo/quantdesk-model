@@ -28,12 +28,12 @@ sprint N de `quantdesk`», salvo SPRINT-01, que es lo que se puede hacer ya (sin
 ## Dependencias de tarea
 
 Entre tareas de sprints que corren a la vez: **no bloquean la activación** del sprint local, sólo el inicio o la
-parte de la tarea indicada (skill `sprint`, `references/deps.md`). SPRINT-01 no espera al backend porque cada día
-sin archivar en el laboratorio también se pierde. El backend hace OC-01 y OC-02 en su SPRINT-01 y
+parte de la tarea indicada (skill `sprint`, `references/deps.md`). SPRINT-01 no espera al backend ni a network: hasta
+que lleguen sus tareas, el laboratorio lee del lago en el modo «mientras tanto». El backend hace OC-01 y OC-02 en su SPRINT-01 y
 OC-03…OC-05 en su SPRINT-02 (usuario, 2026-11-07).
 
 | Tarea local (sprint) | Depende de (proyecto, sprint, tarea) | Motivo | Estado |
 |---|---|---|---|
 | TI-09-ARCH (SPRINT-01), captura al cierre con spot | quantdesk-backend SPRINT-02 OC-03-CLOSE (que espera a quantdesk-network SPRINT-01 OCS-01) | Hasta entonces se archiva la última captura de cada día y el subyacente del OHLCV diario | decidido (usuario, 2026-11-07) |
 | TI-09-ARCH (SPRINT-01), aviso en origen | quantdesk-backend SPRINT-01 OC-01-FAIL, OC-02-ALERT | Fallos y huecos detectados en origen el mismo día | decidido (usuario, 2026-11-07) |
-| TI-09-ARCH (SPRINT-01), duración y retención | quantdesk-backend SPRINT-02 OC-04-TIME, OC-05-RET | Captura acotada sin solapes; retención sin caducidad | decidido (usuario, 2026-11-07) |
+| TI-09-ARCH (SPRINT-01), lectura bajo demanda | quantdesk-network SPRINT-01 OCS-02 | Garantía de S3 sin retención en los topics `market.*` de los scrapers (decisión 12-A): el laboratorio lee del lago y no copia a diario | decidido (usuario, 2026-11-07) |
