@@ -25,8 +25,15 @@ sprint N de `quantdesk`», salvo SPRINT-01, que es lo que se puede hacer ya (sin
 | SPRINT-03 | quantdesk SPRINT-03 | cerrado | TI-03-FMT, TI-00-ADR, TS-01-SIM, TS-02-GEN (para TS-02-DISC), DL-02-GATES | decidido (usuario, 2026-11-07) |
 | SPRINT-04 | quantdesk SPRINT-04 | cerrado | DL-07-TRAIN, TI-06-CLI, TI-14-REG, TS-05-PREC (escalera de entrenamiento) | decidido (usuario, 2026-11-07) |
 
-**Nota (propuesto, sin fila):** TI-09-ARCH mejora cuando `quantdesk-backend` entregue la captura al cierre con spot
-(OC-03-CLOSE de `S:/projects/quantdesk-backend/docs/plans/backlog/PLAN_OPTIONS_CHAIN_ARCHIVO.md`, que a su vez
-necesita campos nuevos en `market.options.chain` de `quantdesk-network`). A 2026-11-07, OC-03 no está en ningún
-sprint del backend (su next es SPRINT-01, Tier 3/streaming; el plan sigue en backlog). Cuando se asigne, añadir aquí
-una fila `propuesto` del sprint local que lo consuma frente a `quantdesk-backend SPRINT-NN` / `activo` o `cerrado`.
+## Dependencias de tarea
+
+Entre tareas de sprints que corren a la vez: **no bloquean la activación** del sprint local, sólo el inicio o la
+parte de la tarea indicada (skill `sprint`, `references/deps.md`). SPRINT-01 no espera al backend porque cada día
+sin archivar en el laboratorio también se pierde. El backend hace OC-01 y OC-02 en su SPRINT-01 y
+OC-03…OC-05 en su SPRINT-02 (usuario, 2026-11-07).
+
+| Tarea local (sprint) | Depende de (proyecto, sprint, tarea) | Motivo | Estado |
+|---|---|---|---|
+| TI-09-ARCH (SPRINT-01), captura al cierre con spot | quantdesk-backend SPRINT-02 OC-03-CLOSE (que espera a quantdesk-network SPRINT-01 OCS-01) | Hasta entonces se archiva la última captura de cada día y el subyacente del OHLCV diario | decidido (usuario, 2026-11-07) |
+| TI-09-ARCH (SPRINT-01), aviso en origen | quantdesk-backend SPRINT-01 OC-01-FAIL, OC-02-ALERT | Fallos y huecos detectados en origen el mismo día | decidido (usuario, 2026-11-07) |
+| TI-09-ARCH (SPRINT-01), duración y retención | quantdesk-backend SPRINT-02 OC-04-TIME, OC-05-RET | Captura acotada sin solapes; retención sin caducidad | decidido (usuario, 2026-11-07) |
