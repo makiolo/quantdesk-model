@@ -25,9 +25,9 @@ Ciclo: planificación → inicio → ejecución → cierre y archivo → freeze 
 
 | Fase | Sprint | Enlace |
 |---|---|---|
-| Activo | ninguno | — |
-| Próximo | SPRINT-01 — Entorno, datos reales y banco de referencia (en planificación; lo que se puede hacer ya) | [next/SPRINT.md](next/SPRINT.md) |
-| Futuros | SPRINT-02 (tras quantdesk SPRINT-02), SPRINT-03 (tras quantdesk SPRINT-03), SPRINT-04 (tras quantdesk SPRINT-04) | [future/](future/README.md) · [DEPENDENCIAS](DEPENDENCIAS.md) |
+| Activo | SPRINT-01 — Entorno, datos reales y banco de referencia (desde 2026-11-07) | [current/SPRINT.md](current/SPRINT.md) |
+| Próximo | SPRINT-02 — Rueda fijada, HMM causal y ampliación de datos y banco (tras quantdesk SPRINT-02) | [next/SPRINT.md](next/SPRINT.md) |
+| Futuros | SPRINT-03 (tras quantdesk SPRINT-03), SPRINT-04 (tras quantdesk SPRINT-04) | [future/](future/README.md) · [DEPENDENCIAS](DEPENDENCIAS.md) |
 | Último cerrado | ninguno | [archive/](archive/index.md) |
 
 ## Backlog

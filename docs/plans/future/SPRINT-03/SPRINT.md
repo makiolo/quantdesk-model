@@ -55,7 +55,7 @@ Re-exportación primero (los bancos citan hashes de dataset); TS-00-PREC y TS-02
 
 ## 7. Definition of Done
 
-La de [SPRINT-01](../../next/SPRINT.md#7-definition-of-done).
+La de [SPRINT-01](../../current/SPRINT.md#8-definition-of-done).
 
 ## 8. Capacidad y presupuesto
 
