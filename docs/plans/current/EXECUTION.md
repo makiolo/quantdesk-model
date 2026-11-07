@@ -42,3 +42,17 @@ Incidente de la raíz (2026-11-07 23:40, A9): un `cat >> … <<'EOF'` con backti
 ejecutara los fragmentos entre backticks (todos «command not found» salvo `D:/miniconda312/python.exe`, abierto en
 interactivo y matado con TaskStop; nada escrito ni instalado). Causa: el Bash de Claude evalúa el heredoc. Control: la
 raíz escribe siempre con Write y añade con script (regla ya escrita en LAUNCH §4 y en `delegation.md`).
+
+**Bloqueo de disco (2026-11-08 00:50 UTC+1).** C: bajó de 3,0 GB a 68–333 MB libres durante la ola. A
+(`pip-compile`: `OSError 28`) y B (guarda de disco antes de `git archive`) pararon como manda LAUNCH §4. No es
+consumo del laboratorio: A y B escribían en E:, B no llegó a compilar y rustup no instaló nada. En ese momento
+corrían `cargo test` de otra sesión sobre `S:\projects\quantdesk\rust\target` y pytest de otro proyecto;
+`%LOCALAPPDATA%\Temp` ocupaba 12 GB. La raíz no borra nada ajeno: pregunta al usuario. Intentos BDD 6 y 7 cerrados
+como `bloqueada`. Sin commit: `requirements.in` (A) y `scripts/build_wheels.py` (B, `--selftest` OK) quedan en el árbol.
+
+Instrucción del usuario (2026-11-08): **en toda orden que use Rust, `RUSTUP_HOME=S:\Apps\Home\.rustup`**. Esa
+carpeta sólo tiene `settings.toml`, así que B tendrá que instalar allí la toolchain 1.97.1 (rustfmt y clippy) que pide
+`rust/rust-toolchain.toml`. La descarga va a S:, que tiene 93 GB libres.
+
+| LAB-00-ENV-A fase 1 | L4 | autor | Claude Haiku 5.5 high | 23:38 | 00:46 | bloqueada (C: < 2 GB) | — | intento 6; venv de herramientas en E:, versiones resueltas: torch 2.15.0+cpu, pyarrow 26.0.1, ml_dtypes 0.6.0, arch 8.0.0, MetaTrader5 5.0.6231, chronos-forecasting 2.3.2 |
+| LAB-00-ENV-B | L5 | autor | Claude Haiku 5.5 max | 23:38 | 00:51 | bloqueada (C: < 2 GB) | — | intento 7; parado por la guarda antes de compilar |
