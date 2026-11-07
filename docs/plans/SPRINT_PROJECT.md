@@ -75,11 +75,26 @@ Reglas de separación (backlog §1, decididas por el usuario el 2026-11-07):
 
 ## 6. Delegación
 
-- Esquema de dificultad: L1–L4 por defecto (execute-plan §2.1); los niveles de los planes de
+- Esquema de dificultad: L1–L4 por defecto (execute-plan §2.1); los niveles de los planes de **Sustituido el 2026-11-07 por `difficulty-v3-10` (L1–L10, ver abajo); se conserva para el histórico.**
   `quantdesk` (L3…L8) se respetan como referencia de riesgo.
 - Tabla de modelos y revisores: la de execute-plan §2.1.
 - Herramientas de cuota/ruta: ninguna propia.
 - Cupo por defecto: raíz + 3 descendientes activos.
+
+- **IA local activada (usuario, 2026-11-07), la misma regla en los cuatro proyectos** (referencia: `quantdesk`
+  `EXECUTION_POLICY.md` A16). Primero se gasta la cuota de las suscripciones; el modelo local (Qwen vía
+  `claude-local` / `claude-or relay --models local:<grado>`) se queda con lo que no exige un modelo de pago: autoría
+  elegible por nivel, revisión previa de fichas, lecturas acotadas y resúmenes para la raíz.
+  - Grados: `haiku` L1–L2, `sonnet` hasta L4, `opus` desde L5 y como respaldo tras dos fallos; desde L7, sólo
+    suscripción salvo decisión del usuario. Siempre con grado (nunca `--models local` a secas ni `lms load` a mano).
+  - Ficha con el bloque de `~/.claude/skills/sprint/references/ficha-local.md` y comprobador mecánico.
+  - **Revisión siempre en la nube** (suscripción, otro modelo); sin revisión no se cierra. Sin exención por holgura.
+  - **GPU compartida por los cuatro proyectos** (ASUS: `opus`, 2 ranuras; Sapphire: `sonnet`/`haiku`, 2 ranuras).
+    Antes de lanzar un autor local: `python -X utf8 "$HOME/.claude/skills/sprint/scripts/sprint_db.py" local-busy
+    --tier <grado>`; si no hay hueco, esperar o usar suscripción. Cada intento (ejecución o revisión, local o
+    suscripción) se registra con `sprint_db.py attempt start/end` (BDD de sprints, `references/sprint-db.md`).
+- Esquema de dificultad: **`difficulty-v3-10` (L1–L10)**, el mismo en los cuatro proyectos (usuario, 2026-11-07);
+  la dificultad no se deduce del modelo ni baja al partir una tarea.
 
 ## 7. Costes
 

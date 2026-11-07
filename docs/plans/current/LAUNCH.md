@@ -23,11 +23,16 @@ Preparado el 2026-11-07 al activar el sprint. Escribirlo no lanza nada: el usuar
 | Autores L3–L4 (niveles del plan L5–L6) | Sonnet 5.5 extra high u Opus 5.5 high; Codex como alternativa de otro proveedor | según tabla | Revisor de otro proveedor si el autor es Claude, y viceversa |
 | Revisores | modelo distinto del autor (preferible otro proveedor) | high | Reciben ficha + diff, nunca el informe del autor |
 
-- Orden de suscripciones: Claude (cuota semanal compartida con quantdesk SPRINT-02), después Codex. Sin modelos
-  gratuitos ni locales (la política del proyecto no los admite todavía). **Sin API de pago**: sin ruta →
-  `BLOQUEADO_PRESUPUESTO` y parar.
-- Cupo: raíz + **3** descendientes activos, contando revisores y nietos.
-- Esquema de dificultad: L1–L4 por defecto; los niveles L3–L6 del plan se usan como referencia de riesgo.
+- Orden de suscripciones: Claude (cuota semanal compartida con quantdesk SPRINT-02), después Codex. **IA local
+  activada** (usuario, 2026-11-07; SPRINT_PROJECT §6): autor local por grado (`haiku` L1–L2, `sonnet` hasta L4,
+  `opus` desde L5; desde L7 sólo suscripción), ficha con `ficha-local.md`, revisión siempre en la nube, y antes de
+  lanzarlo `sprint_db.py local-busy --tier <grado>` (GPU compartida con los otros tres proyectos). Sin gratuitos de
+  OpenRouter. **Sin API de pago**: sin ruta → `BLOQUEADO_PRESUPUESTO` y parar.
+- Cupo: raíz + **3** descendientes activos, contando revisores, nietos y autores locales.
+- Esquema de dificultad: `difficulty-v3-10` (L1–L10); los niveles del plan (L3–L6) se usan tal cual.
+- **BDD de sprints** (`~/.claude/skills/sprint/references/sprint-db.md`): registrar cada intento con `sprint_db.py
+  attempt start/end` y cada cambio de estado con `sprint_db.py task`; tras cerrar una tarea o un cambio relevante,
+  `sprint_db.py update` (regenera la web).
 
 ## 3. Cola y olas (orden de SPRINT.md §7, sin solver)
 
