@@ -22,3 +22,23 @@ Cuota antes de la ola: la del arranque.
 
 | Tarea / entrega | Nivel | Rol | Modelo / esfuerzo | Inicio (UTC) | Fin | Resultado | Commit | Nota |
 |---|---|---|---|---|---|---|---|---|
+| LAB-00-ENV (ficha) | — | revisión A2 | Claude Haiku 5.5 high (sólo lectura) | 2026-11-07 23:30 | 23:35 | 8 dudas, resueltas en las fichas | — | base corregida a `cd471fa`; TEMP/TMP asignados; sin ejecutar el venv de quantdesk; `--no-optional-locks`; temporales separados |
+| LAB-00-ENV-A fase 1 | L4 | autor | Claude Haiku 5.5 high | 2026-11-07 23:38 | | en curso | | intento BDD 6 |
+| LAB-00-ENV-B | L5 | autor | Claude Haiku 5.5 max | 2026-11-07 23:38 | | en curso | | intento BDD 7 |
+
+Decisiones de la raíz (A12):
+
+- GAP-03: la rueda única `scikit-build-core` del commit `69fdb39d` (incluye `data_py`, `market_py`, `findsl_py`,
+  `strategy_py`) cumple «ruedas propias desde un commit fijo, compiladas fuera de quantdesk»; maturin por crate sólo si
+  faltan módulos. Fuente de verdad de las ruedas: `E:/quantdesk-lab/wheels/SHA256SUMS`.
+- `py -3.12` no existe: el `.venv` se crea con `D:/miniconda312/python.exe` (3.12.3, el mismo base que el venv de
+  quantdesk), sin instalar nada en él.
+- Hallazgo: el repo **sí tiene remoto** `origin` (`git@github.com:makiolo/quantdesk-model.git`), al contrario de
+  SPRINT_PROJECT §2. Se sigue sin push; pendiente de que el usuario confirme cuál es la verdad.
+- TI-01-INV (extensión del script) espera a que LAB-00-ENV-A entregue la fase 1: A ejecuta el `--selftest` de
+  `scripts/inventario_options_chain.py` y no se edita a la vez.
+
+Incidente de la raíz (2026-11-07 23:40, A9): un `cat >> … <<'EOF'` con backticks hizo que el Bash de la herramienta
+ejecutara los fragmentos entre backticks (todos «command not found» salvo `D:/miniconda312/python.exe`, abierto en
+interactivo y matado con TaskStop; nada escrito ni instalado). Causa: el Bash de Claude evalúa el heredoc. Control: la
+raíz escribe siempre con Write y añade con script (regla ya escrita en LAUNCH §4 y en `delegation.md`).
