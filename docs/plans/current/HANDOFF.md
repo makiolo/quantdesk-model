@@ -7,6 +7,7 @@
 - HEAD al escribir: 4adda7bef93eef6efacfe730ea1a1eb6eb177a40
 - LAUNCH: docs/plans/current/LAUNCH.md · bloque del coordinador: LAUNCH §2–§4 (raíz, cupo, olas y reglas de ficha) y §8
 - Relevos anteriores: `git log --follow -- docs/plans/current/HANDOFF.md`
+- Aceptado: sesión dd43fa94-0e5a-414a-818f-86561b20af08, 2026-11-08T13:35:24+01:00, contexto inicial 32.8 %
 
 ## Arranque
 1. `D:/miniconda312/python.exe -X utf8 C:/Users/makiolo/.claude/skills/sprint/tools/claude_or.py handoff accept docs/plans/current/HANDOFF.md`: valida este archivo y anota tu sesión.
