@@ -319,10 +319,16 @@ def medidas23(modelos32: list, X_eval: np.ndarray, cfg: dict, contadores: dict, 
     umbral2 = {
         g: float(np.sqrt(np.mean(np.var(np.stack([c[g] for c in cant_ref]), axis=0, ddof=1)))) for g, _ in CANTIDADES_M2
     }
-    # --- referencia y umbral de la medida 3: sigma_loc de los 5 modelos f64 en la rejilla de K del consenso
+    # --- referencia y umbral de la medida 3: sigma_loc de los 5 modelos f64 en la rejilla comun de K, construida con la
+    # interseccion (por entrada y trio de horizontes k-1, k, k+1) de los intervalos [S_h(0,10), S_h(0,90)] de los 5 modelos f64
     S_ref = [dupire.niveles_recentrados(Q)[0] for Q in Qref]
-    S_cons = dupire.niveles_recentrados(np.mean(np.stack(Qref), axis=0))[0]
-    K = dupire.rejilla_k(S_cons)
+    K, estado_k = dupire.rejilla_k(np.stack(S_ref))
+    k_fuera_f64 = [dupire.k_fuera_intervalo(S, K) for S in S_ref]
+    if any(n for n, _ in k_fuera_f64):  # por construccion es 0; si no lo es, la rejilla no cumple la ficha: no se sigue
+        raise RuntimeError(f"medida 3: hay K fuera del intervalo de un modelo f64 (por modelo: {[n for n, _ in k_fuera_f64]})")
+    n_trios = int(estado_k.size)
+    n_vacios = int((estado_k == dupire.REJILLA_VACIA).sum())
+    n_degenerados = int((estado_k == dupire.REJILLA_DEGENERADA).sum())
     sig_ref = [dupire.sigma_loc(S, K) for S in S_ref]
     validos = np.all([np.isfinite(s) for s in sig_ref], axis=0)
     n_validos = int(validos.sum())
@@ -337,6 +343,7 @@ def medidas23(modelos32: list, X_eval: np.ndarray, cfg: dict, contadores: dict, 
     signo = {c: [] for c in ids}
     err3 = {c: [] for c in ids}
     cob3 = {c: [] for c in ids}
+    k_fuera = {c: [0, 0] for c in ids}  # K fuera del intervalo propio del cono redondeado (dato informativo), total de K
     fac = {c: [] for c in ids}
     for s in range(n_s):
         for cid, tipo, var in celdas(incluir_f64=False):
@@ -352,6 +359,9 @@ def medidas23(modelos32: list, X_eval: np.ndarray, cfg: dict, contadores: dict, 
             S_t, c_t = dupire.niveles_recentrados(Q)
             fac[cid].append(c_t.ravel() / c_ref[s].ravel())
             sig = dupire.sigma_loc(S_t, K)
+            nf, nt = dupire.k_fuera_intervalo(S_t, K)
+            k_fuera[cid][0] += nf
+            k_fuera[cid][1] += nt
             ok = validos & np.isfinite(sig)
             cob3[cid].append(float(ok.sum() / n_validos))
             err3[cid].append(_rms((sig - sig_ref[s])[ok]) if ok.any() else None)
@@ -378,16 +388,26 @@ def medidas23(modelos32: list, X_eval: np.ndarray, cfg: dict, contadores: dict, 
         e_med = float(np.median(errs)) if len(errs) == len(err3[c]) and errs else None
         sig_celdas[c] = veredicto_error(e_med, umbral3, float(np.median(cob3[c])))
         sig_celdas[c]["cobertura"] = float(np.median(cob3[c]))
+        sig_celdas[c]["k_fuera_intervalo_propio_n"] = int(k_fuera[c][0])
+        sig_celdas[c]["k_fuera_intervalo_propio_pct"] = float(100.0 * k_fuera[c][0] / k_fuera[c][1]) if k_fuera[c][1] else None
         f = np.concatenate(fac[c])
         sig_celdas[c]["factor_recentrado_rel_mediana"] = float(np.median(f))
         sig_celdas[c]["factor_recentrado_rel_max_dev"] = float(np.max(np.abs(f - 1.0)))
     cf = np.concatenate([x.ravel() for x in c_ref])
     m3 = {
-        "descripcion": "sigma_loc(K, h) por Dupire, anualizada, en la rejilla de K del consenso de los modelos f64",
+        "descripcion": "sigma_loc(K, h) por Dupire, anualizada, en la rejilla de K comun (interseccion de los intervalos [S_h(0,10), S_h(0,90)] de los modelos f64)",
         "n_entradas": int(X_eval.shape[0]),
         "horizontes_dias": [int(i + 2) for i in range(modelos32[0].H - 2)],
         "nk": dupire.NK,
         "dens_min": dupire.DENS_MIN,
+        "rejilla_k": {
+            "ancho_min": dupire.ANCHO_K_MIN,
+            "trios": n_trios,
+            "trios_interseccion_vacia": n_vacios,
+            "trios_interseccion_degenerada": n_degenerados,
+            "k_fuera_intervalo_f64_n": int(sum(n for n, _ in k_fuera_f64)),
+            "k_total": int(k_fuera_f64[0][1]),
+        },
         "cobertura_min": COBERTURA_MIN,
         "puntos_rejilla": int(validos.size),
         "puntos_validos_f64_pct": float(100.0 * n_validos / validos.size),

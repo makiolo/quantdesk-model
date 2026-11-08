@@ -11,7 +11,7 @@ import numpy as np
 import torch
 from scipy.stats import norm
 
-from . import banco, datos, dupire, informe, medidas, modelo
+from . import banco, datos, dupire, informe, medidas, modelo, rutas
 from .redondeo import DTYPE, MAXIMO, MIN_NORMAL, TIPOS, U, Contador, redondear
 
 TMP = "E:/quantdesk-lab/tmp/TS-00-PREC"
@@ -145,7 +145,9 @@ def prueba_dupire() -> None:
     for sig in (0.1, 0.2, 0.4):
         q = -0.5 * sig**2 * h[:, None] + sig * np.sqrt(h)[:, None] * z[None, :]
         S, _ = dupire.niveles_recentrados((q / modelo.ESCALA_SALIDA)[None])
-        s = dupire.sigma_loc(S, dupire.rejilla_k(S))
+        K, estado = dupire.rejilla_k(S[None])
+        assert (estado == dupire.REJILLA_OK).all()
+        s = dupire.sigma_loc(S, K)
         assert np.isfinite(s).all(), f"sigma={sig}: puntos fuera de la region valida en un cono lognormal"
         rel = s / sig - 1.0
         assert np.abs(rel).max() < TOL_DUPIRE_MAX, (sig, np.abs(rel).max())
@@ -156,6 +158,111 @@ def prueba_dupire() -> None:
     S, _ = dupire.niveles_recentrados(q)
     assert np.isnan(dupire.sigma_loc(S, np.full((1, H - 2, dupire.NK), 1.0) + np.linspace(-0.01, 0.01, dupire.NK))).all()
     _ok("Dupire", f"recupera sigma constante 0.1/0.2/0.4 desde un cono lognormal (error relativo max {peor:.4f} < {TOL_DUPIRE_MAX})")
+
+
+def _cono_sesgado(sig: float, sesgo: float, H: int) -> np.ndarray:
+    """Cono sintetico (H, J) en unidades del modelo: cuantiles de un log-rendimiento acumulado de vol anual sig con asimetria
+    tipo Cornish-Fisher (monotono en alfa mientras |sesgo| < 1.16)."""
+    h = np.arange(1, H + 1) / datos.DIAS_ANIO
+    z = norm.ppf(modelo.ALFAS)
+    return sig * np.sqrt(h)[:, None] * (z + sesgo * (z**2 - 1.0) / 6.0)[None, :] / modelo.ESCALA_SALIDA
+
+
+def prueba_rejilla_k() -> None:
+    H, N = 8, 3
+    sigs, sesgos, esc = (0.10, 0.20, 0.30, 0.40, 0.50), (-0.8, -0.4, 0.0, 0.4, 0.8), (0.7, 1.0, 1.4)
+    # 5 conos f64 sinteticos con intervalos [S_h(0,10), S_h(0,90)] distintos (vol y asimetria distintas) y 3 entradas por modelo
+    Qs = np.stack([np.stack([_cono_sesgado(s * e, g, H) for e in esc]) for s, g in zip(sigs, sesgos)])  # (5, N, H, J)
+    S_ref = np.stack([dupire.niveles_recentrados(Q)[0] for Q in Qs])
+    K, estado = dupire.rejilla_k(S_ref)
+    assert K.shape == (N, H - 2, dupire.NK) and (estado == dupire.REJILLA_OK).all() and np.isfinite(K).all()
+    # comprobacion independiente de la funcion: todo K dentro del intervalo de CADA uno de los 5 modelos f64, a los tres horizontes
+    ancho_min = np.inf
+    for m in range(len(sigs)):
+        for n in range(N):
+            for k in range(1, H - 1):
+                for hz in (k - 1, k, k + 1):
+                    assert K[n, k - 1].min() >= S_ref[m, n, hz, dupire.I10], (m, n, k, hz)
+                    assert K[n, k - 1].max() <= S_ref[m, n, hz, dupire.I90], (m, n, k, hz)
+                ancho_min = min(ancho_min, K[n, k - 1].max() - K[n, k - 1].min())
+        assert dupire.k_fuera_intervalo(S_ref[m], K) == (0, K.size), "K fuera del intervalo propio de un f64"
+    # contraste: la rejilla del cono medio (consenso, el metodo del intento 1) SI se sale del intervalo de algun f64: la prueba discrimina
+    S_cons = dupire.niveles_recentrados(Qs.mean(axis=0))[0]
+    K_cons, _ = dupire.rejilla_k(S_cons[None])
+    assert sum(dupire.k_fuera_intervalo(S_ref[m], K_cons)[0] for m in range(len(sigs))) > 0, "la prueba no distingue el consenso de la interseccion"
+    # un cono redondeado mucho mas estrecho que la rejilla comun: sus K quedan fuera de su intervalo propio y se cuentan
+    S_est = dupire.niveles_recentrados(np.stack([_cono_sesgado(0.04, 0.0, H)] * N))[0]
+    fuera, total = dupire.k_fuera_intervalo(S_est, K)
+    assert total == K.size and 0 < fuera <= total, (fuera, total)
+    # interseccion vacia / degenerada / correcta (S dado a mano: S_h(0,10) y S_h(0,90) de dos modelos, 3 entradas, 3 horizontes)
+    S = np.ones((2, 3, 3, modelo.J))
+    S[0, :, :, dupire.I10], S[0, :, :, dupire.I90] = 1.0, 1.5
+    S[1, :, :, dupire.I10], S[1, :, :, dupire.I90] = [[1.3], [1.5 - 1e-6], [1.6]], 2.0  # anchos de la interseccion: 0.2, 1e-6, -0.1
+    K, estado = dupire.rejilla_k(S)
+    assert estado.shape == (3, 1) and estado[:, 0].tolist() == [dupire.REJILLA_OK, dupire.REJILLA_DEGENERADA, dupire.REJILLA_VACIA], estado
+    assert K[0, 0, 0] == 1.3 and K[0, 0, -1] == 1.5 and np.all(np.diff(K[0, 0]) > 0), K[0, 0]
+    assert np.isnan(K[1:]).all(), "una rejilla vacia o degenerada no se rellena"
+    sig = dupire.sigma_loc(S[0], K)
+    assert np.isnan(sig[1:]).all(), "sigma_loc debe ser NaN donde no hay rejilla"
+    assert dupire.k_fuera_intervalo(S[0], K) == (0, dupire.NK), "los K NaN no cuentan como fuera"
+    # conos con intervalos disjuntos (desplazados +-5 % con vol 10 %): interseccion vacia en todas las entradas
+    h = (np.arange(1, H + 1) / datos.DIAS_ANIO)[:, None]
+    z = norm.ppf(modelo.ALFAS)[None, :]
+    disj = np.stack([np.exp(d + 0.1 * np.sqrt(h) * z)[None] for d in (0.05, -0.05)])
+    K, estado = dupire.rejilla_k(disj)
+    assert (estado == dupire.REJILLA_VACIA).all() and np.isnan(K).all()
+    _ok("rejilla de K comun", f"todo K dentro del intervalo de cada uno de 5 f64 a k-1, k, k+1 (ancho min {ancho_min:.4f}); el consenso no lo cumple; vacia/degenerada = NaN")
+
+
+def prueba_rutas() -> None:
+    R = rutas.RUNS
+    for p in (f"{R}/completo", f"{R}/a/b", f"{R}/x/../y"):
+        assert rutas.validar_out(p) == os.path.abspath(p)
+    for p in (f"{R}/completo", rutas.DOCS, rutas.DOCS + "/sub"):
+        assert rutas.validar_informe(p) == os.path.abspath(p), p
+    # rutas ajenas (otro disco, otro proyecto, ".." que se escapa, prefijo parecido, tmp, el propio RUNS para --out, vacio)
+    ajenas = [
+        "C:/quantdesk_prueba_no_escribir", "C:/quantdesk_prueba_no_escribir/x", "S:/projects/quantdesk/x", "S:/Projects/quantdesk-model/docs",
+        R + "/..", R + "/../otro", R + "-otro/x", "E:/quantdesk-lab/runs/TS-00-PREC2/x", "E:/quantdesk-lab/tmp/TS-00-PREC/x",
+        "E:/quantdesk-lab/runs", "E:/quantdesk-lab", "", R, rutas.REPO, rutas.REPO + "/docs/plans/current", rutas.DOCS + "/../TI-13-PUB",
+        rutas.DOCS + "-otro", rutas.REPO + "/scripts",
+    ]
+    for p in ajenas:  # el propio RUNS tampoco vale: es un subdirectorio estricto
+        for f in (rutas.validar_out, rutas.validar_informe):
+            try:
+                f(p)
+            except rutas.RutaNoAutorizada:
+                continue
+            raise AssertionError(f"{f.__name__} acepto una ruta no autorizada: {p!r}")
+    try:
+        rutas.validar_out(rutas.DOCS)  # --out no escribe en el directorio documental
+    except rutas.RutaNoAutorizada:
+        pass
+    else:
+        raise AssertionError("--out acepto el directorio documental")
+    # extremo a extremo por la linea de ordenes: error y codigo != 0 sin escribir nada
+    import importlib
+
+    cli = importlib.import_module("banco_precision")
+    inexistente = "C:/quantdesk_prueba_no_escribir"
+    assert not os.path.exists(inexistente)
+    base = f"{TMP}/rutas-{os.getpid()}"
+    os.makedirs(base, exist_ok=True)
+    try:
+        with open(f"{base}/resultados.json", "w", encoding="utf-8") as f:  # un directorio por lo demas valido, pero no autorizado
+            f.write('{"datos": {}, "meta": {}}\n')
+        casos = (["--out", inexistente + "/x"], ["--out", inexistente + "/x", "--perfil", "mini"], ["--informe", inexistente],
+                 ["--out", base + "/run"], ["--informe", base])
+        for argv in casos:
+            salida = io.StringIO()
+            with contextlib.redirect_stdout(salida):
+                rc = cli.main(argv)
+            assert rc != 0 and "debe ser un subdirectorio" in salida.getvalue(), (argv, rc, salida.getvalue())
+            assert not os.path.exists(inexistente), "la linea de ordenes creo un directorio fuera de las rutas autorizadas"
+        assert sorted(os.listdir(base)) == ["resultados.json"], "la linea de ordenes escribio en un directorio no autorizado"
+    finally:
+        shutil.rmtree(base, ignore_errors=True)
+    _ok("rutas de escritura", f"--out solo bajo {R}; --informe solo ahi o en docs/.../TS-00-PREC; {len(ajenas)} rutas ajenas rechazadas (codigo 2)")
 
 
 def prueba_garch() -> None:
@@ -256,7 +363,8 @@ def selftest() -> int:
     # Un solo hilo: con la maquina compartida y saturada, dos hilos de torch se esperan entre si y el selftest se multiplica por 8.
     banco.configurar_torch(1)
     t0 = time.time()
-    pruebas = (prueba_redondeo, prueba_crps, prueba_veredictos, prueba_cono, prueba_dupire, prueba_garch, prueba_hmm, prueba_banco_mini)
+    pruebas = (prueba_redondeo, prueba_crps, prueba_veredictos, prueba_cono, prueba_dupire, prueba_rejilla_k, prueba_rutas,
+               prueba_garch, prueba_hmm, prueba_banco_mini)
     for p in pruebas:
         t = time.time()
         try:

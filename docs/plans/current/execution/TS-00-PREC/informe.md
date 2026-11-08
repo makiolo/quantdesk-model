@@ -5,11 +5,11 @@ Informe generado por `scripts/banco_precision.py` desde `resultados.json`; no se
 ## 1. Evidencia
 
 - Perfil: `completo`. Semillas: 11, 22, 33, 44, 55 (n = 5); semilla de las entradas de evaluación (fijas, comunes a todas): 9999.
-- Fecha UTC: 2026-11-08T12:03:57Z. Tiempo de pared: 3109.9 s.
+- Fecha UTC: 2026-11-08T13:38:26Z. Tiempo de pared: 975.9 s (16.3 min; objetivo de la ficha ~45 min con el banco completo: dentro del objetivo, tamaños del perfil sin reducir). La máquina es compartida: el tiempo de pared depende de la carga de otros procesos.
 - Versiones: python 3.12.3, torch 2.15.0+cpu, ml_dtypes 0.6.0, arch 8.0.0, numpy 2.5.4, scipy 1.18.1; motor quantdesk commit `69fdb39d` (paquete 0.0.0).
 - Determinismo: `torch.manual_seed` por semilla, `torch.use_deterministic_algorithms(True)`, `torch.set_num_threads(1)` (también `OMP/MKL/OPENBLAS_NUM_THREADS=1`); aleatoriedad de datos con `numpy.random.default_rng([semilla, flujo])`.
-- SHA-256 canónico de `resultados.json` (JSON con claves ordenadas, floats a 10 cifras significativas, sin el bloque `meta`): `5760df75ab902e7bebc09d9bb8f4cc6f5bea95d1f6d62521243f3896b4916e1c`.
-- Comando exacto para reproducir (dos ejecuciones con las mismas semillas deben dar el mismo hash): `.venv/Scripts/python -X utf8 scripts/banco_precision.py --out E:/quantdesk-lab/runs/TS-00-PREC/completo`.
+- SHA-256 canónico de `resultados.json` (JSON con claves ordenadas, floats a 10 cifras significativas, sin el bloque `meta`): `83548e1ab61953a5602f96d0a4c21b67ef99e7b5158629f78b3956969a543d15`. Los floats se canonizan a 10 cifras (una diferencia menor que eso no mueve el hash), pero los veredictos y los cocientes error/umbral forman parte del JSON hasheado, así que un cambio de veredicto siempre cambia el hash.
+- Comando exacto para reproducir (dos ejecuciones con las mismas semillas deben dar el mismo hash): `.venv/Scripts/python -X utf8 scripts/banco_precision.py --out E:/quantdesk-lab/runs/TS-00-PREC/i2-b`.
 - Verificación: `.venv/Scripts/python -X utf8 scripts/banco_precision.py --verificar <DIR>`.
 
 ## 2. Diseño (decisiones de diseño declaradas)
@@ -40,7 +40,7 @@ Pinball medio: de los primeros y de los últimos pasos de entrenamiento (lotes r
 
 ### 2.3 Redondeo
 
-Una sola función para todo el banco: `redondear(x, tipo)` = recorte a ±(máximo finito del tipo) y después ida y vuelta f64 → tipo → f64 con `ml_dtypes` (`float8_e4m3fn`, `float8_e5m2`, `bfloat16`, `float16`) o numpy (`float32`). El recorte emula fp8 con saturación y evita los NaN de desbordamiento de e4m3fn (máx. 448, sin infinitos). Variante «con escala»: se escala por una potencia de 2 (sin error de escalado) para que el máximo absoluto del tensor quepa en el máximo del tipo, se redondea y se desescala; se publica junto a «sin escala», nunca en su lugar. Las activaciones se escalan por muestra (eje 0 = una ventana), los pesos y la serie de entrada por tensor.
+Una sola función para todo el banco: `redondear(x, tipo)` = recorte a ±(máximo finito del tipo) y después ida y vuelta f64 → tipo → f64 con `ml_dtypes` (`float8_e4m3fn`, `float8_e5m2`, `bfloat16`, `float16`) o numpy (`float32`). El recorte emula fp8 con saturación y evita los NaN de desbordamiento de e4m3fn (máx. 448, sin infinitos). Variante «con escala»: se escala por una potencia de 2 (sin error de escalado) para que el máximo absoluto del tensor quepa en el máximo del tipo, se redondea y se desescala; se publica junto a «sin escala», nunca en su lugar. Las activaciones se escalan por muestra (eje 0 = una ventana), los pesos y la serie de entrada por tensor. Justificación: cada ventana es una inferencia, y la escala por tensor de una inferencia con lote 1 hace que el resultado no dependa de cómo se agrupe la evaluación (con una escala por lote, la precisión de una ventana cambiaría según con qué otras comparta lote); el selftest lo comprueba.
 
 | Tipo | Máx. finito | Bits de mantisa | Error relativo máx. teórico |
 |---|---|---|---|
@@ -76,7 +76,7 @@ n = 5 semillas; cada semilla cambia los datos sintéticos, la inicialización y 
 
 ### 2.5 Procedimiento de la medida 3 (Dupire, fijo)
 
-S0 = 1, tipos cero, h = días/252; S_h(α) = exp(q(α, h)) con recentrado multiplicativo para que la media discreta Σ w_j S_j sea 1 (forward = S0; los factores se publican en 3.3). C(K, h) = Σ_j w_j (S_j − K)⁺ con pesos trapezoidales en α y la masa de las colas asignada al cuantil extremo (error declarado: no se extrapola fuera de [0,005; 0,995]). Rejilla de K: 9 puntos equiespaciados en [máx S_h(0,10), mín S_h(0,90)] sobre los horizontes k−1, k, k+1; ∂C/∂h por diferencias centradas entre k−1 y k+1; ∂²C/∂K² por diferencias centradas en K; σ_loc² = 2 ∂C/∂h / (K² ∂²C/∂K²) sólo donde ∂²C/∂K² > 0.5 y ∂C/∂h > 0 (región válida; los puntos fuera se cuentan, no se rellenan). Para comparar tipos la rejilla de K se fija con el cono medio de los modelos f64 (consenso), así todos los modelos y tipos se evalúan en los mismos K; σ_loc se evalúa en los 7 K interiores y en los horizontes de 2 a 19 días. El error se calcula sobre los puntos válidos en los 5 modelos f64 y en el tipo; la cobertura (fracción de esos puntos que el tipo conserva) se publica y, si baja de 90 %, el tipo pierde aunque el RMS de los puntos que quedan sea pequeño.
+S0 = 1, tipos cero, h = días/252; S_h(α) = exp(q(α, h)) con recentrado multiplicativo para que la media discreta Σ w_j S_j sea 1 (forward = S0; los factores se publican en 3.3). C(K, h) = Σ_j w_j (S_j − K)⁺ con pesos trapezoidales en α y la masa de las colas asignada al cuantil extremo (error declarado: no se extrapola fuera de [0,005; 0,995]). Rejilla de K: 9 puntos equiespaciados en [máx S_h(0,10), mín S_h(0,90)], donde el máximo y el mínimo se toman, por entrada de evaluación y trío de horizontes k−1, k, k+1, sobre los 5 modelos f64 (intersección de sus intervalos [S_h(0,10), S_h(0,90)]): todo K cae dentro del intervalo de cada modelo f64 a los tres horizontes, y la rejilla es común a todos los modelos y tipos, que es lo que permite compararlos. Si la intersección es vacía o su ancho es menor que 0.0001 (S0 = 1), ese trío no tiene rejilla y sus puntos cuentan como fuera de región (se publican en 3.3, nunca se rellenan). ∂C/∂h por diferencias centradas entre k−1 y k+1; ∂²C/∂K² por diferencias centradas en K; σ_loc² = 2 ∂C/∂h / (K² ∂²C/∂K²) sólo donde ∂²C/∂K² > 0.5 y ∂C/∂h > 0 (región válida; los puntos fuera se cuentan, no se rellenan). σ_loc se evalúa en los 7 K interiores y en los horizontes de 2 a 19 días. El error se calcula sobre los puntos válidos en los 5 modelos f64 y en el tipo; la cobertura (fracción de esos puntos que el tipo conserva) se publica y, si baja de 90 %, el tipo pierde aunque el RMS de los puntos que quedan sea pequeño.
 
 ## 3. Resultados por medida (valor, umbral, veredicto)
 
@@ -327,20 +327,22 @@ El mismo modelo (pesos entrenados) con pesos (todos los parámetros) y activacio
 
 ### 3.3 Medida 3 — derivados de la salida
 
-σ_loc (H1) por Dupire desde el cono de cada tipo (el de la medida 2). Puntos de la rejilla: 64512; válidos en los modelos f64: 100.00 % (por modelo: 100.00, 100.00, 100.00, 100.00, 100.00 %); σ_loc f64 mediana 1.435e-01; factor de recentrado f64: mediana 0.999341, mín 0.994717, máx 1.008944. Umbral (ruido de semilla de σ_loc f64): 1.198e-02.
+σ_loc (H1) por Dupire desde el cono de cada tipo (el de la medida 2). Puntos de la rejilla: 64512; válidos en los modelos f64: 100.00 % (por modelo: 100.00, 100.00, 100.00, 100.00, 100.00 %); σ_loc f64 mediana 1.429e-01; factor de recentrado f64: mediana 0.999341, mín 0.994717, máx 1.008944. Umbral (ruido de semilla de σ_loc f64): 1.179e-02.
 
-| Celda | Error σ_loc | Umbral | Cociente | Cobertura % | Factor recentrado T/f64 (mediana) | Factor T/f64 máx. desviación absoluta | Veredicto |
-|---|---|---|---|---|---|---|---|
-| f32 sin escala | 1.459e-08 | 1.198e-02 | 0.00 | 100.00 | 1.000000 | 1.621e-09 | no pierde |
-| f32 con escala | 1.459e-08 | 1.198e-02 | 0.00 | 100.00 | 1.000000 | 1.621e-09 | no pierde |
-| bf16 sin escala | 1.023e-03 | 1.198e-02 | 0.09 | 100.00 | 1.000002 | 1.740e-04 | no pierde |
-| bf16 con escala | 1.023e-03 | 1.198e-02 | 0.09 | 100.00 | 1.000002 | 1.740e-04 | no pierde |
-| f16 sin escala | 1.270e-04 | 1.198e-02 | 0.01 | 100.00 | 1.000000 | 2.160e-05 | no pierde |
-| f16 con escala | 1.269e-04 | 1.198e-02 | 0.01 | 100.00 | 1.000000 | 2.160e-05 | no pierde |
-| e4m3 sin escala | 1.741e-02 | 1.198e-02 | 1.45 | 100.00 | 1.000004 | 2.288e-03 | pierde |
-| e4m3 con escala | 1.734e-02 | 1.198e-02 | 1.45 | 100.00 | 1.000000 | 1.921e-03 | pierde |
-| e5m2 sin escala | 3.506e-02 | 1.198e-02 | 2.93 | 99.76 | 1.000009 | 5.160e-03 | pierde |
-| e5m2 con escala | 3.505e-02 | 1.198e-02 | 2.92 | 99.77 | 1.000009 | 5.144e-03 | pierde |
+Rejilla de K común (intersección de los intervalos de los 5 modelos f64): 9216 tríos (entrada, k), de los que 0 tienen intersección vacía y 0 degenerada (ancho < 0.0001); sus puntos cuentan como fuera de región, no se rellenan. Comprobación: K fuera del intervalo de algún modelo f64: 0 de 82944 K por modelo (por construcción 0; el banco aborta si no lo es). Dato informativo: la columna «K fuera del intervalo propio» da el porcentaje de K (suma sobre semillas) que queda fuera de [máx S_h(0,10), mín S_h(0,90)] del propio cono redondeado del tipo (mismos tres horizontes), es decir, cuánto de la rejilla común cae fuera de la región interior que ese cono declara; no cambia el veredicto. El valor de f32 (≈ 2 %) es el suelo de esta cuenta: los dos K extremos de la rejilla coinciden con el borde del f64 que define la intersección y el redondeo de un tipo casi exacto los deja fuera, por una diferencia ínfima, en una parte de esos casos; lo informativo es el exceso sobre f32.
+
+| Celda | Error σ_loc | Umbral | Cociente | Cobertura % | K fuera del intervalo propio % | Factor recentrado T/f64 (mediana) | Factor T/f64 máx. desviación absoluta | Veredicto |
+|---|---|---|---|---|---|---|---|---|
+| f32 sin escala | 1.414e-08 | 1.179e-02 | 0.00 | 100.00 | 2.27 | 1.000000 | 1.621e-09 | no pierde |
+| f32 con escala | 1.414e-08 | 1.179e-02 | 0.00 | 100.00 | 2.27 | 1.000000 | 1.621e-09 | no pierde |
+| bf16 sin escala | 9.949e-04 | 1.179e-02 | 0.08 | 100.00 | 1.82 | 1.000002 | 1.740e-04 | no pierde |
+| bf16 con escala | 9.949e-04 | 1.179e-02 | 0.08 | 100.00 | 1.82 | 1.000002 | 1.740e-04 | no pierde |
+| f16 sin escala | 1.240e-04 | 1.179e-02 | 0.01 | 100.00 | 2.32 | 1.000000 | 2.160e-05 | no pierde |
+| f16 con escala | 1.238e-04 | 1.179e-02 | 0.01 | 100.00 | 2.32 | 1.000000 | 2.160e-05 | no pierde |
+| e4m3 sin escala | 1.703e-02 | 1.179e-02 | 1.44 | 100.00 | 4.59 | 1.000004 | 2.288e-03 | pierde |
+| e4m3 con escala | 1.694e-02 | 1.179e-02 | 1.44 | 100.00 | 4.63 | 1.000000 | 1.921e-03 | pierde |
+| e5m2 sin escala | 3.437e-02 | 1.179e-02 | 2.91 | 99.80 | 7.45 | 1.000009 | 5.160e-03 | pierde |
+| e5m2 con escala | 3.437e-02 | 1.179e-02 | 2.91 | 99.80 | 7.45 | 1.000009 | 5.144e-03 | pierde |
 
 **Delta por AAD** según el tipo del cono: no medida: requiere AAD (engine-nn); no hay diferenciacion automatica del cono hasta engine-nn.
 
@@ -382,16 +384,16 @@ Por celda y medida: número de métricas que pierden entre las medidas, la de pe
 
 | Celda | Pierden / medidas | Peor métrica | Veredicto |
 |---|---|---|---|
-| f32 sin escala | 0/1 | sigma_loc: valor 1.459e-08, umbral 1.198e-02, cociente 0.00 | no pierde |
-| f32 con escala | 0/1 | sigma_loc: valor 1.459e-08, umbral 1.198e-02, cociente 0.00 | no pierde |
-| bf16 sin escala | 0/1 | sigma_loc: valor 1.023e-03, umbral 1.198e-02, cociente 0.09 | no pierde |
-| bf16 con escala | 0/1 | sigma_loc: valor 1.023e-03, umbral 1.198e-02, cociente 0.09 | no pierde |
-| f16 sin escala | 0/1 | sigma_loc: valor 1.270e-04, umbral 1.198e-02, cociente 0.01 | no pierde |
-| f16 con escala | 0/1 | sigma_loc: valor 1.269e-04, umbral 1.198e-02, cociente 0.01 | no pierde |
-| e4m3 sin escala | 1/1 | sigma_loc: valor 1.741e-02, umbral 1.198e-02, cociente 1.45 | pierde |
-| e4m3 con escala | 1/1 | sigma_loc: valor 1.734e-02, umbral 1.198e-02, cociente 1.45 | pierde |
-| e5m2 sin escala | 1/1 | sigma_loc: valor 3.506e-02, umbral 1.198e-02, cociente 2.93 | pierde |
-| e5m2 con escala | 1/1 | sigma_loc: valor 3.505e-02, umbral 1.198e-02, cociente 2.92 | pierde |
+| f32 sin escala | 0/1 | sigma_loc: valor 1.414e-08, umbral 1.179e-02, cociente 0.00 | no pierde |
+| f32 con escala | 0/1 | sigma_loc: valor 1.414e-08, umbral 1.179e-02, cociente 0.00 | no pierde |
+| bf16 sin escala | 0/1 | sigma_loc: valor 9.949e-04, umbral 1.179e-02, cociente 0.08 | no pierde |
+| bf16 con escala | 0/1 | sigma_loc: valor 9.949e-04, umbral 1.179e-02, cociente 0.08 | no pierde |
+| f16 sin escala | 0/1 | sigma_loc: valor 1.240e-04, umbral 1.179e-02, cociente 0.01 | no pierde |
+| f16 con escala | 0/1 | sigma_loc: valor 1.238e-04, umbral 1.179e-02, cociente 0.01 | no pierde |
+| e4m3 sin escala | 1/1 | sigma_loc: valor 1.703e-02, umbral 1.179e-02, cociente 1.44 | pierde |
+| e4m3 con escala | 1/1 | sigma_loc: valor 1.694e-02, umbral 1.179e-02, cociente 1.44 | pierde |
+| e5m2 sin escala | 1/1 | sigma_loc: valor 3.437e-02, umbral 1.179e-02, cociente 2.91 | pierde |
+| e5m2 con escala | 1/1 | sigma_loc: valor 3.437e-02, umbral 1.179e-02, cociente 2.91 | pierde |
 
 **Delta por AAD**: no medida: requiere AAD (engine-nn).
 

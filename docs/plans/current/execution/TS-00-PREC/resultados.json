@@ -2241,92 +2241,112 @@
    "celdas": {
     "bf16:con": {
      "cobertura": 1.0,
-     "cociente": 0.08539234996,
-     "error": 0.001023414978,
+     "cociente": 0.08438122362,
+     "error": 0.000994892551,
      "factor_recentrado_rel_max_dev": 0.0001740196166,
      "factor_recentrado_rel_mediana": 1.000001516,
-     "umbral": 0.01198485554,
+     "k_fuera_intervalo_propio_n": 7529,
+     "k_fuera_intervalo_propio_pct": 1.815441744,
+     "umbral": 0.01179044944,
      "veredicto": "no pierde"
     },
     "bf16:sin": {
      "cobertura": 1.0,
-     "cociente": 0.08539234996,
-     "error": 0.001023414978,
+     "cociente": 0.08438122362,
+     "error": 0.000994892551,
      "factor_recentrado_rel_max_dev": 0.0001740196166,
      "factor_recentrado_rel_mediana": 1.000001516,
-     "umbral": 0.01198485554,
+     "k_fuera_intervalo_propio_n": 7529,
+     "k_fuera_intervalo_propio_pct": 1.815441744,
+     "umbral": 0.01179044944,
      "veredicto": "no pierde"
     },
     "e4m3:con": {
-     "cobertura": 0.999968998,
-     "cociente": 1.446750305,
-     "error": 0.0173390934,
+     "cobertura": 0.999984499,
+     "cociente": 1.436867949,
+     "error": 0.01694131891,
      "factor_recentrado_rel_max_dev": 0.001920599967,
      "factor_recentrado_rel_mediana": 0.9999995036,
-     "umbral": 0.01198485554,
+     "k_fuera_intervalo_propio_n": 19220,
+     "k_fuera_intervalo_propio_pct": 4.63445216,
+     "umbral": 0.01179044944,
      "veredicto": "pierde"
     },
     "e4m3:sin": {
-     "cobertura": 0.999953497,
-     "cociente": 1.452905229,
-     "error": 0.01741285928,
+     "cobertura": 0.999968998,
+     "cociente": 1.444801762,
+     "error": 0.01703486213,
      "factor_recentrado_rel_max_dev": 0.002288332791,
      "factor_recentrado_rel_mediana": 1.000003773,
-     "umbral": 0.01198485554,
+     "k_fuera_intervalo_propio_n": 19023,
+     "k_fuera_intervalo_propio_pct": 4.586950231,
+     "umbral": 0.01179044944,
      "veredicto": "pierde"
     },
     "e5m2:con": {
-     "cobertura": 0.9976903522,
-     "cociente": 2.924885812,
-     "error": 0.03505433391,
+     "cobertura": 0.998046875,
+     "cociente": 2.914944552,
+     "error": 0.03436850636,
      "factor_recentrado_rel_max_dev": 0.00514392506,
      "factor_recentrado_rel_mediana": 1.000008909,
-     "umbral": 0.01198485554,
+     "k_fuera_intervalo_propio_n": 30902,
+     "k_fuera_intervalo_propio_pct": 7.451292438,
+     "umbral": 0.01179044944,
      "veredicto": "pierde"
     },
     "e5m2:sin": {
-     "cobertura": 0.9976438492,
-     "cociente": 2.925595962,
-     "error": 0.03506284496,
+     "cobertura": 0.998000372,
+     "cociente": 2.914839696,
+     "error": 0.03436727006,
      "factor_recentrado_rel_max_dev": 0.005160386168,
      "factor_recentrado_rel_mediana": 1.0000086,
-     "umbral": 0.01198485554,
+     "k_fuera_intervalo_propio_n": 30879,
+     "k_fuera_intervalo_propio_pct": 7.445746528,
+     "umbral": 0.01179044944,
      "veredicto": "pierde"
     },
     "f16:con": {
      "cobertura": 1.0,
-     "cociente": 0.01058419422,
-     "error": 0.0001268500387,
+     "cociente": 0.01050205212,
+     "error": 0.0001238239146,
      "factor_recentrado_rel_max_dev": 2.16016691e-05,
      "factor_recentrado_rel_mediana": 0.9999998719,
-     "umbral": 0.01198485554,
+     "k_fuera_intervalo_propio_n": 9623,
+     "k_fuera_intervalo_propio_pct": 2.320360725,
+     "umbral": 0.01179044944,
      "veredicto": "no pierde"
     },
     "f16:sin": {
      "cobertura": 1.0,
-     "cociente": 0.01059728886,
-     "error": 0.0001270069761,
+     "cociente": 0.01051830888,
+     "error": 0.0001240155891,
      "factor_recentrado_rel_max_dev": 2.16016691e-05,
      "factor_recentrado_rel_mediana": 0.999999872,
-     "umbral": 0.01198485554,
+     "k_fuera_intervalo_propio_n": 9623,
+     "k_fuera_intervalo_propio_pct": 2.320360725,
+     "umbral": 0.01179044944,
      "veredicto": "no pierde"
     },
     "f32:con": {
      "cobertura": 1.0,
-     "cociente": 1.217321764e-06,
-     "error": 1.458942548e-08,
+     "cociente": 1.199573092e-06,
+     "error": 1.414350589e-08,
      "factor_recentrado_rel_max_dev": 1.620650059e-09,
      "factor_recentrado_rel_mediana": 1.0,
-     "umbral": 0.01198485554,
+     "k_fuera_intervalo_propio_n": 9400,
+     "k_fuera_intervalo_propio_pct": 2.266589506,
+     "umbral": 0.01179044944,
      "veredicto": "no pierde"
     },
     "f32:sin": {
      "cobertura": 1.0,
-     "cociente": 1.217321764e-06,
-     "error": 1.458942548e-08,
+     "cociente": 1.199573092e-06,
+     "error": 1.414350589e-08,
      "factor_recentrado_rel_max_dev": 1.620650059e-09,
      "factor_recentrado_rel_mediana": 1.0,
-     "umbral": 0.01198485554,
+     "k_fuera_intervalo_propio_n": 9400,
+     "k_fuera_intervalo_propio_pct": 2.266589506,
+     "umbral": 0.01179044944,
      "veredicto": "no pierde"
     }
    },
@@ -2336,7 +2356,7 @@
     "veredicto": "no medida"
    },
    "dens_min": 0.5,
-   "descripcion": "sigma_loc(K, h) por Dupire, anualizada, en la rejilla de K del consenso de los modelos f64",
+   "descripcion": "sigma_loc(K, h) por Dupire, anualizada, en la rejilla de K comun (interseccion de los intervalos [S_h(0,10), S_h(0,90)] de los modelos f64)",
    "factor_recentrado_f64": {
     "max": 1.008944335,
     "mediana": 0.9993405344,
@@ -2373,8 +2393,16 @@
     100.0,
     100.0
    ],
-   "sigma_loc_f64_mediana": 0.1434551473,
-   "umbral": 0.01198485554
+   "rejilla_k": {
+    "ancho_min": 0.0001,
+    "k_fuera_intervalo_f64_n": 0,
+    "k_total": 82944,
+    "trios": 9216,
+    "trios_interseccion_degenerada": 0,
+    "trios_interseccion_vacia": 0
+   },
+   "sigma_loc_f64_mediana": 0.1428927922,
+   "umbral": 0.01179044944
   },
   "modelo": {
    "alfas": [
@@ -2556,10 +2584,10 @@
   }
  },
  "meta": {
-  "comando": ".venv/Scripts/python -X utf8 scripts/banco_precision.py --out E:/quantdesk-lab/runs/TS-00-PREC/completo",
-  "fecha_utc": "2026-11-08T12:03:57Z",
+  "comando": ".venv/Scripts/python -X utf8 scripts/banco_precision.py --out E:/quantdesk-lab/runs/TS-00-PREC/i2-b",
+  "fecha_utc": "2026-11-08T13:38:26Z",
   "plataforma": "Windows-10-10.0.19045-SP0",
-  "sha256_canonico": "5760df75ab902e7bebc09d9bb8f4cc6f5bea95d1f6d62521243f3896b4916e1c",
-  "tiempo_pared_s": 3109.9
+  "sha256_canonico": "83548e1ab61953a5602f96d0a4c21b67ef99e7b5158629f78b3956969a543d15",
+  "tiempo_pared_s": 975.9
  }
 }

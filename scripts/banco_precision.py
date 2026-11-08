@@ -8,9 +8,11 @@ Uso, con el venv del laboratorio:
 
 --out ejecuta el banco completo (medidas 1-3 de PLAN_TSFM_FINANZAS 4.5 sobre un transformer pequeno y sobre el
 paso cono -> sigma_loc), escribe resultados.json (+ .sha256), informe.md y los pesos entrenados en DIR, que debe
-estar bajo E:/quantdesk-lab. Solo CPU, sin red; el redondeo se emula con ml_dtypes (la acumulacion interna sigue
-en f64: TS-00-PREC en hardware real lo corrige). Las medidas 4-5 (entrenamiento, mezclas) y la delta por AAD
-quedan fuera.
+ser un subdirectorio de E:/quantdesk-lab/runs/TS-00-PREC/. --informe escribe DIR/informe.md y solo acepta un
+subdirectorio de esa misma ruta o docs/plans/current/execution/TS-00-PREC/ del repositorio; cualquier otra ruta
+sale con error (codigo 2) sin escribir nada. Solo CPU, sin red; el redondeo se emula con ml_dtypes (la acumulacion
+interna sigue en f64: TS-00-PREC en hardware real lo corrige). Las medidas 4-5 (entrenamiento, mezclas) y la delta
+por AAD quedan fuera.
 """
 from __future__ import annotations
 
@@ -26,9 +28,9 @@ import shutil  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from setup_env import LAB, under_lab  # noqa: E402
+from banco_precision_lib import rutas  # noqa: E402
 
-RUNS = LAB + "/runs/TS-00-PREC"
+RUNS = rutas.RUNS
 C_MIN_GB = 2.0
 
 
@@ -47,11 +49,10 @@ def espacio_c_ok() -> bool:
 def cmd_out(out: str, perfil: str) -> int:
     from banco_precision_lib import banco, informe
 
-    out = os.path.abspath(out)
-    lab_ok = under_lab(out)
-    runs_ok = os.path.normcase(out).startswith(os.path.normcase(os.path.abspath(RUNS)) + os.sep)
-    if not lab_ok or (perfil == "completo" and not runs_ok):
-        print(f"banco_precision: --out debe estar bajo {RUNS} (recibido {out})")
+    try:
+        out = rutas.validar_out(out)
+    except rutas.RutaNoAutorizada as exc:
+        print(f"banco_precision: {exc}")
         return 2
     if not espacio_c_ok():
         return 3
@@ -88,8 +89,13 @@ def main(argv=None) -> int:
     from banco_precision_lib import informe
 
     if a.informe:
-        informe.escribir_informe(a.informe)
-        print(f"informe regenerado en {os.path.join(a.informe, 'informe.md')}")
+        try:
+            destino = rutas.validar_informe(a.informe)
+        except rutas.RutaNoAutorizada as exc:
+            print(f"banco_precision: {exc}")
+            return 2
+        informe.escribir_informe(destino)
+        print(f"informe regenerado en {os.path.join(destino, 'informe.md')}")
         return 0
     return informe.verificar(a.verificar)
 

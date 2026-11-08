@@ -9,6 +9,7 @@ from .medidas import CANTIDADES_M2, METRICAS_M1
 from .redondeo import TIPOS, celdas
 
 DIRECCION_INFORME = "docs/plans/current/execution/TS-00-PREC/informe.md"
+OBJETIVO_PARED_MIN = 45  # la ficha pide reducir tamaños si el banco completo pasa de ~45 min en CPU
 
 
 def etiqueta(cid: str) -> str:
@@ -89,13 +90,17 @@ def generar_informe(doc: dict) -> str:
     v = d["versiones"]
     a(f"- Perfil: `{d['perfil']}`. Semillas: {', '.join(str(s) for s in cfg['semillas'])} (n = {len(cfg['semillas'])}); "
       f"semilla de las entradas de evaluación (fijas, comunes a todas): {banco.SEMILLA_EVAL}.")
-    a(f"- Fecha UTC: {meta['fecha_utc']}. Tiempo de pared: {meta['tiempo_pared_s']} s.")
+    t_pared = meta["tiempo_pared_s"]
+    a(f"- Fecha UTC: {meta['fecha_utc']}. Tiempo de pared: {t_pared} s ({t_pared / 60:.1f} min; objetivo de la ficha ~{OBJETIVO_PARED_MIN} min con el banco completo: "
+      + ("dentro del objetivo, tamaños del perfil sin reducir" if t_pared <= 60 * OBJETIVO_PARED_MIN else "por encima del objetivo, ver el compromiso de tamaños en la entrega")
+      + "). La máquina es compartida: el tiempo de pared depende de la carga de otros procesos.")
     a(f"- Versiones: python {v['python']}, torch {v['torch']}, ml_dtypes {v['ml_dtypes']}, arch {v['arch']}, numpy {v['numpy']}, "
       f"scipy {v['scipy']}; motor quantdesk commit `{v['quantdesk_motor_commit']}` (paquete {v['quantdesk_paquete']}).")
     a(f"- Determinismo: `torch.manual_seed` por semilla, `torch.use_deterministic_algorithms(True)`, `torch.set_num_threads({d['hilos']})` "
       f"(también `OMP/MKL/OPENBLAS_NUM_THREADS={d['hilos']}`); aleatoriedad de datos con `numpy.random.default_rng([semilla, flujo])`.")
     a(f"- SHA-256 canónico de `resultados.json` (JSON con claves ordenadas, floats a 10 cifras significativas, sin el bloque `meta`): "
-      f"`{meta['sha256_canonico']}`.")
+      f"`{meta['sha256_canonico']}`. Los floats se canonizan a 10 cifras (una diferencia menor que eso no mueve el hash), pero los veredictos y los "
+      "cocientes error/umbral forman parte del JSON hasheado, así que un cambio de veredicto siempre cambia el hash.")
     a(f"- Comando exacto para reproducir (dos ejecuciones con las mismas semillas deben dar el mismo hash): `{meta['comando']}`.")
     a("- Verificación: `.venv/Scripts/python -X utf8 scripts/banco_precision.py --verificar <DIR>`.")
     a("")
@@ -146,7 +151,9 @@ def generar_informe(doc: dict) -> str:
       "`ml_dtypes` (`float8_e4m3fn`, `float8_e5m2`, `bfloat16`, `float16`) o numpy (`float32`). El recorte emula fp8 con saturación y evita los NaN de "
       "desbordamiento de e4m3fn (máx. 448, sin infinitos). Variante «con escala»: se escala por una potencia de 2 (sin error de escalado) para que "
       "el máximo absoluto del tensor quepa en el máximo del tipo, se redondea y se desescala; se publica junto a «sin escala», nunca en su lugar. "
-      "Las activaciones se escalan por muestra (eje 0 = una ventana), los pesos y la serie de entrada por tensor.")
+      "Las activaciones se escalan por muestra (eje 0 = una ventana), los pesos y la serie de entrada por tensor. "
+      "Justificación: cada ventana es una inferencia, y la escala por tensor de una inferencia con lote 1 hace que el resultado no dependa de cómo se agrupe "
+      "la evaluación (con una escala por lote, la precisión de una ventana cambiaría según con qué otras comparta lote); el selftest lo comprueba.")
     a("")
     a("| Tipo | Máx. finito | Bits de mantisa | Error relativo máx. teórico |")
     a("|---|---|---|---|")
@@ -178,10 +185,12 @@ def generar_informe(doc: dict) -> str:
     m3 = d["m3"]
     a(f"S0 = 1, tipos cero, h = días/252; S_h(α) = exp(q(α, h)) con recentrado multiplicativo para que la media discreta Σ w_j S_j sea 1 "
       f"(forward = S0; los factores se publican en 3.3). C(K, h) = Σ_j w_j (S_j − K)⁺ con pesos trapezoidales en α y la masa de las colas asignada al cuantil extremo "
-      f"(error declarado: no se extrapola fuera de [0,005; 0,995]). Rejilla de K: {m3['nk']} puntos equiespaciados en [máx S_h(0,10), mín S_h(0,90)] sobre los "
-      f"horizontes k−1, k, k+1; ∂C/∂h por diferencias centradas entre k−1 y k+1; ∂²C/∂K² por diferencias centradas en K; "
+      f"(error declarado: no se extrapola fuera de [0,005; 0,995]). Rejilla de K: {m3['nk']} puntos equiespaciados en [máx S_h(0,10), mín S_h(0,90)], donde el máximo y el mínimo se "
+      f"toman, por entrada de evaluación y trío de horizontes k−1, k, k+1, sobre los {len(cfg['semillas'])} modelos f64 (intersección de sus intervalos [S_h(0,10), S_h(0,90)]): "
+      f"todo K cae dentro del intervalo de cada modelo f64 a los tres horizontes, y la rejilla es común a todos los modelos y tipos, que es lo que permite compararlos. "
+      f"Si la intersección es vacía o su ancho es menor que {m3['rejilla_k']['ancho_min']:g} (S0 = 1), ese trío no tiene rejilla y sus puntos cuentan como fuera de región (se publican en 3.3, nunca se rellenan). "
+      f"∂C/∂h por diferencias centradas entre k−1 y k+1; ∂²C/∂K² por diferencias centradas en K; "
       f"σ_loc² = 2 ∂C/∂h / (K² ∂²C/∂K²) sólo donde ∂²C/∂K² > {m3['dens_min']:g} y ∂C/∂h > 0 (región válida; los puntos fuera se cuentan, no se rellenan). "
-      f"Para comparar tipos la rejilla de K se fija con el cono medio de los modelos f64 (consenso), así todos los modelos y tipos se evalúan en los mismos K; "
       f"σ_loc se evalúa en los {m3['nk'] - 2} K interiores y en los horizontes de {m3['horizontes_dias'][0]} a {m3['horizontes_dias'][-1]} días. "
       f"El error se calcula sobre los puntos válidos en los {len(cfg['semillas'])} modelos f64 y en el tipo; la cobertura (fracción de esos puntos que el tipo conserva) "
       f"se publica y, si baja de {100 * m3['cobertura_min']:.0f} %, el tipo pierde aunque el RMS de los puntos que quedan sea pequeño.")
@@ -256,13 +265,23 @@ def generar_informe(doc: dict) -> str:
       f"σ_loc f64 mediana {fe(m3['sigma_loc_f64_mediana'])}; factor de recentrado f64: mediana {m3['factor_recentrado_f64']['mediana']:.6f}, "
       f"mín {m3['factor_recentrado_f64']['min']:.6f}, máx {m3['factor_recentrado_f64']['max']:.6f}. Umbral (ruido de semilla de σ_loc f64): {fe(m3['umbral'])}.")
     a("")
+    rk = m3["rejilla_k"]
+    a(f"Rejilla de K común (intersección de los intervalos de los {len(cfg['semillas'])} modelos f64): {rk['trios']} tríos (entrada, k), de los que "
+      f"{rk['trios_interseccion_vacia']} tienen intersección vacía y {rk['trios_interseccion_degenerada']} degenerada (ancho < {rk['ancho_min']:g}); sus puntos cuentan como fuera de región, "
+      f"no se rellenan. Comprobación: K fuera del intervalo de algún modelo f64: {rk['k_fuera_intervalo_f64_n']} de {rk['k_total']} K por modelo "
+      "(por construcción 0; el banco aborta si no lo es). Dato informativo: la columna «K fuera del intervalo propio» da el porcentaje de K (suma sobre semillas) "
+      "que queda fuera de [máx S_h(0,10), mín S_h(0,90)] del propio cono redondeado del tipo (mismos tres horizontes), es decir, cuánto de la rejilla común cae fuera de la región "
+      "interior que ese cono declara; no cambia el veredicto. El valor de f32 (≈ 2 %) es el suelo de esta cuenta: los dos K extremos de la rejilla coinciden con el borde "
+      "del f64 que define la intersección y el redondeo de un tipo casi exacto los deja fuera, por una diferencia ínfima, en una parte de esos casos; lo informativo es el exceso sobre f32.")
+    a("")
     filas = []
     for c in ids:
         x = m3["celdas"][c]
         filas.append([etiqueta(c), fe(x["error"]), fe(x["umbral"]), fc(x["cociente"]), fp(100 * x["cobertura"]),
+                      fp(x["k_fuera_intervalo_propio_pct"]),
                       f"{x['factor_recentrado_rel_mediana']:.6f}", fe(x["factor_recentrado_rel_max_dev"]),
                       x["veredicto"] + (f" ({x['motivo']})" if x.get("motivo") else "")])
-    L += tabla(["Celda", "Error σ_loc", "Umbral", "Cociente", "Cobertura %", "Factor recentrado T/f64 (mediana)", "Factor T/f64 máx. desviación absoluta", "Veredicto"], filas)
+    L += tabla(["Celda", "Error σ_loc", "Umbral", "Cociente", "Cobertura %", "K fuera del intervalo propio %", "Factor recentrado T/f64 (mediana)", "Factor T/f64 máx. desviación absoluta", "Veredicto"], filas)
     a(f"**Delta por AAD** según el tipo del cono: {m3['delta_aad']['motivo']}.")
     a("")
 
