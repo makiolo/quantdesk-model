@@ -1,0 +1,13 @@
+# Dependencias directas del laboratorio (LAB-00-ENV). Python 3.12, win_amd64.
+# Versiones exactas y dependencias transitivas con hashes: requirements.lock (pip-compile).
+# Regenerar: ver docs/plans/current/execution/LAB-00-ENV/env.md, seccion "Metodo del lock".
+
+# torch CPU: indice de PyTorch, nunca la variante CUDA. Version fijada con el sufijo +cpu.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.15.0+cpu
+
+pyarrow
+ml_dtypes
+arch
+MetaTrader5
+chronos-forecasting

@@ -36,11 +36,11 @@ genérica de la skill. Mantenerlo corto: la parte principal se lee en cada invoc
 
 | Uso | Comando |
 |---|---|
-| Entorno | `.venv` propio, Python 3.12 (LAB-00-ENV): `py -3.12 -m venv .venv` y `.venv/Scripts/python -m pip install -r requirements.lock` «el lock lo crea LAB-00-ENV» |
-| Python mientras no exista `.venv` | `S:/projects/quantdesk/venv/Scripts/python.exe` sólo para leer/probar; **no instalar nada en él** (lo cambian los sprints de `quantdesk`) |
+| Entorno | `.venv` propio, Python 3.12.3 (`D:/miniconda312/python.exe`; `py -3.12` no existe en esta máquina). Crear y configurar: `D:/miniconda312/python.exe -X utf8 scripts/setup_env.py` (instala `requirements.lock` con `--require-hashes`; cachés y temporales en `E:/quantdesk-lab/`) |
+| Python mientras no exista `.venv` | Ya existe `.venv` (LAB-00-ENV): usar `.venv/Scripts/python`. `S:/projects/quantdesk/venv/Scripts/python.exe` sólo para leer/probar; **no instalar nada en él** (lo cambian los sprints de `quantdesk`) |
 | Build | sólo las ruedas de `quantdesk` (GAP-03): `git -C S:/projects/quantdesk archive <commit>` a `E:/quantdesk-lab/build/<commit>/` y `maturin build --release` allí; ruedas a `E:/quantdesk-lab/wheels/` con SHA-256. Nunca compilar dentro de `S:/projects/quantdesk` |
 | Tests rápidos | `--selftest` de cada script, p. ej. `.venv/Scripts/python -X utf8 scripts/inventario_options_chain.py --selftest` |
-| Suite completa (DoD y cierre) | «rellenar al crear LAB-00-ENV: selftests de todos los `scripts/*.py`, p. ej. con `pytest`» |
+| Suite completa (DoD y cierre) | `.venv/Scripts/python -X utf8 scripts/run_selftests.py` (ejecuta `--selftest` de cada `scripts/*.py` que lo soporte) |
 | Gate / candados | ninguno propio; la GPU según los carriles de DL-02-GATES de `quantdesk` cuando existan |
 | Build de release / Publicar | ninguno |
 
