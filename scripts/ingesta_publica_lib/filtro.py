@@ -351,8 +351,8 @@ class Escritor:
     def cerrar(self) -> list:
         for k in list(self.buf):
             self._vaciar(k)
-        if self.guarda_lote and self.w:  # ultimo control: los pies de los ficheros se escriben al cerrar
-            self.guarda_lote(self.bytes_escritos(), MARGEN_PARQUET * len(self.w))
+        if self.guarda_lote:  # ultimo control: los pies de los ficheros se escriben al cerrar, y manifest.json (y su .tmp) despues de este
+            self.guarda_lote(self.bytes_escritos(), MARGEN_PARQUET * len(self.w) + C.RESERVA_AUXILIAR)  # 64 MiB fijos para el manifiesto
         out = []
         for k, w in sorted(self.w.items()):
             w.close()
@@ -425,7 +425,8 @@ def procesar_dataset(entry: dict, an: dict, lados: dict, salida: str, corte: str
       1. ANTES de empezar: `guarda` con la estimacion de lo que va a ocupar (2 x el crudo del dataset);
       2. ANTES de cada lote: `guarda_lote` con los bytes REALES ya escritos y la cota del lote (la estimacion puede quedarse corta,
          p. ej. un ZIP de Binance que se expande mucho). Si salta, `escribir` cierra los writers, borra la carpeta del dataset (no queda
-         parquet parcial ni manifiesto) y relanza la excepcion.
+         parquet parcial ni manifiesto) y relanza la excepcion. El ultimo control (al cerrar, antes de los pies del parquet) suma ademas
+         la reserva fija C.RESERVA_AUXILIAR (64 MiB) para manifest.json y su .tmp, que se escriben despues; sin parquet se comprueba igual.
     `usado_previo` incluye el manifiesto anterior de este mismo dataset, que se borra antes de escribir: la cuenta es conservadora."""
     carpeta = f"{salida}/{entry['id']}"
     hay_datos = any(r["accion"] != "excluida" for r in an["registros"])
@@ -438,6 +439,8 @@ def procesar_dataset(entry: dict, an: dict, lados: dict, salida: str, corte: str
     if hay_datos:
         ficheros = escribir(entry, an, lados, carpeta, corte_ms(corte),
                             guarda_lote=lambda escrito, cota: guarda_lote(escrito, cota, usado_previo, cache_hf))
+    else:  # sin parquet solo se escribe el manifiesto: misma reserva fija que el control final de los demas datasets
+        guarda_lote(0, C.RESERVA_AUXILIAR, usado_previo, C.bytes_cache_hf())
     st = estadisticas(entry, an)
     man = {
         "dataset": entry["id"], "fuente": entry["fuente"], "repo": entry.get("repo"), "subconjunto": entry["nombre"],
@@ -528,7 +531,7 @@ def correr(corte: str, estado_lic: dict, salida: str, ids: list | None = None, i
         crudo = [{"ruta": k, **crudo_all[k]} for k in LEC.rutas_crudo(e) if k in crudo_all]
         print(f"  escribiendo {e['id']}")
         mans[e["id"]] = procesar_dataset(e, an, lados, salida, corte, lic, crudo,
-                                         usado_previo=F.bytes_en_manifiestos() + escrito_fuera)
+                                         usado_previo=F.bytes_en_manifiestos() + C.bytes_temporales() + escrito_fuera)
         if not en_datasets:
             escrito_fuera += sum(f["bytes"] for f in mans[e["id"]]["ficheros"])
         filas += filas_csv(e, an)
@@ -538,12 +541,21 @@ def correr(corte: str, estado_lic: dict, salida: str, ids: list | None = None, i
     resumen = {"corte": corte, "sal": R.SAL, "fraccion_val": R.FRAC_VAL, "particion": comp, "duplicados": st_lados,
                "datasets": sorted(mans)}
     if informes_dir:
-        os.makedirs(informes_dir, exist_ok=True)
-        ruta = f"{informes_dir}/filtro_ids.csv"
-        with open(ruta, "w", encoding="utf-8", newline="\n") as f:
-            f.write("dataset,series_id,accion,motivo,puntos,puntos_tronco,puntos_adaptadores\n")
-            for fila in filas:
-                f.write(",".join('"%s"' % str(x).replace('"', "'") if isinstance(x, str) else str(x) for x in fila) + "\n")
-        resumen["csv"] = {"ruta": ruta, "sha256": C.sha256_fichero(ruta), "filas": len(filas), "bytes": os.path.getsize(ruta)}
-        C.escribir_json(f"{informes_dir}/filtro_resumen.json", resumen)
+        escribir_csv_y_resumen(informes_dir, filas, resumen, F.bytes_en_manifiestos() + C.bytes_temporales() + escrito_fuera)
     return {"manifiestos": mans, "resumen": resumen}
+
+
+def escribir_csv_y_resumen(informes_dir: str, filas: list, resumen: dict, usado_previo: int, guarda=C.guarda) -> None:
+    """filtro_ids.csv y filtro_resumen.json (y su .tmp) se escriben DESPUES de la ultima guarda de los parquet. Antes de escribirlos,
+    `guarda` con el tamano exacto del CSV (ya en memoria) mas la reserva fija C.RESERVA_AUXILIAR (64 MiB) para el resumen y su .tmp.
+    Si salta (PresupuestoExcedido o ParadaDisco) no se escribe nada de esto."""
+    texto = "dataset,series_id,accion,motivo,puntos,puntos_tronco,puntos_adaptadores\n" + "".join(
+        ",".join('"%s"' % str(x).replace('"', "'") if isinstance(x, str) else str(x) for x in fila) + "\n" for fila in filas)
+    datos = texto.encode("utf-8")
+    guarda(len(datos) + C.RESERVA_AUXILIAR, usado_previo, C.bytes_cache_hf())
+    os.makedirs(informes_dir, exist_ok=True)
+    ruta = f"{informes_dir}/filtro_ids.csv"
+    with open(ruta, "wb") as f:  # mismos bytes que en modo texto con newline="\n": el SHA-256 del CSV no cambia
+        f.write(datos)
+    resumen["csv"] = {"ruta": ruta, "sha256": C.sha256_fichero(ruta), "filas": len(filas), "bytes": os.path.getsize(ruta)}
+    C.escribir_json(f"{informes_dir}/filtro_resumen.json", resumen)

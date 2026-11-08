@@ -52,8 +52,11 @@ def _registrar(fuente_dir: str, rel: str, entrada: dict) -> None:
     C.escribir_json(fuente_dir + "/raw_manifest.json", m)
 
 
-def _guarda(extra: int) -> None:
-    C.guarda(extra, bytes_en_manifiestos(), C.bytes_cache_hf())
+def _guarda(extra: int, libre_fn=C.libre) -> None:
+    """Guarda de descarga (Hub y Binance): manifiestos + TEMPORALES de descarga abandonados (.dl.part, .dl, .part, .tmp bajo
+    data/public, que ningun manifiesto registra) + cache de HF + lo siguiente (`extra`). Los temporales se conservan (la reanudacion con
+    Range los aprovecha) pero cuentan; reanudar el MISMO fichero cuenta su parcial y el fichero entero (cota conservadora)."""
+    C.guarda(extra, bytes_en_manifiestos(), C.bytes_cache_hf(), libre_fn, usado_temporales=C.bytes_temporales())
 
 
 # --- Hub -------------------------------------------------------------------------------------------------------------

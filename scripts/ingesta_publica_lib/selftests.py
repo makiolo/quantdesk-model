@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import email.utils
 import functools
 import glob
 import io
@@ -190,6 +191,42 @@ def t_red():
     except C.ErrorRed:
         pass
     assert esp == [9.0, 9.0, 9.0], esp  # respeta Retry-After (mayor que 2, 4, 8 en el primero) en los 3 reintentos
+
+    # revision 3 (MEDIA): un Retry-After mayor que ESPERA_MAX (60 s) no se acorta a 60 s: no se reintenta (cero peticiones mas) y
+    # se lanza ErrorRed con el motivo. 7, 30 y 60 s siguen como antes (se espera exactamente lo que pide el servidor).
+    def abrir_con_ra(ra, antes=()):
+        n = []
+
+        def abrir(req, timeout=0):
+            n.append(1)
+            if len(n) <= len(antes):
+                raise urllib.error.HTTPError(req.full_url, antes[len(n) - 1], "x", {}, io.BytesIO(b""))
+            raise urllib.error.HTTPError(req.full_url, 429, "x", {"Retry-After": ra}, io.BytesIO(b""))
+        return abrir, n
+
+    assert C.ESPERA_MAX == 60.0
+    for ra, antes, peticiones, esperas in (("7", (), 4, [7.0, 7.0, 8.0]),  # la exponencial (2, 4, 8) manda cuando es mayor que Retry-After
+                                           ("30", (), 4, [30.0] * 3), ("60", (), 4, [60.0] * 3),
+                                           ("61", (), 1, []), ("120", (), 1, []), ("120", (503,), 2, [2.0])):
+        abrir, n = abrir_con_ra(ra, antes)
+        esp = []
+        try:
+            C.http_get("http://x.test/ra", abrir=abrir, ritmo=C.Ritmo(0, dormir=lambda s: None), dormir=esp.append)
+            raise AssertionError(ra)
+        except C.ErrorRed as err:
+            assert len(n) == peticiones and esp == esperas, (ra, len(n), esp)  # tras Retry-After > 60 s: ni una peticion mas, ni una espera
+            if int(ra) > 60:
+                assert f"el servidor pide esperar {ra} s; se reintentara en otra ejecucion" in str(err), err
+            else:
+                assert "4 intentos" in str(err), err
+    # Retry-After como fecha HTTP lejana (> 60 s desde ahora): tampoco se reintenta
+    lejos = email.utils.format_datetime(dt.datetime.now(dt.timezone.utc) + dt.timedelta(minutes=10), usegmt=True)
+    abrir, n = abrir_con_ra(lejos)
+    try:
+        C.http_get("http://x.test/ra", abrir=abrir, ritmo=C.Ritmo(0, dormir=lambda s: None), dormir=lambda s: None)
+        raise AssertionError("fecha lejana")
+    except C.ErrorRed as err:
+        assert len(n) == 1 and "el servidor pide esperar" in str(err) and "otra ejecucion" in str(err), (len(n), err)
 
     llamadas = []
 
@@ -790,6 +827,29 @@ def t_hub_red(tmp):
         assert C.parse_retry_after("Sun, 08 Nov 2026 10:00:30 GMT", t0) == 30.0
         assert C.parse_retry_after("Sun, 08 Nov 2026 09:59:00 GMT", t0) == 0.0 and C.parse_retry_after("-3") == 0.0
         assert C.parse_retry_after("ni idea", t0) is None
+
+        # j) revision 3 (MEDIA): Retry-After 120 s (> ESPERA_MAX) en el Hub: una sola peticion, ninguna espera, y descargar_hub lo deja en
+        # "no bajado" con el motivo (no sigue con el resto del subconjunto); con 30 s se espera 30 s y se baja
+        limpio()
+        F._siblings = lambda estado_lic, fuente: ({rel: s, "fino/dos.arrow": s}, "rev1")
+        m = _Mundo(lambda m, req: (_ for _ in ()).throw(_http_error(req.full_url, 429, {"Retry-After": "120"})))
+        omit = F.descargar_hub("lotsa", {"datasets": {"lotsa__fino": {"estado": "verificada"}}}, datasets=[d], http=m.http())
+        assert [i for i, _ in omit] == [f"lotsa__fino:{rel}"] and len(m.peticiones) == 1 and m.esperas == [], (omit, m.peticiones, m.esperas)
+        assert "el servidor pide esperar 120 s; se reintentara en otra ejecucion" in omit[0][1], omit
+        assert not os.path.exists(destino) and F.manifiesto_crudo(base)["archivos"] == {}
+        n = [0]
+
+        def srv_30(m, req):
+            if req.full_url.startswith(R.HUB_BASE):
+                n[0] += 1
+                if n[0] == 1:
+                    raise _http_error(req.full_url, 429, {"Retry-After": "30"})
+                raise _http_error(req.full_url, 302, {"Location": CDN})
+            return _Resp(contenido)
+
+        m = _Mundo(srv_30)
+        F._bajar_hub(d, rel, s, "rev1", m.http())
+        assert m.esperas == [30.0] and open(destino, "rb").read() == contenido, m.esperas
     finally:
         F.RAW_HF, F._guarda, F._siblings = raw0, guarda0, sib0
         limpio()
@@ -854,6 +914,35 @@ def t_guarda_incremental(tmp):
         assert all(reg[i + 1][0] - reg[i][0] <= reg[i][1] for i in range(4)), reg  # la cota es una cota: cada lote cabe en ella
         total = man["ficheros"][0]["bytes"]
         assert reg[4][0] <= total <= reg[4][0] + reg[4][1], (reg[4], total)  # lo escrito + los pies cabe en lo ultimo comprobado
+        # revision 3 (BAJA): el control final suma una reserva FIJA de 64 MiB para manifest.json y su .tmp (se escriben despues)
+        n_pq = len(man["ficheros"])
+        assert C.RESERVA_AUXILIAR == 64 * 1024**2 and reg[4][1] == FI.MARGEN_PARQUET * n_pq + C.RESERVA_AUXILIAR, reg[4]
+
+        def con_final(delta):  # solo el control final (5.a llamada) aplica el presupuesto: lo escrito + los pies + la reserva + delta
+            nn = [0]
+
+            def gl(escrito, cota, usado, cache):
+                nn[0] += 1
+                if nn[0] == 5:
+                    return C.guarda_lote(escrito, cota, usado, cache, libre_fn=libre,
+                                         presupuesto=escrito + FI.MARGEN_PARQUET * n_pq + C.RESERVA_AUXILIAR + delta)
+                return {}
+            return gl
+
+        FI.procesar_dataset(e, an, lados, f"{tmp}/inc_fin_ok", "2016-10-01", {}, [], guarda=_sin_guarda, guarda_lote=con_final(0))  # justo: pasa
+        try:  # parquet + pies caben, pero NO la reserva del manifiesto (un byte menos): para y no deja nada
+            FI.procesar_dataset(e, an, lados, f"{tmp}/inc_fin", "2016-10-01", {}, [], guarda=_sin_guarda, guarda_lote=con_final(-1))
+            raise AssertionError("sin sitio para la reserva del manifiesto debia parar")
+        except C.PresupuestoExcedido:
+            assert os.listdir(f"{tmp}/inc_fin") == [], os.listdir(f"{tmp}/inc_fin")
+        # un dataset sin ninguna serie escribible (todas excluidas) solo escribe el manifiesto: misma reserva fija
+        LEC.series = lambda entry, con_ts=True: iter([LEC.Serie("V1", None, np.array([])), LEC.Serie("V2", None, np.full(5, np.nan))])
+        an0 = FI.analizar(e, CORTE, AHORA)
+        vistas0 = []
+        man0 = FI.procesar_dataset(e, an0, {}, f"{tmp}/inc_vacio", "2016-10-01", {}, [], guarda=_sin_guarda,
+                                   guarda_lote=lambda escrito, cota, usado, cache: vistas0.append((escrito, cota)) or {})
+        assert man0["ficheros"] == [] and vistas0 == [(0, C.RESERVA_AUXILIAR)], (man0["ficheros"], vistas0)
+        LEC.series = lambda entry, con_ts=True: iter(sint)
 
         # la reserva previa (2 x crudo = 2000 B) pasa; en el 3.er lote, lo ya escrito mas su cota supera el presupuesto: PARA
         pres = reg[2][0] + reg[2][1] - 1
@@ -944,6 +1033,143 @@ def t_procesar_parada():
         FI.correr, ip._estado_licencias = correr0, estado0
 
 
+def _escribir_bytes(ruta: str, n: int) -> None:
+    os.makedirs(os.path.dirname(ruta), exist_ok=True)
+    with open(ruta, "wb") as f:
+        f.write(b"x" * n)
+
+
+def t_temporales(tmp):
+    """Revision 3 (MEDIA): los temporales de descarga abandonados (.dl.part, .dl, .part, .tmp bajo data/public) entran en la guarda de
+    100 GB aunque ningun manifiesto los registre, y se CONSERVAN para que la reanudacion con Range siga funcionando entre ejecuciones."""
+    GB = 10**9
+    libre = lambda u: {"C:/": 5 * GB, "E:/": 300 * GB}[u]  # noqa: E731
+    # a) bytes_temporales: solo los temporales, a cualquier profundidad; un directorio ausente son 0 bytes; no se mide a medias
+    pub = f"{tmp}/pub_t"
+    for rel, n in (("hf/r/a.arrow.dl.part", 2000), ("hf/r/b.arrow.dl", 300), ("binance/x/y.zip.part", 40),
+                   ("hf/raw_manifest.json.tmp", 5), ("hf/r/.cache/z.incomplete", 7), ("hf/r/real.arrow", 99_999),
+                   ("binance/x/y.zip.CHECKSUM", 70)):
+        _escribir_bytes(f"{pub}/{rel}", n)
+    assert C.bytes_temporales(pub) == 2000 + 300 + 40 + 5 + 7 and C.bytes_temporales(f"{tmp}/no_existe") == 0
+    try:
+        C.bytes_temporales(pub, max_ficheros=3)
+        raise AssertionError("un recorrido que no cabe en el limite debe abortar, no devolver un subtotal")
+    except C.TemporalesNoMedibles as e:
+        assert "no se pueden medir" in str(e) and isinstance(e, C.ParadaDisco)
+    # b) C.guarda suma los temporales
+    assert C.guarda(1000, 4000, 0, libre, presupuesto=10_000, usado_temporales=5000)["total_previsto_bytes"] == 10_000  # justo
+    try:
+        C.guarda(1001, 4000, 0, libre, presupuesto=10_000, usado_temporales=5000)
+        raise AssertionError("un byte mas sobre el limite")
+    except C.PresupuestoExcedido as e:
+        assert "temporales de descarga 0.00" in str(e) and "superan" in str(e), e
+    # c) la guarda de descarga REAL (fuentes._guarda: Hub y Binance): un .part abandonado de tamano conocido la hace saltar cuando, sin
+    # el, el fichero cabria; y el .part sigue en disco
+    base = f"{tmp}/pub_g"
+    salvado = (F.RAW_HF, F.RAW_BINANCE, C.PUBLIC, C.DATASETS, C.PRESUPUESTO, C.bytes_cache_hf, F._guarda, F._siblings)
+    F.RAW_HF, F.RAW_BINANCE, C.PUBLIC, C.DATASETS, C.PRESUPUESTO = f"{base}/hf", f"{base}/binance", base, f"{base}/datasets", 10_000
+    C.bytes_cache_hf = lambda *a, **k: 0
+    real = F._guarda
+    F._guarda = lambda extra: real(extra, libre)  # el suelo de C:/E: del selftest no depende del disco real
+    try:
+        F._registrar(F.RAW_HF, "hf/r/registrado.arrow", {"bytes": 4000, "sha256": "x"})
+        real(5000, libre)  # 4000 + 5000 <= 10000: cabe
+        parcial = f"{base}/hf/r/x.arrow.dl.part"
+        _escribir_bytes(parcial, 2000)
+        for extra, ok in ((4000, True), (4001, False)):  # 4000 + 2000 + 4000 = 10000 justo; un byte mas, no
+            try:
+                real(extra, libre)
+                assert ok, extra
+            except C.PresupuestoExcedido as e:
+                assert not ok and "temporales de descarga" in str(e), (extra, e)
+        assert os.path.getsize(parcial) == 2000, "el temporal se conserva (reanudacion con Range), no se borra"
+        os.remove(parcial)  # y lo mismo con un .part de Binance (la guarda de _bajar_binance es la misma)
+        _escribir_bytes(f"{base}/binance/data/spot/monthly/klines/P/1d/P-1d-2020-01.zip.part", 2000)
+        try:
+            real(5000, libre)
+            raise AssertionError("el .part de Binance no entro en la guarda")
+        except C.PresupuestoExcedido:
+            pass
+        os.remove(f"{base}/binance/data/spot/monthly/klines/P/1d/P-1d-2020-01.zip.part")
+
+        # d) de punta a punta: una descarga del Hub agota los reintentos (503) tras dejar 3000 bytes; el bucle sigue con el SIGUIENTE
+        # subconjunto, y su guarda cuenta ese .dl.part: no se baja nada mas. Con presupuesto otra vez, la reanudacion usa Range.
+        contenido = bytes(range(256)) * 20  # 5120 bytes
+        s = {"size": len(contenido), "lfs": {"sha256": C.sha256_bytes(contenido)}}
+        ds = lambda n: {"id": f"chronos__{n}", "fuente": "chronos", "repo": "autogluon/chronos_datasets", "nombre": n,  # noqa: E731
+                        "archivos": [f"{n}/data.arrow"], "extras": []}
+        estado = {"datasets": {"chronos__a": {"estado": "verificada"}, "chronos__b": {"estado": "verificada"}}}
+        F._siblings = lambda estado_lic, fuente: ({"a/data.arrow": s, "b/data.arrow": s}, "rev1")
+        shutil.rmtree(base, ignore_errors=True)
+        C.PRESUPUESTO = 8000  # un fichero (5120) cabe; el parcial abandonado (3000) mas otro fichero (5120) no
+        n = [0]
+
+        def srv_cae(m, req):
+            if req.full_url.startswith(R.HUB_BASE):
+                raise _http_error(req.full_url, 302, {"Location": CDN})
+            n[0] += 1
+            if n[0] == 1:
+                return _Resp(contenido[:3000], headers={"Content-Length": str(len(contenido))})  # cuerpo truncado
+            raise _http_error(req.full_url, 503)
+
+        m = _Mundo(srv_cae)
+        try:
+            F.descargar_hub("chronos", estado, datasets=[ds("a"), ds("b")], http=m.http())
+            raise AssertionError("el .dl.part abandonado de a (3000 B) + b (5120 B) supera 8000 B: la guarda de b debia saltar")
+        except C.PresupuestoExcedido as e:
+            assert "temporales de descarga 0.00" in str(e) and "superan" in str(e), e
+        abandonado = f"{base}/hf/autogluon/chronos_datasets/a/data.arrow.dl.part"
+        assert os.path.getsize(abandonado) == 3000 and len(m.a(R.HUB_BASE)) == 4, (os.path.exists(abandonado), len(m.peticiones))
+        assert not [p for p in m.peticiones if "/b/data.arrow" in p[1]], "de b no se pidio ni un byte"
+        assert F.manifiesto_crudo(F.RAW_HF)["archivos"] == {}  # y no esta en ningun manifiesto: solo la guarda de temporales lo ve
+        assert C.bytes_temporales(base) == 3000
+        # otra ejecucion con presupuesto: reanuda con Range desde el parcial conservado y lo deja verificado y sin temporales
+        C.PRESUPUESTO = 10**9
+
+        def srv_reanuda(m, req):
+            if req.full_url.startswith(R.HUB_BASE):
+                raise _http_error(req.full_url, 302, {"Location": CDN})
+            assert req.headers.get("Range") == "bytes=3000-", req.headers
+            return _Resp(contenido[3000:], 206, {"Content-Length": str(len(contenido) - 3000)})
+
+        assert F.descargar_hub("chronos", estado, datasets=[ds("a")], http=_Mundo(srv_reanuda).http()) == []
+        assert open(f"{base}/hf/autogluon/chronos_datasets/a/data.arrow", "rb").read() == contenido and C.bytes_temporales(base) == 0
+    finally:
+        F.RAW_HF, F.RAW_BINANCE, C.PUBLIC, C.DATASETS, C.PRESUPUESTO, C.bytes_cache_hf, F._guarda, F._siblings = salvado
+
+
+def t_csv_resumen(tmp):
+    """Revision 3 (BAJA): filtro_ids.csv y filtro_resumen.json (y su .tmp) se escriben tras la ultima guarda de los parquet: su guarda suma
+    el tamano exacto del CSV (en memoria) mas la reserva fija de 64 MiB, y si salta no se escribe nada."""
+    GB = 10**9
+    libre = lambda u: {"C:/": 5 * GB, "E:/": 300 * GB}[u]  # noqa: E731
+    filas = [("chronos__x", "a", "excluida", "m", 10, 0, 0), ("chronos__x", 'b"c', "cortada", "x", 5, 2, 3)]
+    cache0, C.bytes_cache_hf = C.bytes_cache_hf, lambda *a, **k: 0
+    try:
+        reg = []
+        res = {"corte": "2016-10-01"}
+        FI.escribir_csv_y_resumen(f"{tmp}/inf", filas, res, 7, guarda=lambda extra, usado, cache: reg.append((extra, usado)) or {})
+        ruta = f"{tmp}/inf/filtro_ids.csv"
+        tam = os.path.getsize(ruta)
+        assert reg == [(tam + C.RESERVA_AUXILIAR, 7)], reg
+        with open(ruta, "rb") as f:
+            assert f.read() == ('dataset,series_id,accion,motivo,puntos,puntos_tronco,puntos_adaptadores\n'
+                                '"chronos__x","a","excluida","m",10,0,0\n"chronos__x","b\'c","cortada","x",5,2,3\n').encode()
+        assert res["csv"] == {"ruta": ruta, "sha256": C.sha256_fichero(ruta), "filas": 2, "bytes": tam}
+        assert C.leer_json(f"{tmp}/inf/filtro_resumen.json")["csv"]["bytes"] == tam and not os.path.exists(f"{tmp}/inf/filtro_resumen.json.tmp")
+        # limite exacto con la guarda real: usado + CSV + reserva cabe justo; un byte menos de presupuesto (el CSV solo cabria) para
+        justo = 7 + tam + C.RESERVA_AUXILIAR
+        guarda_con = lambda pres: (lambda extra, usado, cache: C.guarda(extra, usado, cache, libre_fn=libre, presupuesto=pres))  # noqa: E731
+        FI.escribir_csv_y_resumen(f"{tmp}/inf_ok", filas, {}, 7, guarda=guarda_con(justo))
+        try:
+            FI.escribir_csv_y_resumen(f"{tmp}/inf_no", filas, {}, 7, guarda=guarda_con(justo - 1))
+            raise AssertionError("sin sitio para la reserva debia parar")
+        except C.PresupuestoExcedido:
+            assert not os.path.exists(f"{tmp}/inf_no"), "si la guarda salta no se escribe ni el CSV ni el resumen"
+    finally:
+        C.bytes_cache_hf = cache0
+
+
 def t_verificar(tmp):
     """Puntos 5 y 6: filas alteradas, directorio vacio, dataset esperado ausente o inesperado => problemas."""
     from . import verificar as V
@@ -1002,7 +1228,7 @@ def correr():
         for nombre, f in (("lectores", t_lectores), ("licencias", t_licencias), ("extremo_a_extremo", t_extremo_a_extremo),
                           ("guarda_incremental", t_guarda_incremental), ("binance_idempotencia", t_binance_idempotencia),
                           ("cache_hf", t_cache_hf), ("topes_lotsa", t_topes_lotsa), ("hub_red", t_hub_red),
-                          ("verificar", t_verificar)):
+                          ("temporales", t_temporales), ("csv_resumen", t_csv_resumen), ("verificar", t_verificar)):
             f(tmp)
             print(f"  ok {nombre}")
     finally:

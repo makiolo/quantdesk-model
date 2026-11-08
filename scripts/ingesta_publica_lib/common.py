@@ -40,6 +40,11 @@ LOTSA_SUBCONJUNTO_MAX = 2 * 10**9
 MAX_FICHEROS_CACHE = 200_000  # mas ficheros que esto en la cache de HF: no se mide a mano, se aborta
 FACTOR_ESCRITURA = 2  # estimacion prudente de lo procesado que se va a escribir: 2 x el crudo del dataset
 CACHE_AJENA = ("torch", "xdg")  # carpetas de HF_HOME que no son descargas de huggingface_hub (TORCH_HOME, XDG_CACHE_HOME)
+# Temporales propios de la descarga: http_get escribe X.part, el Hub X.dl (y X.dl.part), escribir_json X.tmp, y los intentos 1 y 2 pudieron dejar
+# .incomplete de huggingface_hub. Una descarga que agota los reintentos los deja sin registrar en ningun manifiesto.
+SUFIJOS_TEMPORAL = (".part", ".dl", ".tmp", ".incomplete")
+# manifest.json, filtro_ids.csv, filtro_resumen.json y sus .tmp se escriben DESPUES de la ultima guarda: reserva fija (declarada) para ellos.
+RESERVA_AUXILIAR = 64 * 1024**2
 
 
 class ParadaDisco(RuntimeError):
@@ -48,6 +53,10 @@ class ParadaDisco(RuntimeError):
 
 class CacheNoMedible(ParadaDisco):
     """La cache de huggingface_hub no se puede medir completa: se aborta en lugar de guardar con un subtotal."""
+
+
+class TemporalesNoMedibles(ParadaDisco):
+    """Los temporales de descarga bajo data/public no se pueden medir completos: se aborta en lugar de guardar con un subtotal."""
 
 
 class PresupuestoExcedido(RuntimeError):
@@ -124,16 +133,17 @@ def comprobar_discos(libre_fn=libre, reserva_e: int = 0) -> dict:
 
 
 def guarda(extra: int, usado_manifiestos: int, usado_cache_hf: int, libre_fn=libre, presupuesto: int | None = None,
-           reserva_e: int | None = None, etiqueta: str = "siguiente") -> dict:
-    """Para ANTES de pasarse: manifiestos + cache HF + lo siguiente (`extra`) deben caber en el presupuesto (100 GB por defecto),
-    y C:/E: no pueden quedar por debajo de sus suelos. `reserva_e` (por defecto `extra`) son los bytes nuevos que caeran en E:."""
+           reserva_e: int | None = None, etiqueta: str = "siguiente", usado_temporales: int = 0) -> dict:
+    """Para ANTES de pasarse: manifiestos + temporales de descarga abandonados + cache HF + lo siguiente (`extra`) deben caber en el
+    presupuesto (100 GB por defecto), y C:/E: no pueden quedar por debajo de sus suelos. `reserva_e` (por defecto `extra`) son los
+    bytes nuevos que caeran en E:."""
     limite = PRESUPUESTO if presupuesto is None else presupuesto
     medidas = comprobar_discos(libre_fn, extra if reserva_e is None else reserva_e)
-    total = usado_manifiestos + usado_cache_hf + extra
+    total = usado_manifiestos + usado_temporales + usado_cache_hf + extra
     if total > limite:
         raise PresupuestoExcedido(
-            f"{total / 1e9:.2f} GB (manifiestos {usado_manifiestos / 1e9:.2f} + cache HF {usado_cache_hf / 1e9:.2f} + "
-            f"{etiqueta} {extra / 1e9:.2f}) superan {limite / 1e9:.0f} GB"
+            f"{total / 1e9:.2f} GB (manifiestos {usado_manifiestos / 1e9:.2f} + temporales de descarga {usado_temporales / 1e9:.2f} + "
+            f"cache HF {usado_cache_hf / 1e9:.2f} + {etiqueta} {extra / 1e9:.2f}) superan {limite / 1e9:.0f} GB"
         )
     medidas.update(total_previsto_bytes=total)
     return medidas
@@ -192,6 +202,34 @@ def bytes_cache_hf(raiz: str = HF_CACHE, max_ficheros: int = MAX_FICHEROS_CACHE)
     return total
 
 
+def bytes_temporales(raiz: str | None = None, max_ficheros: int = MAX_FICHEROS_CACHE) -> int:
+    """Bytes de TODO temporal de descarga bajo `raiz` (por defecto data/public): los ficheros que acaban en SUFIJOS_TEMPORAL. Una
+    descarga del Hub o de Binance que agota los reintentos deja su .dl.part (o .part) sin registrar en ningun manifiesto: se CONSERVA
+    (la reanudacion con Range lo aprovecha en otra ejecucion; no se borra por defecto) pero la guarda de 100 GB lo cuenta. Recorrido
+    acotado (sin du): si no se puede medir completo lanza TemporalesNoMedibles, nunca un subtotal."""
+    raiz = raiz or PUBLIC
+    if not os.path.isdir(raiz):
+        return 0
+    total, visto = 0, 0
+
+    def sin_error(e):
+        raise TemporalesNoMedibles(f"no se pudo recorrer {raiz}: {e}")
+
+    for r, _, nombres in os.walk(raiz, onerror=sin_error):
+        for n in nombres:
+            visto += 1
+            if visto > max_ficheros:
+                raise TemporalesNoMedibles(f"{raiz} tiene mas de {max_ficheros} ficheros: no se pueden medir los temporales completos")
+            if n.endswith(SUFIJOS_TEMPORAL):
+                try:
+                    total += os.path.getsize(os.path.join(r, n))
+                except FileNotFoundError:
+                    continue  # desaparecio durante el recorrido (p. ej. un .tmp renombrado)
+                except OSError as e:
+                    raise TemporalesNoMedibles(f"no se pudo medir {os.path.join(r, n)}: {e}") from e
+    return total
+
+
 def comprobar_tope_lotsa(bytes_subconjunto: int, bytes_lotsa_con_el_siguiente: int) -> None:
     """Antes de bajar un fichero de LOTSA: subconjunto (tamano declarado por el Hub) <= 2 GB y total de LOTSA <= 10 GB."""
     if bytes_subconjunto > LOTSA_SUBCONJUNTO_MAX:
@@ -203,7 +241,8 @@ def comprobar_tope_lotsa(bytes_subconjunto: int, bytes_lotsa_con_el_siguiente: i
 # --- red -------------------------------------------------------------------------------------------------------------
 
 def espera_reintento(intento: int, retry_after: float | None = None) -> float:
-    """Espera exponencial 2, 4, 8... s; respeta Retry-After (acotado)."""
+    """Espera exponencial 2, 4, 8... s; respeta Retry-After hasta ESPERA_MAX. http_get nunca llama aqui con un Retry-After mayor que
+    ESPERA_MAX (no reintenta: lanza ErrorRed); el tope solo protege a quien la llame directamente."""
     base = float(2 ** (intento + 1))
     if retry_after is not None:
         base = max(base, float(retry_after))
@@ -355,7 +394,8 @@ def _un_intento(url: str, *, permitir: tuple, destino: str | None, timeout: floa
 def http_get(url: str, *, permitir: tuple = (), destino: str | None = None, timeout: float = 60.0,
              cabeceras: dict | None = None, abrir=abrir_defecto, ritmo: Ritmo | None = None,
              dormir=time.sleep) -> dict:
-    """GET con UA del proyecto, ritmo por host, 3 reintentos con espera exponencial y Retry-After.
+    """GET con UA del proyecto, ritmo por host, 3 reintentos con espera exponencial y Retry-After (si pide esperar mas de ESPERA_MAX
+    = 60 s no se reintenta: ErrorRed 'el servidor pide esperar N s; se reintentara en otra ejecucion').
 
     Devuelve {status, cabeceras, cuerpo (bytes; vacio si destino), bytes}. Los estados de `permitir` (p. ej. 404) se
     devuelven en lugar de lanzar. Con `destino`, descarga a destino+'.part' (reanuda con Range) y renombra al terminar.
@@ -372,6 +412,12 @@ def http_get(url: str, *, permitir: tuple = (), destino: str | None = None, time
             return r
         except _Reintentable as e:
             ultimo_error, retry_after = e.motivo, e.retry_after
+        if retry_after is not None and retry_after > ESPERA_MAX:
+            # Retry-After mayor que la espera maxima: acortarlo seria volver a pedir antes de lo que dice el servidor. No se reintenta;
+            # el fichero queda como no bajado con este motivo (y su .part, si lo hay, se conserva para otra ejecucion).
+            PETICIONES.append((url, "ERR"))
+            raise ErrorRed(f"{url}: {ultimo_error}; el servidor pide esperar {retry_after:.0f} s; se reintentara en otra ejecucion "
+                           f"(se espera como maximo {ESPERA_MAX:.0f} s)")
         if intento < REINTENTOS:
             dormir(espera_reintento(intento, retry_after))
     PETICIONES.append((url, "ERR"))

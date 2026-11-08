@@ -105,6 +105,7 @@ def informe_md(mans: dict, resumen: dict, lic: dict, corte: str) -> list:
     desc = C.leer_json(F.DESCARGAS, {})
     usado = F.bytes_en_manifiestos()
     cache = C.bytes_cache_hf()
+    temporales = C.bytes_temporales()
     raw = {**F.manifiesto_crudo(F.RAW_HF)["archivos"], **F.manifiesto_crudo(F.RAW_BINANCE)["archivos"]}
     bytes_crudo = sum(e["bytes"] for e in raw.values())
     bytes_proc = sum(f["bytes"] for m in mans.values() for f in m["ficheros"])
@@ -122,7 +123,8 @@ def informe_md(mans: dict, resumen: dict, lic: dict, corte: str) -> list:
           "Los datasets y manifiestos estan en `E:/quantdesk-lab/datasets/TI-13-PUB/<dataset>/`; lo crudo, en `E:/quantdesk-lab/data/public/`.", "",
           "## Espacio", "",
           f"- Usado por TI-13-PUB (bytes de los manifiestos): **{_gb(usado)}** de 100 GB (crudo {_gb(bytes_crudo)} + procesado {_gb(bytes_proc)}); "
-          f"cache de huggingface_hub (scan_cache_dir): {_gb(cache)}.", "",
+          f"cache de huggingface_hub (scan_cache_dir): {_gb(cache)}; temporales de descarga abandonados (`.part`, `.dl`, `.tmp`, "
+          f"`.incomplete` bajo `{C.PUBLIC}`, que la guarda tambien cuenta): {_gb(temporales)}.", "",
           "| fuente | fase | UTC | libre C: | libre E: | usado manifiestos | cache HF |", "|---|---|---|---|---|---|---|"]
     for e in esp:
         L_.append(f"| {e['fuente']} | {e['fase']} | {e['fecha_utc']} | {_gb(e['libre_C_bytes'])} | {_gb(e['libre_E_bytes'])} | "
@@ -140,8 +142,10 @@ def informe_md(mans: dict, resumen: dict, lic: dict, corte: str) -> list:
            "- Red: un unico cliente HTTP (`common.http_get`, biblioteca estandar) para TODA la red, el Hub de Hugging Face incluido: "
            f"User-Agent `{C.UA}`, 1 peticion por segundo y host (tambien en cada salto de una redireccion, p. ej. del Hub a su CDN), "
            "3 reintentos tras el primer intento (4 intentos como maximo por fichero) con espera exponencial 2, 4, 8 s y `Retry-After` "
-           "(en segundos o fecha HTTP, tope 60 s), descarga a un temporal reanudable (`Range`), cuerpo truncado = intento fallido y "
-           "rename atomico solo tras verificar.",
+           "(en segundos o fecha HTTP), descarga a un temporal reanudable (`Range`), cuerpo truncado = intento fallido y rename atomico "
+           f"solo tras verificar. Si el servidor pide esperar mas de {C.ESPERA_MAX:.0f} s (`Retry-After` mayor que la espera maxima) NO se "
+           "reintenta: `ErrorRed` \"el servidor pide esperar N s; se reintentara en otra ejecucion\" y el fichero queda en \"no bajado\" "
+           "con ese motivo (no se acorta la espera).",
            "- Hub: desde el intento 3 no se usa `hf_hub_download` ni `HfApi` (`huggingface_hub` reintenta por dentro y no es configurable). "
            "Cada fichero se pide a `https://huggingface.co/datasets/<repo>/resolve/<commit sha>/<ruta>`, fijada a la revision de arriba "
            "(el commit que da la API del Hub, registrado en cada entrada del manifiesto), y se verifica tamano y SHA-256 LFS (o git blob id "
@@ -159,7 +163,17 @@ def informe_md(mans: dict, resumen: dict, lic: dict, corte: str) -> list:
            "DE CADA LOTE de parquet, con los bytes reales ya escritos + una cota superior del lote + manifiestos + cache de HF. Si salta, "
            "`procesar` imprime `PARADA: ...` y sale 3, tras cerrar los writers y borrar la carpeta del dataset (sin parquet parcial ni "
            "manifiesto; el borrado reintenta si Windows tiene un fichero en uso un instante y avisa si no lo consigue).",
-           "- LOTSA: el tope de 10 GB se reserva con el tamano declarado de lo que falta del subconjunto ANTES de bajar su primer fichero.", "",
+           "- Temporales de descarga: una descarga que agota los reintentos deja su `.dl.part` (o `.part`) sin registrar en ningun manifiesto. "
+           "Se conservan (la reanudacion con `Range` los aprovecha en otra ejecucion; no se borran por defecto), pero TODA guarda de 100 GB "
+           "(descargar Hub y Binance, procesar y el CSV del filtro) suma los bytes de cualquier `.part`, `.dl`, `.tmp` o `.incomplete` bajo "
+           f"`{C.PUBLIC}`. Reanudar el mismo fichero cuenta su parcial y el fichero entero (cota conservadora).",
+           f"- Reserva fija para ficheros auxiliares: el control final de cada dataset suma {C.RESERVA_AUXILIAR / 2**20:.0f} MiB para "
+           "`manifest.json` y su `.tmp`, y la guarda de `filtro_ids.csv` / `filtro_resumen.json` suma su tamano exacto (CSV en memoria) mas "
+           "esos mismos 64 MiB; los escribe despues de la ultima guarda de los parquet.",
+           "- LOTSA: el tope de 10 GB se reserva con el tamano declarado de lo que falta del subconjunto ANTES de bajar su primer fichero.",
+           "- Limitacion conocida (LOTSA, bloqueo conservador): reparar un fichero ya registrado pero corrupto cerca del tope de 10 GB "
+           "suma otra vez el tamano de ese fichero y puede bloquearse aunque el resultado final cupiera; nunca supera el presupuesto. "
+           "Para repararlo, liberar cupo o retirar a mano la entrada corrupta de `raw_manifest.json`.", "",
            "## Datasets obtenidos", "",
            "| dataset | fuente | series (tronco / adaptadores) | puntos tronco / adaptadores | rango (UTC) | frecuencia | bytes crudo | bytes procesado | descarga (UTC) | SHA-256 del dataset |",
            "|---|---|---|---|---|---|---|---|---|---|"]
