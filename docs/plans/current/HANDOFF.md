@@ -35,7 +35,8 @@ Recuperación en frío (RECOVERY-20261108-133223): la raíz anterior murió haci
 - TI-12-MT5 espera la puerta 2; TI-09-ARCH, las cifras de TI-01-INV (puerta 1).
 
 ## En vuelo
-ninguno (los dos hijos de la sesión anterior terminaron: Codex revisión 2 con salida completa; autor de TS-00-PREC con commit `4adda7b`).
+- TI-02-DATA, autor fase 1 (Agent en segundo plano de la sesión dd43fa94; intento BDD 119). Si esta sesión muere, el
+  hijo muere con ella: comprobar `git log` por commits `TI-02-DATA:` y relanzar desde la ficha.
 
 ## Decisiones
 - Raíz (A12): los 4 hallazgos de la revisión 2 de TI-13-PUB se corrigen en un intento 3 (los dos ALTA son requisitos
@@ -46,10 +47,9 @@ ninguno (los dos hijos de la sesión anterior terminaron: Codex revisión 2 con 
   «command not found» y un tar por stdout). La raíz escribe ficheros sólo con Write/Edit.
 
 ## Preguntas abiertas al usuario
-- Puerta 1 resuelta: TI-01-INV CERRADA. Decide el usuario:
-  - qué hacer con TI-09-ARCH, porque `market.options.chain` está vacío en `main`;
-  - si emite otro token de sólo lectura para que TI-02-DATA exporte del lago (el de TI-01-INV, id 32, ya está
-    revocado).
+- Respondidas el 2026-11-08: TI-09-ARCH RETIRADA del sprint (`eccc8d2`); el usuario autoriza otro token de sólo
+  lectura igual al de TI-01-INV para TI-02-DATA («emite otro token de solo lectura»). La raíz lo emite en mini sólo
+  cuando `descarga_lago.py` esté leído y con selftest en verde, y lo revoca al terminar la descarga (EXECUTION, ola 3, A13).
 - Puerta 2 (TI-12-MT5): el usuario abre y autentica el terminal MT5 («luego lo resuelvo»).
 
 ## Conocimiento promovido
@@ -61,9 +61,12 @@ Hecho en este tramo:
 - TI-01-INV CERRADA: la raíz ejecutó el inventario con el token 32, ya revocado. Las cadenas de opciones están vacías
   en qn y la flota no tiene GPU (EXECUTION, «Cierre de TI-01-INV»).
 
-Siguiente paso: esperar al usuario.
-- Con su decisión sobre el token de lectura, lanzar TI-02-DATA (ola 3) con ohlcv, rates y performance.
-- TI-09-ARCH, según lo que decida.
-- TI-12-MT5, tras la puerta 2.
+En vuelo: autor de TI-02-DATA, fase 1 (Sonnet 5.5 xhigh, intento BDD 119, ficha en
+`.git/sprint-runtime/s01/TI-02-DATA/ficha.md`, base `eccc8d2`).
 
-No hay hijos en vuelo.
+Siguiente paso:
+1. Al entregar la fase 1: verificar sobre su commit, leer entero `descarga_lago.py`, correr su selftest en mini.
+2. Emitir el token (`ti02-lago-20261108`, `main`, `sub:market.>`, skill `qn-token`), ejecutar la descarga en mini,
+   copiar el volcado a `E:/quantdesk-lab/data/lago/`, revocar y borrar.
+3. Pedir al autor la fase 2 por mensaje; luego revisión de otro modelo (Codex si le queda margen; si no, Opus).
+4. TS-00-BENCH tras el primer dataset congelado. TI-12-MT5, tras la puerta 2.
