@@ -120,4 +120,24 @@ compactación). El usuario pide lanzar la ola 2 mientras la puerta 1 sigue abier
 | TS-00-PREC intento 1 | autor | Claude Sonnet 5.5 xhigh | en curso | | intento 95 |
 | TI-13-PUB intento 1 | autor | Claude Sonnet 5.5 xhigh | rechazada | `cd4e4ba` | intento 96 (la BDD lo guarda como «aceptada» porque la raíz lo cerró al recibir la entrega, antes de verificar; no se puede reabrir; el rechazo vale aquí y en el 109). Verificación de la raíz sobre `git archive cd4e4ba` en `E:/quantdesk-lab/tmp/verif-cd4e4ba` (unión al `.venv`): `--selftest` ok, `run_selftests.py` 5 OK / 0 FALLO, `--verificar` OK (1805 ficheros, 130.066.541 filas, filtro reaplicado sobre 36 datasets con el mismo hash), commit sólo con rutas autorizadas. Datos: 36 datasets, 1,0 GB |
 | TI-13-PUB revisión 1 | revisor | Codex gpt-5.6-terra high (sólo lectura) | RECHAZAR | — | intento 108. 6 ALTA, 3 confirmadas por la raíz en el código: idempotencia de Binance sólo por tamaño; guarda de 100 GB sin contar los parquet procesados y caché HF truncada a partir de 20.000 ficheros; sin tope LOTSA de 2/10 GB; HF sin User-Agent ni control de reintentos; `--verificar` no compara filas y pasa en vacío. Sin fuga D-11 ni credenciales |
-| TI-13-PUB intento 2 | autor | Claude Sonnet 5.5 xhigh | en curso | | intento 109, mismo autor reanudado con el diagnóstico |
+| TI-13-PUB intento 2 | autor | Claude Sonnet 5.5 xhigh | entregada | `4a56315` | intento 109. Verificación de la raíz sobre `git archive 4a56315`: `--selftest` ok, suite 5 OK / 0 FALLO, `--verificar` OK (1805 ficheros, 130.066.541 filas releídas, 36 datasets) |
+| TI-13-PUB revisión 2 | revisor | Codex gpt-5.6-terra high (sólo lectura) | RECHAZAR | — | intento 110 (terminó a las 13:10, cerrado tras la recuperación). 4 de 6 corregidos. Quedan: ALTA guarda de 100 GB por estimación 2 × crudo sin guarda incremental al escribir parquet; ALTA reintentos internos de `hf_hub_download` fuera de control (la ficha pide 3 reintentos, Retry-After, ≤ 1 req/s); MEDIA tope total de LOTSA comprobado por fichero (descarga parcial); BAJA `procesar` sin PARADA controlada. Salida: `E:/quantdesk-lab/tmp/TI-13-PUB/revision2_out.md` |
+| TS-00-PREC intento 1 | autor | Claude Sonnet 5.5 xhigh | entregada | `4adda7b` | intento 95; la sesión murió tras el commit, sin informe. Logs del autor: selftest ok (8 pruebas, 28 s), suite 6 OK / 0 FALLO, dos ejecuciones completas con el mismo SHA-256 canónico `5760df75…6e1c` (3110 s y 3098 s) |
+
+### Recuperación en frío (2026-11-08 13:32)
+
+La raíz anterior (sesión 6c94f479) murió hacia las 13:11 sin relevar (RECOVERY-20261108-133223). Raíz nueva: sesión
+dd43fa94, HANDOFF relevo 1 (`674344b`). Ningún hijo vivo; ningún WIP sin commit. Cuota (api): Claude 51 % con el
+78,9 % de la ventana; Codex 77 % con el 60,6 %. Disco: C: 2,9 GB; E: 314 GB.
+
+- Decisión de la raíz (A12): TI-13-PUB intento 3 corrige los 4 hallazgos de la revisión 2; para el Hub, GET propios con
+  el cliente de Binance (UA, ritmo, reintentos y Retry-After de la ficha) en lugar de `hf_hub_download`.
+- Incidente A9 (cuarto): un heredoc con backticks volvió a ejecutar fragmentos en el shell (sin escrituras ni cambios).
+  Además, órdenes con `<correo>` entre comillas rompen el envoltorio del Bash de la herramienta: los mensajes de commit
+  van siempre en fichero (Write) con `git commit -F`.
+
+| Entrega | Rol | Modelo / esfuerzo | Resultado | Commit | Nota |
+|---|---|---|---|---|---|
+| TS-00-PREC | verificación de la raíz | — | en curso | | `git archive 4adda7b` en `E:/quantdesk-lab/tmp/verif-4adda7b`: selftest, suite, `--verificar` y banco completo a `runs/TS-00-PREC/verif-raiz` frente al hash `5760df75…` |
+| TS-00-PREC revisión 1 | revisor | Codex gpt-5.6-terra high (sólo lectura) | en curso | | intento 111 |
+| TI-13-PUB intento 3 | autor | Claude Sonnet 5.5 xhigh | en curso | | intento 112, autor nuevo con la ficha y el diagnóstico de la revisión 2 |
