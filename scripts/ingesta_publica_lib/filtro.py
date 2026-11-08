@@ -160,11 +160,13 @@ def comprobar_disjuntos(lados: dict, contenidos: dict) -> dict:
 def comprobar_escrito(salida: str, mans: dict) -> dict:
     """Sobre lo ESCRITO: relee los parquet y cuenta series_id y contenidos (hash de los valores de cada serie) presentes a la vez
     en los ficheros train y val de cualquier dataset."""
-    ids, hs, filas = {"train": set(), "val": set()}, {"train": set(), "val": set()}, 0
+    ids, hs, filas, filas_distintas = {"train": set(), "val": set()}, {"train": set(), "val": set()}, 0, []
     for did, m in mans.items():
         for f in m["ficheros"]:
             t = pq.read_table(f"{salida}/{did}/{f['ruta']}", columns=["series_id", "value"])
             filas += t.num_rows
+            if t.num_rows != f["filas"]:
+                filas_distintas.append(f"{did}/{f['ruta']}: {t.num_rows} filas leidas, {f['filas']} en el manifiesto")
             cod = t.column("series_id").combine_chunks().dictionary_encode()
             idx, nombres, v = cod.indices.to_numpy(), cod.dictionary.to_pylist(), t.column("value").to_numpy()
             corta = np.flatnonzero(np.diff(idx)) + 1
@@ -172,7 +174,8 @@ def comprobar_escrito(salida: str, mans: dict) -> dict:
                 ids[f["split"]].add(nombres[idx[a]])
                 hs[f["split"]].add(hash_contenido(v[a:b]))
     return {"filas_releidas": filas, "series_train": len(ids["train"]), "series_val": len(ids["val"]),
-            "ids_en_ambos_lados": len(ids["train"] & ids["val"]), "contenidos_en_ambos_lados": len(hs["train"] & hs["val"])}
+            "ids_en_ambos_lados": len(ids["train"] & ids["val"]), "contenidos_en_ambos_lados": len(hs["train"] & hs["val"]),
+            "filas_distintas_del_manifiesto": filas_distintas}
 
 
 # --- analisis (pasada 1) ---------------------------------------------------------------------------------------------
@@ -350,12 +353,23 @@ def hash_contenido_dataset(an: dict, lados: dict) -> str:
     return C.hash_conjunto(pares)
 
 
-def procesar_dataset(entry: dict, an: dict, lados: dict, salida: str, corte: str, licencia: dict, crudo: list) -> dict:
-    """Escribe los parquet y el manifiesto de un dataset. `salida` es la carpeta raiz de datasets."""
+def estimacion_escritura(crudo: list) -> int:
+    """Estimacion prudente de lo que ocupara lo procesado de un dataset: FACTOR_ESCRITURA x los bytes de su crudo (en los datos
+    reales el parquet zstd ocupa entre 0,5 y 1,3 veces el crudo)."""
+    return C.FACTOR_ESCRITURA * sum(int(c["bytes"]) for c in crudo)
+
+
+def procesar_dataset(entry: dict, an: dict, lados: dict, salida: str, corte: str, licencia: dict, crudo: list,
+                     usado_previo: int = 0, guarda=C.guarda) -> dict:
+    """Escribe los parquet y el manifiesto de un dataset. `salida` es la carpeta raiz de datasets. ANTES de escribir aplica la
+    guarda de 100 GB (y los suelos de C: y E:) con `usado_previo` (bytes de los manifiestos) mas la estimacion de lo que va a ocupar."""
     carpeta = f"{salida}/{entry['id']}"
+    hay_datos = any(r["accion"] != "excluida" for r in an["registros"])
+    if hay_datos:
+        guarda(estimacion_escritura(crudo), usado_previo, C.bytes_cache_hf())
     if os.path.isdir(carpeta):
         shutil.rmtree(carpeta)
-    ficheros = escribir(entry, an, lados, carpeta, corte_ms(corte)) if any(r["accion"] != "excluida" for r in an["registros"]) else []
+    ficheros = escribir(entry, an, lados, carpeta, corte_ms(corte)) if hay_datos else []
     st = estadisticas(entry, an)
     man = {
         "dataset": entry["id"], "fuente": entry["fuente"], "repo": entry.get("repo"), "subconjunto": entry["nombre"],
@@ -387,20 +401,40 @@ def filas_csv(entry: dict, an: dict) -> list:
     return out
 
 
+def crudo_registrado() -> dict:
+    """Entradas de los raw_manifest.json de todas las fuentes: ruta -> {bytes, sha256, ...}."""
+    from . import fuentes as F
+    return F.manifiesto_crudo(F.RAW_HF)["archivos"] | F.manifiesto_crudo(F.RAW_BINANCE)["archivos"]
+
+
+def datasets_esperados(estado_lic: dict | None, crudo_all: dict, ids: list | None = None) -> list:
+    """Datasets que DEBEN estar procesados: los del registro con licencia verificada y todo su crudo registrado."""
+    if not estado_lic:
+        return []
+    out = []
+    for e in R.DATASETS + R.BINANCE:
+        if ids and e["id"] not in ids:
+            continue
+        if (estado_lic["datasets"].get(e["id"]) or {}).get("estado") != "verificada":
+            continue
+        claves = LEC.rutas_crudo(e)
+        if claves and all(k in crudo_all for k in claves):
+            out.append(e)
+    return out
+
+
 def correr(corte: str, estado_lic: dict, salida: str, ids: list | None = None, informes_dir: str | None = None) -> dict:
     """Procesa todos los datasets con lo crudo presente y licencia verificada. Devuelve {id: manifiesto}."""
     from . import fuentes as F
     ahora = int(dt.datetime.now(dt.timezone.utc).timestamp() * 1000)
     c_ms = corte_ms(corte)
-    crudo_all = F.manifiesto_crudo(F.RAW_HF)["archivos"] | F.manifiesto_crudo(F.RAW_BINANCE)["archivos"]
+    crudo_all = crudo_registrado()
+    esperados = datasets_esperados(estado_lic, crudo_all, ids)
     analisis, contenidos, usados = {}, {}, []
     for e in R.DATASETS + R.BINANCE:
-        if ids and e["id"] not in ids:
+        if (ids and e["id"] not in ids) or (estado_lic["datasets"].get(e["id"]) or {}).get("estado") != "verificada":
             continue
-        if not (estado_lic["datasets"].get(e["id"]) or {}).get("estado") == "verificada":
-            continue
-        claves = LEC.rutas_crudo(e)
-        if not claves or not all(k in crudo_all for k in claves):
+        if e not in esperados:
             print(f"  sin crudo completo: {e['id']} (no se procesa)")
             continue
         print(f"  analizando {e['id']}")
@@ -417,13 +451,18 @@ def correr(corte: str, estado_lic: dict, salida: str, ids: list | None = None, i
     mans = {}
     os.makedirs(salida, exist_ok=True)
     filas = []
+    en_datasets = os.path.abspath(salida) == os.path.abspath(C.DATASETS)
+    escrito_fuera = 0  # bytes ya escritos en una carpeta distinta de DATASETS: los manifiestos aun no los cuentan
     for e in usados:
         an = analisis[e["id"]]
         lic = {k: v for k, v in estado_lic["datasets"][e["id"]].items() if k not in ("id",)}
         lic["consulta_utc"] = estado_lic["fecha_utc"]
         crudo = [{"ruta": k, **crudo_all[k]} for k in LEC.rutas_crudo(e) if k in crudo_all]
         print(f"  escribiendo {e['id']}")
-        mans[e["id"]] = procesar_dataset(e, an, lados, salida, corte, lic, crudo)
+        mans[e["id"]] = procesar_dataset(e, an, lados, salida, corte, lic, crudo,
+                                         usado_previo=F.bytes_en_manifiestos() + escrito_fuera)
+        if not en_datasets:
+            escrito_fuera += sum(f["bytes"] for f in mans[e["id"]]["ficheros"])
         filas += filas_csv(e, an)
     comp["en_parquet"] = comprobar_escrito(salida, mans)
     if comp["en_parquet"]["ids_en_ambos_lados"] or comp["en_parquet"]["contenidos_en_ambos_lados"]:

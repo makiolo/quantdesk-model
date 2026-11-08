@@ -1,6 +1,6 @@
 # TI-13-PUB: informe de ingesta publica
 
-- Generado: 2026-11-08T10:59:23Z (UTC). `--corte`: **2016-10-01**. Sal/semilla de la particion: `TI-13-PUB/SPRINT-01/v1` (val 10%).
+- Generado: 2026-11-08T11:53:59Z (UTC). `--corte`: **2016-10-01**. Sal/semilla de la particion: `TI-13-PUB/SPRINT-01/v1` (val 10%).
 - Versiones: python 3.12.3, pyarrow 26.0.1, pandas 3.1.1, numpy 2.5.4, huggingface-hub 2.4.0. Motor del entorno: quantdesk 69fdb39d (commit `69fdb39d0b67969dbdafa77f5da656511342f175`; no se usa en esta ingesta).
 - Revisiones fijadas del Hub: chronos_datasets `eeecad0b82a8c237e212ce6f8d1abecb513e2cec`, lotsa_data `8191fd29eb5cf906ec55effca44d8059888b615d`.
 - Formato procesado (provisional hasta TI-03-FMT): parquet zstd, columnas `series_id` (str, `dataset/id`), `ts` (timestamp ms UTC), `value` (float64; en cripto = cierre) y, en cripto, `open, high, low, close, volume, quote_volume, n_trades`. Un fichero por `<parte>.<split>.parquet` (parte = `tronco` o `adaptadores`; split = `train` o `val`) y un `manifest.json` por dataset.
@@ -31,6 +31,14 @@ Los datasets y manifiestos estan en `E:/quantdesk-lab/datasets/TI-13-PUB/<datase
 | lotsa | despues | 2026-11-08T09:46:23Z | 2.622 GB | 337.274 GB | 0.550 GB | 0.000 GB |
 | binance | antes | 2026-11-08T09:46:35Z | 2.622 GB | 337.274 GB | 0.550 GB | 0.000 GB |
 | binance | despues | 2026-11-08T10:45:23Z | 2.600 GB | 336.439 GB | 0.991 GB | 0.000 GB |
+
+- Topes de LOTSA (se comprueban antes de cada descarga con el tamano que declara el Hub): total 0.327 GB de 10.000 GB; mayor subconjunto `temperature_rain_with_missing` 90.0 MB de 2.000 GB.
+
+## Limites conocidos de las descargas
+
+- shortcut: huggingface_hub reintenta por dentro (hasta 5 veces, espera de 1 a 8 s, Retry-After solo dentro de su ciclo) y no deja configurarlo; `fuentes.con_reintentos` anade 3 reintentos externos con espera exponencial y el Retry-After de la excepcion HTTP, en lugar de un transporte propio. Subir a GET propios (como Binance) si hiciera falta control total del ritmo.
+- Desde el intento 2 las descargas del Hub van en serie, con `user_agent=quantdesk-lab-ingesta/0.1` (la biblioteca lo antepone a su cadena `hf_hub/...; python/...`) y con el transporte Xet desactivado (`HF_HUB_DISABLE_XET=1`). Los ficheros del Hub que ya estaban descargados (intento 1) se bajaron con el agente por defecto de la biblioteca y no se repitieron; su integridad consta por el SHA-256 LFS del Hub (tabla de hashes).
+- Los GET propios (APIs de licencias, Zenodo, GitHub, Binance) usan el User-Agent del proyecto, 1 peticion/s por host, 3 reintentos con espera exponencial y Retry-After.
 
 ## Datasets obtenidos
 

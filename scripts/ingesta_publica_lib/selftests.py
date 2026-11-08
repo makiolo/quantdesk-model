@@ -325,9 +325,25 @@ def t_extremo_a_extremo(tmp):
         assert lados["chronos__sint/COPIA"] == lados["chronos__sint/F01"]  # el duplicado va al mismo lado
         h = []
         for k in (1, 2):
-            man = FI.procesar_dataset(e, an, lados, f"{tmp}/ds{k}", "2016-10-01", {"licencia": "x"}, [])
+            man = FI.procesar_dataset(e, an, lados, f"{tmp}/ds{k}", "2016-10-01", {"licencia": "x"}, [], guarda=_sin_guarda)
             h.append((man["dataset_sha256"], man["contenido_sha256"]))
         assert h[0] == h[1], "reaplicar el filtro debe dar el mismo hash de dataset"
+        # punto 2a: la guarda se aplica ANTES de escribir, con usado_previo y 2 x el crudo del dataset como estimacion
+        vistas = []
+        FI.procesar_dataset(e, an, lados, f"{tmp}/g1", "2016-10-01", {}, [{"bytes": 1000}], usado_previo=7,
+                            guarda=lambda extra, usado, cache: vistas.append((extra, usado)) or {})
+        assert vistas == [(2 * 1000, 7)], vistas
+        cache0, C.bytes_cache_hf = C.bytes_cache_hf, lambda *a, **k: 0
+        try:
+            try:
+                FI.procesar_dataset(e, an, lados, f"{tmp}/g2", "2016-10-01", {}, [{"bytes": 60 * 10**9}], usado_previo=0,
+                                    guarda=lambda extra, usado, cache: C.guarda(extra, usado, cache, libre_fn=lambda u: 10**13))
+                raise AssertionError("2 x 60 GB de estimacion debia superar el presupuesto")
+            except C.PresupuestoExcedido:
+                pass
+        finally:
+            C.bytes_cache_hf = cache0
+        assert not os.path.exists(f"{tmp}/g2/chronos__sint"), "no debe escribirse nada si la guarda para"
         for k in ("corte", "sal", "versiones", "motor", "fecha_proceso_utc", "dataset_sha256", "ficheros"):
             assert k in man, k
         assert man["motor"] == "quantdesk 69fdb39d" and man["sal"] == R.SAL and man["corte"] == "2016-10-01"
@@ -358,7 +374,7 @@ def t_extremo_a_extremo(tmp):
         tt = pa.table({"series_id": ["x/a"] * 3, "ts": pa.array([1, 2, 3], pa.timestamp("ms", tz="UTC")), "value": [1.0, 2.0, 3.0]})
         for sp in ("train", "val"):
             pq.write_table(tt, f"{tmp}/mal/x/tronco.{sp}.parquet")
-        mal = FI.comprobar_escrito(f"{tmp}/mal", {"x": {"ficheros": [{"ruta": f"tronco.{sp}.parquet", "split": sp} for sp in ("train", "val")]}})
+        mal = FI.comprobar_escrito(f"{tmp}/mal", {"x": {"ficheros": [{"ruta": f"tronco.{sp}.parquet", "split": sp, "filas": 3} for sp in ("train", "val")]}})
         assert mal["ids_en_ambos_lados"] == 1 and mal["contenidos_en_ambos_lados"] == 1, mal
         # otro corte: mismo crudo, otro reparto, sin descargar nada
         an2 = FI.analizar(e, FI.corte_ms("2016-09-01"), AHORA)
@@ -367,15 +383,266 @@ def t_extremo_a_extremo(tmp):
         LEC.series = orig
 
 
+def _sin_guarda(extra, usado, cache):
+    return {}
+
+
+def _zip(contenido: bytes) -> bytes:
+    b = io.BytesIO()
+    with zipfile.ZipFile(b, "w") as z:
+        z.writestr("TESTUSDT-1d-2020-01.csv", contenido)
+    return b.getvalue()
+
+
+def t_binance_idempotencia(tmp):
+    """Punto 1: la idempotencia exige tamano y SHA-256; un ZIP corrupto del mismo tamano se redescarga y se verifica."""
+    ok = _zip(b"1,2,3\n" * 50)
+    mal = bytearray(ok)
+    mal[len(mal) // 2] ^= 0xFF  # mismo tamano, otro contenido
+    mal = bytes(mal)
+    assert len(mal) == len(ok) and mal != ok
+    clave = "data/spot/monthly/klines/TESTUSDT/1d/TESTUSDT-1d-2020-01.zip"
+    base = f"{tmp}/binance_idem"
+    llamadas, servidor = [], {"zip": ok}
+
+    def http_falso(url, destino=None, **kw):
+        llamadas.append(url)
+        if url.endswith(".CHECKSUM"):
+            return {"status": 200, "cabeceras": {}, "cuerpo": (C.sha256_bytes(ok) + "  TESTUSDT-1d-2020-01.zip\n").encode(), "bytes": 0}
+        os.makedirs(os.path.dirname(destino), exist_ok=True)
+        with open(destino, "wb") as f:
+            f.write(servidor["zip"])
+        return {"status": 200, "cabeceras": {}, "cuerpo": b"", "bytes": len(servidor["zip"])}
+
+    raw0, guarda0, http0 = F.RAW_BINANCE, F._guarda, C.http_get
+    F.RAW_BINANCE, F._guarda, C.http_get = base, lambda extra: None, http_falso
+    destino = f"{base}/{clave}"
+    try:
+        F._bajar_binance(clave, len(ok))
+        assert len(llamadas) == 2 and open(destino, "rb").read() == ok  # .CHECKSUM + zip
+        llamadas.clear()
+        F._bajar_binance(clave, len(ok))
+        assert llamadas == [], "con tamano y hash correctos no debe haber red"
+        with open(destino, "wb") as f:
+            f.write(mal)  # corrupto, del mismo tamano que lo registrado
+        assert os.path.getsize(destino) == F.manifiesto_crudo(base)["archivos"][f"binance/{clave}"]["bytes"]
+        F._bajar_binance(clave, len(ok))
+        assert len(llamadas) == 2 and open(destino, "rb").read() == ok, llamadas  # se redescargo y quedo bien
+        assert F.manifiesto_crudo(base)["archivos"][f"binance/{clave}"]["sha256"] == C.sha256_bytes(ok)
+        # si el servidor tambien da un contenido que no casa con el .CHECKSUM, se rechaza y se borra
+        servidor["zip"] = mal
+        with open(destino, "wb") as f:
+            f.write(mal)
+        try:
+            F._bajar_binance(clave, len(ok))
+            raise AssertionError("debia rechazar un zip que no casa con su .CHECKSUM")
+        except RuntimeError:
+            assert not os.path.exists(destino)
+    finally:
+        F.RAW_BINANCE, F._guarda, C.http_get = raw0, guarda0, http0
+    # camino del Hub: el mismo criterio (tamano y hash del manifiesto)
+    ruta = f"{tmp}/hub_f.bin"
+    with open(ruta, "wb") as f:
+        f.write(b"abc")
+    assert F.ya_descargado({"bytes": 3, "sha256": C.sha256_bytes(b"abc")}, ruta)
+    assert not F.ya_descargado({"bytes": 3, "sha256": C.sha256_bytes(b"abd")}, ruta)  # mismo tamano, otro hash
+    assert not F.ya_descargado(None, ruta) and not F.ya_descargado({"bytes": 3, "sha256": "x"}, ruta + ".no")
+
+
+def t_cache_hf(tmp):
+    """Punto 2b: la cache de HF se cuenta entera o se aborta; nunca devuelve un subtotal."""
+    raiz = f"{tmp}/cachehf"
+    for rel, n in (("xet/a/1", 10), ("xet/a/2", 5), ("datasets/x", 7), ("torch/grande", 1000), ("xdg/y", 1000)):
+        os.makedirs(os.path.dirname(f"{raiz}/{rel}"), exist_ok=True)
+        with open(f"{raiz}/{rel}", "wb") as f:
+            f.write(b"x" * n)
+    assert C.bytes_cache_hf(raiz) == 22  # xet + datasets; torch y xdg no son descargas de huggingface_hub
+    assert C.bytes_cache_hf(f"{tmp}/no_existe") == 0
+    try:
+        C.bytes_cache_hf(raiz, max_ficheros=2)  # 3 ficheros contables > 2: la cache esta truncada
+        raise AssertionError("una cache que no se puede medir completa debe abortar")
+    except C.CacheNoMedible as e:
+        assert "no se puede medir completa" in str(e)
+    assert issubclass(C.CacheNoMedible, C.ParadaDisco)  # la orden descargar la trata como parada
+    os.makedirs(f"{raiz}/hub/basura")  # entrada que scan_cache_dir no reconoce: medida incompleta
+    try:
+        C.bytes_cache_hf(raiz)
+        raise AssertionError("una entrada ilegible en hub/ debe abortar")
+    except C.CacheNoMedible:
+        pass
+
+
+def t_topes_lotsa(tmp):
+    """Punto 3: un subconjunto de LOTSA de mas de 2 GB, o un total de mas de 10 GB, se bloquea antes de bajar."""
+    GB = 10**9
+    C.comprobar_tope_lotsa(2 * GB, 8 * GB)  # justo en el limite: pasa
+    C.comprobar_tope_lotsa(GB, 10 * GB)
+    for sub, tot in ((2 * GB + 1, 0), (2_100_000_000, 3 * GB), (GB, 10 * GB + 1)):
+        try:
+            C.comprobar_tope_lotsa(sub, tot)
+            raise AssertionError((sub, tot))
+        except C.TopeLotsa:
+            pass
+    assert issubclass(C.TopeLotsa, C.PresupuestoExcedido)
+    base = f"{tmp}/hf_topes"
+
+    def ds(nombre, extras=()):
+        return {"id": f"lotsa__{nombre}", "fuente": "lotsa", "repo": R.LOTSA_REPO, "nombre": nombre,
+                "archivos": [f"{nombre}/data.arrow"], "extras": list(extras)}
+
+    contenido = b"x" * 1000
+    sib = {"grande/data.arrow": {"size": 2_100_000_000}, "grande/state.json": {"size": 250},
+           "pequeno/data.arrow": {"size": 1000, "lfs": {"sha256": C.sha256_bytes(contenido)}}}
+    estado = {"datasets": {"lotsa__grande": {"estado": "verificada"}, "lotsa__pequeno": {"estado": "verificada"}}}
+    pedidas = []
+
+    def bajar_falso(repo, rel, **kw):
+        pedidas.append((rel, kw))
+        ruta = f"{kw['local_dir']}/{rel}"
+        os.makedirs(os.path.dirname(ruta), exist_ok=True)
+        with open(ruta, "wb") as f:
+            f.write(contenido)
+        return ruta
+
+    raw0, guarda0, sib0 = F.RAW_HF, F._guarda, F._siblings
+    F.RAW_HF, F._guarda, F._siblings = base, lambda extra: None, lambda estado_lic, fuente: (sib, "rev")
+    try:
+        omit = F.descargar_hub("lotsa", estado, datasets=[ds("grande", ["grande/state.json"]), ds("pequeno")], bajar=bajar_falso)
+        assert [i for i, _ in omit] == ["lotsa__grande"] and "tope de LOTSA" in omit[0][1], omit
+        assert [r for r, _ in pedidas] == ["pequeno/data.arrow"], pedidas  # el de 2,1 GB no se pidio ni un byte
+        # punto 4: user_agent del proyecto, sin token, en serie
+        kw = pedidas[0][1]
+        assert kw["user_agent"] == C.UA == "quantdesk-lab-ingesta/0.1" and kw["token"] is False and kw["force_download"] is False
+        # total: con 9,5 GB de LOTSA ya registrados, un subconjunto de 1 GB lo llevaria por encima de 10 GB
+        for i in range(19):
+            F._registrar(base, f"hf/{R.LOTSA_REPO}/viejo{i}/d.arrow", {"bytes": GB // 2, "sha256": "x"})
+        sib["otro/data.arrow"] = {"size": GB, "lfs": {"sha256": C.sha256_bytes(contenido)}}
+        estado["datasets"]["lotsa__otro"] = {"estado": "verificada"}
+        pedidas.clear()
+        try:
+            F.descargar_hub("lotsa", estado, datasets=[ds("otro")], bajar=bajar_falso)
+            raise AssertionError("debia parar por el tope de 10 GB de LOTSA")
+        except C.TopeLotsa as e:
+            assert "10 GB" in str(e) and pedidas == []
+    finally:
+        F.RAW_HF, F._guarda, F._siblings = raw0, guarda0, sib0
+
+
+def t_hf_reintentos():
+    """Punto 4: el envoltorio reintenta (3 reintentos), respeta Retry-After de la excepcion HTTP y no reintenta un 4xx."""
+    class Resp:
+        def __init__(self, st, ra):
+            self.status_code, self.headers = st, ({"Retry-After": ra} if ra else {})
+
+    class ErrHttp(OSError):
+        def __init__(self, st, ra=None):
+            super().__init__(f"HTTP {st}")
+            self.response = Resp(st, ra)
+
+    n, esperas = [0], []
+
+    def dos_429():
+        n[0] += 1
+        if n[0] <= 2:
+            raise ErrHttp(429, "7")
+        return "ok"
+
+    assert F.con_reintentos(dos_429, dormir=esperas.append) == "ok" and esperas == [7.0, 7.0], esperas
+    n[0], esperas[:] = 0, []
+
+    def siempre_503():
+        n[0] += 1
+        raise ErrHttp(503)
+
+    try:
+        F.con_reintentos(siempre_503, dormir=esperas.append)
+        raise AssertionError("debia agotar los reintentos")
+    except ErrHttp:
+        assert n[0] == C.REINTENTOS + 1 and esperas == [2.0, 4.0, 8.0], (n, esperas)
+    n[0] = 0
+
+    def cuatrocientoscuatro():
+        n[0] += 1
+        raise ErrHttp(404)
+
+    try:
+        F.con_reintentos(cuatrocientoscuatro, dormir=lambda s: None)
+    except ErrHttp:
+        assert n[0] == 1  # un 404 no se reintenta
+    n[0] = 0
+
+    def caida():
+        n[0] += 1
+        if n[0] == 1:
+            raise ConnectionResetError("cerrada")
+        return "ok"
+
+    assert F.con_reintentos(caida, dormir=lambda s: None) == "ok" and n[0] == 2
+    try:
+        F.con_reintentos(lambda: (_ for _ in ()).throw(ValueError("no es de red")), dormir=lambda s: None)
+        raise AssertionError("un ValueError no se reintenta")
+    except ValueError:
+        pass
+
+
+def t_verificar(tmp):
+    """Puntos 5 y 6: filas alteradas, directorio vacio, dataset esperado ausente o inesperado => problemas."""
+    from . import verificar as V
+
+    bueno = f"{tmp}/ds1"  # lo escribio t_extremo_a_extremo
+    problemas = []
+    n = V.verificar_datasets(bueno, {"chronos__sint"}, problemas)
+    assert n > 0 and problemas == [], problemas
+    # punto 5: un manifiesto con filas alteradas falla (el parquet no cambia)
+    malo = f"{tmp}/dsmal"
+    shutil.copytree(bueno, malo)
+    ruta = f"{malo}/chronos__sint/manifest.json"
+    man = C.leer_json(ruta)
+    man["ficheros"][0]["filas"] += 1
+    C.escribir_json(ruta, man)
+    problemas = []
+    V.verificar_datasets(malo, {"chronos__sint"}, problemas)
+    assert any("filas distintas" in p for p in problemas), problemas
+    assert any("total de filas" in p for p in problemas), problemas
+    esc = FI.comprobar_escrito(malo, V.cargar_manifiestos(malo))
+    assert len(esc["filas_distintas_del_manifiesto"]) == 1, esc
+    # punto 6: la verificacion no pasa en vacio
+    os.makedirs(f"{tmp}/vacio")
+    problemas = []
+    assert V.verificar_datasets(f"{tmp}/vacio", {"chronos__sint"}, problemas) == 0
+    assert any("no hay manifiestos" in p for p in problemas), problemas
+    problemas = []
+    V.verificar_datasets(f"{tmp}/vacio", set(), problemas)  # ni siquiera sin esperados: un directorio vacio no es una verificacion
+    assert any("no hay manifiestos" in p for p in problemas), problemas
+    # y se contrasta con lo esperado: uno ausente y uno inesperado son problemas
+    problemas = []
+    V.verificar_datasets(bueno, {"chronos__sint", "lotsa__ausente"}, problemas)
+    assert problemas == ["falta el dataset esperado (licencia verificada y crudo completo): lotsa__ausente"], problemas
+    problemas = []
+    V.verificar_datasets(bueno, set(), problemas)
+    assert any("no se esperaba" in p for p in problemas), problemas
+    # los esperados salen del registro: licencia verificada y todo el crudo registrado
+    e0 = R.DATASETS[0]
+    crudo = {k: {} for k in LEC.rutas_crudo(e0)}
+    ver = {"datasets": {e0["id"]: {"estado": "verificada"}}}
+    assert [e["id"] for e in FI.datasets_esperados(ver, crudo)] == [e0["id"]]
+    assert FI.datasets_esperados(ver, {}) == []  # falta el crudo
+    assert FI.datasets_esperados({"datasets": {e0["id"]: {"estado": "excluida"}}}, crudo) == []  # sin licencia
+    assert FI.datasets_esperados(None, crudo) == []
+
+
 def correr():
     tmp = f"{C.TMP}/selftest-{os.getpid()}"
     shutil.rmtree(tmp, ignore_errors=True)
     os.makedirs(tmp)
     try:
-        for nombre, f in (("decidir", t_decidir), ("particion", t_particion), ("guarda", t_guarda), ("red", t_red)):
+        for nombre, f in (("decidir", t_decidir), ("particion", t_particion), ("guarda", t_guarda), ("red", t_red),
+                          ("hf_reintentos", t_hf_reintentos)):
             f()
             print(f"  ok {nombre}")
-        for nombre, f in (("lectores", t_lectores), ("licencias", t_licencias), ("extremo_a_extremo", t_extremo_a_extremo)):
+        for nombre, f in (("lectores", t_lectores), ("licencias", t_licencias), ("extremo_a_extremo", t_extremo_a_extremo),
+                          ("binance_idempotencia", t_binance_idempotencia), ("cache_hf", t_cache_hf),
+                          ("topes_lotsa", t_topes_lotsa), ("verificar", t_verificar)):
             f(tmp)
             print(f"  ok {nombre}")
     finally:

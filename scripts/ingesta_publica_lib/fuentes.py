@@ -62,39 +62,100 @@ def _siblings(estado_lic: dict, clave: str) -> dict:
     return {s["rfilename"]: s for s in api["siblings"]}, api["sha"]
 
 
-def descargar_hub(fuente: str, estado_lic: dict, forzar_ids: list | None = None) -> list:
-    """Baja de `fuente` ('chronos'|'lotsa') solo los datasets con licencia verificada. Devuelve [(id, motivo)] no bajados."""
-    from huggingface_hub import hf_hub_download
+def ya_descargado(prev: dict | None, destino: str) -> bool:
+    """Idempotencia: el fichero existe con el tamano Y el SHA-256 registrados. El tamano solo no basta (un ZIP corrupto o
+    truncado y rellenado puede medir lo mismo)."""
+    return bool(prev) and os.path.isfile(destino) and os.path.getsize(destino) == prev["bytes"] \
+        and C.sha256_fichero(destino) == prev["sha256"]
+
+
+def bytes_lotsa_en_manifiesto() -> int:
+    pref = f"hf/{R.LOTSA_REPO}/"
+    return sum(e["bytes"] for k, e in manifiesto_crudo(RAW_HF)["archivos"].items() if k.startswith(pref))
+
+
+def _error_hub(e: Exception) -> tuple:
+    """(Retry-After en s o None, reintentable) de una excepcion de huggingface_hub/httpx."""
+    resp = getattr(e, "response", None)
+    estado = getattr(resp, "status_code", None)
+    cab = getattr(resp, "headers", None)
+    ra = C.parse_retry_after(cab.get("Retry-After") if cab is not None else None)
+    if estado is not None:
+        return ra, estado in (408, 429) or estado >= 500
+    nombres = {c.__name__ for c in type(e).__mro__}
+    return ra, isinstance(e, (ConnectionError, TimeoutError)) or bool(
+        nombres & {"TransportError", "TimeoutException", "NetworkError", "RemoteProtocolError"})
+
+
+def con_reintentos(llamada, dormir=time.sleep):
+    """Envuelve una descarga del Hub con el ritmo de reintentos del proyecto: 3 reintentos tras el primer intento, espera
+    exponencial y Retry-After si llega en la excepcion HTTP. Un 4xx distinto de 408/429 no se reintenta.
+
+    shortcut: huggingface_hub reintenta por dentro (hasta 5 veces, 1-8 s, leyendo Retry-After solo en su propio ciclo) y no deja
+    configurarlo; este envoltorio anade los reintentos externos en lugar de un transporte propio. Si hiciera falta control
+    total del ritmo, sustituir hf_hub_download por GET propios (como Binance)."""
+    for intento in range(C.REINTENTOS + 1):
+        try:
+            return llamada()
+        except Exception as e:  # noqa: BLE001 - se reclasifica abajo; lo no reintentable se relanza
+            ra, reintentable = _error_hub(e)
+            if not reintentable or intento == C.REINTENTOS:
+                raise
+            dormir(C.espera_reintento(intento, ra))
+
+
+def descargar_hub(fuente: str, estado_lic: dict, forzar_ids: list | None = None, datasets: list | None = None,
+                  bajar=None) -> list:
+    """Baja de `fuente` ('chronos'|'lotsa') solo los datasets con licencia verificada. Devuelve [(id, motivo)] no bajados.
+    En LOTSA bloquea, con el tamano declarado por el Hub y ANTES de bajar, un subconjunto de mas de 2 GB y todo lo que
+    llevaria el total de LOTSA por encima de 10 GB. Las descargas son en serie."""
+    if bajar is None:
+        from huggingface_hub import hf_hub_download as bajar
 
     sib, revision = _siblings(estado_lic, fuente)
     omitidos = []
-    for d in R.DATASETS:
+    for d in datasets or R.DATASETS:
         if d["fuente"] != fuente or (forzar_ids and d["id"] not in forzar_ids):
             continue
         if not L.verificada(estado_lic, d["id"]):
             omitidos.append((d["id"], "licencia: " + estado_lic["datasets"][d["id"]]["motivo"]))
             print(f"  OMITIDO {d['id']}: licencia no verificada")
             continue
+        tam_sub = sum(int(sib[r]["size"]) for r in d["archivos"] + d["extras"] if r in sib)
+        if fuente == "lotsa":
+            try:
+                C.comprobar_tope_lotsa(tam_sub, 0)
+            except C.TopeLotsa as e:
+                omitidos.append((d["id"], f"tope de LOTSA: {e}"))
+                print(f"  BLOQUEADO {d['id']}: {e}")
+                continue
         for rel in d["archivos"] + d["extras"]:
             s = sib.get(rel)
             if s is None:
                 omitidos.append((d["id"], f"{rel} no existe en el repo"))
                 continue
-            _bajar_hub(d, rel, s, revision, hf_hub_download)
+            _bajar_hub(d, rel, s, revision, bajar, tam_sub)
     return omitidos
 
 
-def _bajar_hub(d: dict, rel: str, s: dict, revision: str, hf_hub_download) -> None:
+def _bajar_hub(d: dict, rel: str, s: dict, revision: str, hf_hub_download, tam_subconjunto: int = 0) -> None:
     local_dir = f"{RAW_HF}/{d['repo']}"
     destino = f"{local_dir}/{rel}"
     clave = f"hf/{d['repo']}/{rel}"
     esperado_lfs = (s.get("lfs") or {}).get("sha256")
     prev = manifiesto_crudo(RAW_HF)["archivos"].get(clave)
-    if prev and os.path.isfile(destino) and os.path.getsize(destino) == prev["bytes"] and C.sha256_fichero(destino) == prev["sha256"]:
-        return  # idempotente: ya esta con el hash registrado
+    if ya_descargado(prev, destino):
+        return  # idempotente: ya esta con el tamano y el hash registrados
+    if d["fuente"] == "lotsa":
+        C.comprobar_tope_lotsa(tam_subconjunto, bytes_lotsa_en_manifiesto() + int(s["size"]))
     _guarda(int(s["size"]))
     t0 = time.monotonic()
-    ruta = hf_hub_download(d["repo"], rel, repo_type="dataset", revision=revision, local_dir=local_dir, token=False)
+    # force_download si ya hay un fichero que no coincide con lo registrado: la biblioteca daria por bueno uno corrupto del
+    # mismo tamano porque solo mira los metadatos de local_dir.
+    forzar = os.path.isfile(destino)
+    ruta = con_reintentos(lambda: hf_hub_download(
+        d["repo"], rel, repo_type="dataset", revision=revision, local_dir=local_dir, token=False, user_agent=C.UA,
+        force_download=forzar))
     h = C.sha256_fichero(ruta)
     if esperado_lfs:
         if h != esperado_lfs:
@@ -154,8 +215,8 @@ def _bajar_binance(clave: str, tam: int) -> None:
     destino = f"{RAW_BINANCE}/{clave}"
     rel = f"binance/{clave}"
     prev = manifiesto_crudo(RAW_BINANCE)["archivos"].get(rel)
-    if prev and os.path.isfile(destino) and os.path.getsize(destino) == prev["bytes"]:
-        return
+    if ya_descargado(prev, destino):
+        return  # tamano y SHA-256 registrados; si el hash no coincide se redescarga y se verifica contra el .CHECKSUM
     _guarda(tam)
     esp_txt = C.http_get(f"{R.BINANCE_BASE}/{clave}.CHECKSUM")["cuerpo"].decode("utf-8", "replace")
     esperado = parse_checksum(esp_txt)

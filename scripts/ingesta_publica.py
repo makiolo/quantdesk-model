@@ -25,6 +25,9 @@ sys.path.insert(0, HERE)
 from setup_env import LAB_ENV  # noqa: E402  (cachés y temporales del laboratorio: HF_HOME, TMPDIR, TEMP...)
 
 os.environ.update(LAB_ENV)  # el sitecustomize del venv ya lo hace; esto cubre un lanzamiento con otro interprete
+# Descargas del Hub por HTTP normal, en serie y con el User-Agent del proyecto: sin el transporte Xet (hf_xet), que abre sus
+# propias conexiones y no da control sobre el ritmo ni la cabecera. Debe fijarse antes de importar huggingface_hub.
+os.environ["HF_HUB_DISABLE_XET"] = "1"
 
 from ingesta_publica_lib import common as C  # noqa: E402
 from ingesta_publica_lib import registro as R  # noqa: E402

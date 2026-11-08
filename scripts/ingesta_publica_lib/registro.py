@@ -30,6 +30,7 @@ DOMINIOS_NO_FIN = {"demographic"}  # unico dominio de M4/M3/M1 claramente no eco
 
 _CHRONOS_REPO = "autogluon/chronos_datasets"
 _LOTSA_REPO = "Salesforce/lotsa_data"
+LOTSA_REPO = _LOTSA_REPO
 _ZEN_FMT = "Monash Time Series Forecasting Archive (Zenodo, CC BY 4.0)"
 
 

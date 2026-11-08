@@ -33,12 +33,28 @@ REINTENTOS = 3  # reintentos tras el primer intento, con espera exponencial
 ESPERA_MAX = 60.0
 
 
+# Topes de LOTSA (ficha): como mucho 10 GB en total y 2 GB por subconjunto, medidos con el tamano que declara el Hub.
+LOTSA_TOTAL_MAX = 10 * 10**9
+LOTSA_SUBCONJUNTO_MAX = 2 * 10**9
+MAX_FICHEROS_CACHE = 200_000  # mas ficheros que esto en la cache de HF: no se mide a mano, se aborta
+FACTOR_ESCRITURA = 2  # estimacion prudente de lo procesado que se va a escribir: 2 x el crudo del dataset
+CACHE_AJENA = ("torch", "xdg")  # carpetas de HF_HOME que no son descargas de huggingface_hub (TORCH_HOME, XDG_CACHE_HOME)
+
+
 class ParadaDisco(RuntimeError):
     """C: o E: por debajo del suelo: parar y avisar."""
 
 
+class CacheNoMedible(ParadaDisco):
+    """La cache de huggingface_hub no se puede medir completa: se aborta en lugar de guardar con un subtotal."""
+
+
 class PresupuestoExcedido(RuntimeError):
     """El siguiente fichero superaria el presupuesto de TI-13-PUB."""
+
+
+class TopeLotsa(PresupuestoExcedido):
+    """Un subconjunto de LOTSA supera 2 GB o el total de LOTSA superaria 10 GB."""
 
 
 class ErrorRed(RuntimeError):
@@ -118,27 +134,56 @@ def guarda(extra: int, usado_manifiestos: int, usado_cache_hf: int, libre_fn=lib
     return medidas
 
 
-def bytes_cache_hf(max_ficheros: int = 20000) -> int:
-    """Lo que las descargas de huggingface_hub han dejado en HF_HOME: scan_cache_dir (como pide la ficha) mas la cache de
-    chunks de Xet, que ese escaneo no ve. El recorrido de xet esta acotado a `max_ficheros` (sin du sobre arboles grandes)."""
-    total = 0
-    try:
-        from huggingface_hub import scan_cache_dir
+def bytes_cache_hf(raiz: str = HF_CACHE, max_ficheros: int = MAX_FICHEROS_CACHE) -> int:
+    """Bytes que las descargas de huggingface_hub han dejado en HF_HOME: scan_cache_dir de hub/ (como pide la ficha) mas todo lo
+    demas de HF_HOME salvo las carpetas ajenas (xet/ guarda los chunks, que ese escaneo no ve). Cuenta la cache ENTERA: si no se
+    puede medir completa (mas de `max_ficheros`, un error de lectura o entradas corruptas) lanza CacheNoMedible, nunca un
+    subtotal. Sin du sobre arboles grandes: el recorrido esta acotado."""
+    total, visto = 0, 0
+    hub = raiz + "/hub"
+    if os.path.isdir(hub):
+        try:
+            from huggingface_hub import scan_cache_dir
 
-        total += int(scan_cache_dir(HF_CACHE + "/hub").size_on_disk)
-    except Exception:  # noqa: BLE001 - sin cache todavia (o carpeta ausente): cuenta 0, la medida de E: lo cubre
-        pass
-    visto = 0
-    for raiz, _, nombres in os.walk(HF_CACHE + "/xet"):
-        for n in nombres:
-            visto += 1
-            if visto > max_ficheros:
-                return total
-            try:
-                total += os.path.getsize(os.path.join(raiz, n))
-            except OSError:
-                pass
+            informe = scan_cache_dir(hub)
+        except Exception as e:  # noqa: BLE001 - cualquier fallo de lectura impide garantizar la medida
+            raise CacheNoMedible(f"no se pudo escanear {hub}: {type(e).__name__}: {e}") from e
+        if informe.warnings:
+            raise CacheNoMedible(f"{hub} tiene {len(informe.warnings)} entradas ilegibles o corruptas: medida incompleta")
+        total += int(informe.size_on_disk)
+
+    def sin_error(e):
+        raise CacheNoMedible(f"no se pudo recorrer la cache de HF: {e}")
+
+    if os.path.isdir(raiz):
+        for nombre in sorted(os.listdir(raiz)):
+            ruta = os.path.join(raiz, nombre)
+            if nombre == "hub" or nombre in CACHE_AJENA:
+                continue
+            if os.path.isfile(ruta):
+                visto += 1
+                total += os.path.getsize(ruta)
+                continue
+            for r, _, nombres in os.walk(ruta, onerror=sin_error):
+                for n in nombres:
+                    visto += 1
+                    if visto > max_ficheros:
+                        raise CacheNoMedible(f"la cache de HF tiene mas de {max_ficheros} ficheros: no se puede medir completa")
+                    try:
+                        total += os.path.getsize(os.path.join(r, n))
+                    except FileNotFoundError:
+                        continue  # desaparecio durante el recorrido
+                    except OSError as e:
+                        raise CacheNoMedible(f"no se pudo medir {os.path.join(r, n)}: {e}") from e
     return total
+
+
+def comprobar_tope_lotsa(bytes_subconjunto: int, bytes_lotsa_con_el_siguiente: int) -> None:
+    """Antes de bajar un fichero de LOTSA: subconjunto (tamano declarado por el Hub) <= 2 GB y total de LOTSA <= 10 GB."""
+    if bytes_subconjunto > LOTSA_SUBCONJUNTO_MAX:
+        raise TopeLotsa(f"el subconjunto declara {bytes_subconjunto / 1e9:.2f} GB (> {LOTSA_SUBCONJUNTO_MAX / 1e9:.0f} GB)")
+    if bytes_lotsa_con_el_siguiente > LOTSA_TOTAL_MAX:
+        raise TopeLotsa(f"LOTSA llegaria a {bytes_lotsa_con_el_siguiente / 1e9:.2f} GB (> {LOTSA_TOTAL_MAX / 1e9:.0f} GB)")
 
 
 # --- red -------------------------------------------------------------------------------------------------------------

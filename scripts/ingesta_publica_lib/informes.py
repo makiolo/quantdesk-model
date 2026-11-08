@@ -127,7 +127,26 @@ def informe_md(mans: dict, resumen: dict, lic: dict, corte: str) -> list:
     for e in esp:
         L_.append(f"| {e['fuente']} | {e['fase']} | {e['fecha_utc']} | {_gb(e['libre_C_bytes'])} | {_gb(e['libre_E_bytes'])} | "
                   f"{_gb(e['usado_manifiestos_bytes'])} | {_gb(e.get('cache_hf_bytes', 0))} |")
-    L_ += ["", "## Datasets obtenidos", "",
+    lotsa = {}
+    for k, e in raw.items():
+        if k.startswith(f"hf/{R.LOTSA_REPO}/"):
+            sub = k.split("/")[3]
+            lotsa[sub] = lotsa.get(sub, 0) + e["bytes"]
+    if lotsa:
+        mayor = max(lotsa, key=lotsa.get)
+        L_ += ["", f"- Topes de LOTSA (se comprueban antes de cada descarga con el tamano que declara el Hub): total {_gb(sum(lotsa.values()))} "
+               f"de {_gb(C.LOTSA_TOTAL_MAX)}; mayor subconjunto `{mayor}` {_mb(lotsa[mayor])} de {_gb(C.LOTSA_SUBCONJUNTO_MAX)}."]
+    L_ += ["", "## Limites conocidos de las descargas", "",
+           "- shortcut: huggingface_hub reintenta por dentro (hasta 5 veces, espera de 1 a 8 s, Retry-After solo dentro de su ciclo) y no "
+           "deja configurarlo; `fuentes.con_reintentos` anade 3 reintentos externos con espera exponencial y el Retry-After de la "
+           "excepcion HTTP, en lugar de un transporte propio. Subir a GET propios (como Binance) si hiciera falta control total del ritmo.",
+           "- Desde el intento 2 las descargas del Hub van en serie, con `user_agent=quantdesk-lab-ingesta/0.1` (la biblioteca lo antepone a "
+           "su cadena `hf_hub/...; python/...`) y con el transporte Xet desactivado (`HF_HUB_DISABLE_XET=1`). Los ficheros del Hub que "
+           "ya estaban descargados (intento 1) se bajaron con el agente por defecto de la biblioteca y no se repitieron; su integridad "
+           "consta por el SHA-256 LFS del Hub (tabla de hashes).",
+           "- Los GET propios (APIs de licencias, Zenodo, GitHub, Binance) usan el User-Agent del proyecto, 1 peticion/s por host, 3 "
+           "reintentos con espera exponencial y Retry-After.", "",
+           "## Datasets obtenidos", "",
            "| dataset | fuente | series (tronco / adaptadores) | puntos tronco / adaptadores | rango (UTC) | frecuencia | bytes crudo | bytes procesado | descarga (UTC) | SHA-256 del dataset |",
            "|---|---|---|---|---|---|---|---|---|---|"]
     for did, m in mans.items():
