@@ -6,6 +6,8 @@ import hashlib
 import os
 import platform
 import shutil
+import sys
+import time
 
 import numpy as np
 import pyarrow as pa
@@ -20,6 +22,19 @@ MS_ANIO_MIN = -8_520_336_000_000  # 1700-01-01 UTC: por debajo es casi seguro un
 INICIOS_FICTICIOS = (0, -2_208_988_800_000)
 PARTES = ("tronco", "adaptadores")
 FILAS_POR_LOTE = 2_000_000
+COTA_PARQUET = 1.01  # cota superior del parquet por lote: bytes sin comprimir x 1,01 (ver cota_lote)
+MARGEN_PARQUET = 1 << 20  # + 1 MiB por lote, y 1 MiB por fichero para su pie al cerrar
+
+
+def borrar_carpeta(ruta: str, intentos: int = 6, espera: float = 0.5, dormir=time.sleep) -> bool:
+    """Borra una carpeta con reintentos: en Windows un antivirus o el indexador pueden tener un instante un fichero recien cerrado.
+    Devuelve False si tras los reintentos sigue existiendo."""
+    for i in range(intentos):
+        shutil.rmtree(ruta, ignore_errors=True)
+        if not os.path.exists(ruta):
+            return True
+        dormir(espera * (i + 1))
+    return not os.path.exists(ruta)
 
 
 def iso_ms(t) -> str | None:
@@ -268,14 +283,38 @@ def esquema(entry: dict) -> pa.Schema:
 
 
 class Escritor:
-    """Un ParquetWriter por (parte, split), con orden de filas determinista (orden de lectura)."""
+    """Un ParquetWriter por (parte, split), con orden de filas determinista (orden de lectura).
 
-    def __init__(self, entry, carpeta):
-        self.entry, self.carpeta, self.esq = entry, carpeta, esquema(entry)
-        self.w, self.buf, self.filas, self.series, self.nbuf = {}, {}, {}, {}, {}
+    Guarda INCREMENTAL: `guarda_lote(escrito, cota)` se llama ANTES de escribir cada lote con los bytes reales ya escritos en el
+    dataset (posicion de cada fichero de salida) y una cota superior de lo que ocupara el lote; si lanza (PresupuestoExcedido,
+    ParadaDisco) no se escribe ese lote, y `escribir` cierra los writers y borra la carpeta parcial."""
+
+    def __init__(self, entry, carpeta, guarda_lote=None):
+        self.entry, self.carpeta, self.esq, self.guarda_lote = entry, carpeta, esquema(entry), guarda_lote
+        self.w, self.buf, self.filas, self.series, self.nbuf, self.sink = {}, {}, {}, {}, {}, {}
 
     def _ruta(self, parte, split):
         return f"{self.carpeta}/{parte}.{split}.parquet"
+
+    def bytes_escritos(self) -> int:
+        """Bytes que los ficheros de salida ya tienen en disco (el pie de cada fichero se escribe al cerrar)."""
+        return sum(fh.tell() for fh in self.sink.values())
+
+    def abortar(self) -> None:
+        """Cierra los writers y borra la carpeta parcial: tras un fallo no queda ningun parquet a medias."""
+        for w in self.w.values():
+            try:
+                w.close()
+            except Exception:  # noqa: BLE001 - ya se esta abortando; lo importante es soltar los ficheros
+                pass
+        for fh in self.sink.values():
+            try:
+                fh.close()
+            except Exception:  # noqa: BLE001
+                pass
+        self.w, self.sink, self.buf = {}, {}, {}
+        if not borrar_carpeta(self.carpeta):  # nunca en silencio: queda dicho que carpeta hay que borrar a mano
+            print(f"AVISO: no se pudo borrar la carpeta parcial {self.carpeta}; borrarla a mano", file=sys.stderr)
 
     def anadir(self, parte, split, clave, ts, v, cols):
         k = (parte, split)
@@ -299,9 +338,12 @@ class Escritor:
             for c in LEC.OHLCV:
                 cols.append(pa.array(np.concatenate([x[3][c] for x in lote]), self.esq.field(c).type))
         tabla = pa.Table.from_arrays(cols, schema=self.esq)
+        if self.guarda_lote:  # ANTES de escribir: lo ya escrito + la cota de este lote
+            self.guarda_lote(self.bytes_escritos(), cota_lote(tabla))
         if k not in self.w:
             os.makedirs(self.carpeta, exist_ok=True)
-            self.w[k] = pq.ParquetWriter(self._ruta(*k), self.esq, compression="zstd", compression_level=3,
+            self.sink[k] = pa.OSFile(self._ruta(*k), "wb")  # el sink propio da la posicion (bytes reales) sin releer el disco
+            self.w[k] = pq.ParquetWriter(self.sink[k], self.esq, compression="zstd", compression_level=3,
                                          use_dictionary=["series_id"], write_statistics=True)
         self.w[k].write_table(tabla, row_group_size=FILAS_POR_LOTE)
         self.filas[k] = self.filas.get(k, 0) + tabla.num_rows
@@ -309,31 +351,48 @@ class Escritor:
     def cerrar(self) -> list:
         for k in list(self.buf):
             self._vaciar(k)
+        if self.guarda_lote and self.w:  # ultimo control: los pies de los ficheros se escriben al cerrar
+            self.guarda_lote(self.bytes_escritos(), MARGEN_PARQUET * len(self.w))
         out = []
         for k, w in sorted(self.w.items()):
             w.close()
+            self.sink[k].close()
             ruta = self._ruta(*k)
             out.append({"ruta": os.path.basename(ruta), "parte": k[0], "split": k[1], "bytes": os.path.getsize(ruta),
                         "sha256": C.sha256_fichero(ruta), "filas": self.filas[k], "series": self.series[k]})
         return out
 
 
-def escribir(entry: dict, an: dict, lados: dict, carpeta: str, corte: int) -> list:
-    esc = Escritor(entry, carpeta)
+def cota_lote(tabla: pa.Table) -> int:
+    """Cota superior de lo que ocupara el lote en parquet: sus bytes sin comprimir (>= la codificacion plana del parquet, incluso si
+    el diccionario de series_id se abandona) con un 1 % para las cabeceras de pagina, mas un margen fijo. zstd no expande mas de
+    ~0,1 %. Conservadora a proposito: en los datos de esta ingesta el parquet real ocupa entre el 2 % y el 31 % de la cota (21 ficheros
+    de mas de 100 000 filas), asi que la guarda solo se adelanta, como mucho, un lote (< 220 MB) al limite real."""
+    return int(tabla.nbytes * COTA_PARQUET) + MARGEN_PARQUET
+
+
+def escribir(entry: dict, an: dict, lados: dict, carpeta: str, corte: int, guarda_lote=None) -> list:
+    """Escribe los parquet de un dataset en `carpeta`. Si algo falla (la guarda incremental incluida) cierra los writers, borra la
+    carpeta y relanza: no queda ningun parquet parcial."""
+    esc = Escritor(entry, carpeta, guarda_lote)
     por_clave = {r["clave"]: r for r in an["registros"]}
     vistos = {}
-    for s in LEC.series(entry, con_ts=True):
-        sid = s.id
-        if sid in vistos:
-            vistos[sid] += 1
-            sid = f"{sid}~dup{vistos[s.id]}"
-            s = s._replace(id=sid)
-        vistos.setdefault(sid, 1)
-        r = por_clave[f"{entry['id']}/{sid}"]
-        for parte, sl in trozos(r, s):
-            cols = None if s.cols is None else {c: a[sl] for c, a in s.cols.items()}
-            esc.anadir(parte, lados[r["clave"]], r["clave"], s.ts[sl], s.v[sl], cols)
-    return esc.cerrar()
+    try:
+        for s in LEC.series(entry, con_ts=True):
+            sid = s.id
+            if sid in vistos:
+                vistos[sid] += 1
+                sid = f"{sid}~dup{vistos[s.id]}"
+                s = s._replace(id=sid)
+            vistos.setdefault(sid, 1)
+            r = por_clave[f"{entry['id']}/{sid}"]
+            for parte, sl in trozos(r, s):
+                cols = None if s.cols is None else {c: a[sl] for c, a in s.cols.items()}
+                esc.anadir(parte, lados[r["clave"]], r["clave"], s.ts[sl], s.v[sl], cols)
+        return esc.cerrar()
+    except BaseException:
+        esc.abortar()
+        raise
 
 
 # --- manifiestos -----------------------------------------------------------------------------------------------------
@@ -360,16 +419,25 @@ def estimacion_escritura(crudo: list) -> int:
 
 
 def procesar_dataset(entry: dict, an: dict, lados: dict, salida: str, corte: str, licencia: dict, crudo: list,
-                     usado_previo: int = 0, guarda=C.guarda) -> dict:
-    """Escribe los parquet y el manifiesto de un dataset. `salida` es la carpeta raiz de datasets. ANTES de escribir aplica la
-    guarda de 100 GB (y los suelos de C: y E:) con `usado_previo` (bytes de los manifiestos) mas la estimacion de lo que va a ocupar."""
+                     usado_previo: int = 0, guarda=C.guarda, guarda_lote=C.guarda_lote) -> dict:
+    """Escribe los parquet y el manifiesto de un dataset. `salida` es la carpeta raiz de datasets. Dos barreras de 100 GB (y de los
+    suelos de C: y E:), con `usado_previo` (bytes de los manifiestos) y la cache de HF:
+      1. ANTES de empezar: `guarda` con la estimacion de lo que va a ocupar (2 x el crudo del dataset);
+      2. ANTES de cada lote: `guarda_lote` con los bytes REALES ya escritos y la cota del lote (la estimacion puede quedarse corta,
+         p. ej. un ZIP de Binance que se expande mucho). Si salta, `escribir` cierra los writers, borra la carpeta del dataset (no queda
+         parquet parcial ni manifiesto) y relanza la excepcion.
+    `usado_previo` incluye el manifiesto anterior de este mismo dataset, que se borra antes de escribir: la cuenta es conservadora."""
     carpeta = f"{salida}/{entry['id']}"
     hay_datos = any(r["accion"] != "excluida" for r in an["registros"])
+    ficheros = []
     if hay_datos:
-        guarda(estimacion_escritura(crudo), usado_previo, C.bytes_cache_hf())
-    if os.path.isdir(carpeta):
-        shutil.rmtree(carpeta)
-    ficheros = escribir(entry, an, lados, carpeta, corte_ms(corte)) if hay_datos else []
+        cache_hf = C.bytes_cache_hf()  # la cache de HF no cambia mientras se procesa: una medida por dataset
+        guarda(estimacion_escritura(crudo), usado_previo, cache_hf)  # barrera 1, antes de tocar nada
+    if os.path.isdir(carpeta) and not borrar_carpeta(carpeta):
+        raise OSError(f"no se pudo borrar el dataset anterior {carpeta} (ficheros en uso)")
+    if hay_datos:
+        ficheros = escribir(entry, an, lados, carpeta, corte_ms(corte),
+                            guarda_lote=lambda escrito, cota: guarda_lote(escrito, cota, usado_previo, cache_hf))
     st = estadisticas(entry, an)
     man = {
         "dataset": entry["id"], "fuente": entry["fuente"], "repo": entry.get("repo"), "subconjunto": entry["nombre"],

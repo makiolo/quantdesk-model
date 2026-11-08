@@ -1,10 +1,14 @@
-"""Descarga reanudable e idempotente de lo crudo (Hub de Hugging Face y data.binance.vision) con guarda de presupuesto."""
+"""Descarga reanudable e idempotente de lo crudo (Hub de Hugging Face y data.binance.vision) con guarda de presupuesto.
+
+Todo GET sale por common.http_get (User-Agent del proyecto, 1 peticion/s por host, 3 reintentos con espera exponencial,
+Retry-After): tambien el Hub. No se usa hf_hub_download ni HfApi (huggingface_hub reintenta por dentro y no es configurable)."""
 from __future__ import annotations
 
 import glob
 import os
 import re
 import time
+import urllib.parse
 import xml.etree.ElementTree as ET
 
 from . import common as C
@@ -74,44 +78,19 @@ def bytes_lotsa_en_manifiesto() -> int:
     return sum(e["bytes"] for k, e in manifiesto_crudo(RAW_HF)["archivos"].items() if k.startswith(pref))
 
 
-def _error_hub(e: Exception) -> tuple:
-    """(Retry-After en s o None, reintentable) de una excepcion de huggingface_hub/httpx."""
-    resp = getattr(e, "response", None)
-    estado = getattr(resp, "status_code", None)
-    cab = getattr(resp, "headers", None)
-    ra = C.parse_retry_after(cab.get("Retry-After") if cab is not None else None)
-    if estado is not None:
-        return ra, estado in (408, 429) or estado >= 500
-    nombres = {c.__name__ for c in type(e).__mro__}
-    return ra, isinstance(e, (ConnectionError, TimeoutError)) or bool(
-        nombres & {"TransportError", "TimeoutException", "NetworkError", "RemoteProtocolError"})
-
-
-def con_reintentos(llamada, dormir=time.sleep):
-    """Envuelve una descarga del Hub con el ritmo de reintentos del proyecto: 3 reintentos tras el primer intento, espera
-    exponencial y Retry-After si llega en la excepcion HTTP. Un 4xx distinto de 408/429 no se reintenta.
-
-    shortcut: huggingface_hub reintenta por dentro (hasta 5 veces, 1-8 s, leyendo Retry-After solo en su propio ciclo) y no deja
-    configurarlo; este envoltorio anade los reintentos externos en lugar de un transporte propio. Si hiciera falta control
-    total del ritmo, sustituir hf_hub_download por GET propios (como Binance)."""
-    for intento in range(C.REINTENTOS + 1):
-        try:
-            return llamada()
-        except Exception as e:  # noqa: BLE001 - se reclasifica abajo; lo no reintentable se relanza
-            ra, reintentable = _error_hub(e)
-            if not reintentable or intento == C.REINTENTOS:
-                raise
-            dormir(C.espera_reintento(intento, ra))
+def url_hub(repo: str, revision: str, rel: str) -> str:
+    """URL de resolve del Hub FIJADA a un commit (revision): el contenido de esa URL no cambia, y es lo que se registra."""
+    return f"{R.HUB_BASE}/datasets/{repo}/resolve/{revision}/{urllib.parse.quote(rel)}"
 
 
 def descargar_hub(fuente: str, estado_lic: dict, forzar_ids: list | None = None, datasets: list | None = None,
-                  bajar=None) -> list:
+                  http=None) -> list:
     """Baja de `fuente` ('chronos'|'lotsa') solo los datasets con licencia verificada. Devuelve [(id, motivo)] no bajados.
-    En LOTSA bloquea, con el tamano declarado por el Hub y ANTES de bajar, un subconjunto de mas de 2 GB y todo lo que
-    llevaria el total de LOTSA por encima de 10 GB. Las descargas son en serie."""
-    if bajar is None:
-        from huggingface_hub import hf_hub_download as bajar
-
+    Los ficheros se piden con GET propios (`http`, por defecto C.http_get: User-Agent del proyecto, 1 peticion/s por host, 3
+    reintentos con espera exponencial y Retry-After), a la URL de resolve fijada a la revision de la API del Hub, y en serie.
+    En LOTSA bloquea, con el tamano declarado por el Hub y ANTES de bajar el primer fichero, un subconjunto de mas de 2 GB y
+    todo subconjunto cuyo pendiente llevaria el total de LOTSA por encima de 10 GB (nunca queda un subconjunto a medias)."""
+    http = http or C.http_get
     sib, revision = _siblings(estado_lic, fuente)
     omitidos = []
     for d in datasets or R.DATASETS:
@@ -121,7 +100,10 @@ def descargar_hub(fuente: str, estado_lic: dict, forzar_ids: list | None = None,
             omitidos.append((d["id"], "licencia: " + estado_lic["datasets"][d["id"]]["motivo"]))
             print(f"  OMITIDO {d['id']}: licencia no verificada")
             continue
-        tam_sub = sum(int(sib[r]["size"]) for r in d["archivos"] + d["extras"] if r in sib)
+        ficheros = d["archivos"] + d["extras"]
+        tam_sub = sum(int(sib[r]["size"]) for r in ficheros if r in sib)
+        registrados = manifiesto_crudo(RAW_HF)["archivos"]
+        pendiente = sum(int(sib[r]["size"]) for r in ficheros if r in sib and f"hf/{d['repo']}/{r}" not in registrados)
         if fuente == "lotsa":
             try:
                 C.comprobar_tope_lotsa(tam_sub, 0)
@@ -129,50 +111,69 @@ def descargar_hub(fuente: str, estado_lic: dict, forzar_ids: list | None = None,
                 omitidos.append((d["id"], f"tope de LOTSA: {e}"))
                 print(f"  BLOQUEADO {d['id']}: {e}")
                 continue
-        for rel in d["archivos"] + d["extras"]:
+            # el subconjunto ENTERO (lo que aun no esta registrado) cabe en el cupo global antes de bajar su primer fichero
+            C.comprobar_tope_lotsa(tam_sub, bytes_lotsa_en_manifiesto() + pendiente)
+        if pendiente:
+            _guarda(pendiente)  # y en los 100 GB: tampoco se empieza un subconjunto que no cabe
+        for rel in ficheros:
             s = sib.get(rel)
             if s is None:
                 omitidos.append((d["id"], f"{rel} no existe en el repo"))
                 continue
-            _bajar_hub(d, rel, s, revision, bajar, tam_sub)
+            try:
+                _bajar_hub(d, rel, s, revision, http, tam_sub)
+            except C.ErrorRed as e:  # tras los reintentos: se documenta y se pasa al siguiente subconjunto (este ya no sirve entero)
+                omitidos.append((f"{d['id']}:{rel}", str(e)))
+                print(f"  NO BAJADO {rel}: {e}")
+                break
     return omitidos
 
 
-def _bajar_hub(d: dict, rel: str, s: dict, revision: str, hf_hub_download, tam_subconjunto: int = 0) -> None:
+def _bajar_hub(d: dict, rel: str, s: dict, revision: str, http, tam_subconjunto: int = 0) -> None:
+    """Un fichero del Hub: GET propio a un temporal, verificacion de tamano y SHA-256 frente a lo que declara la API del Hub
+    (LFS sha256, o el git blob id de los ficheros pequenos) y rename atomico. Como mucho 4 intentos de red por fichero."""
     local_dir = f"{RAW_HF}/{d['repo']}"
     destino = f"{local_dir}/{rel}"
     clave = f"hf/{d['repo']}/{rel}"
+    tam = int(s["size"])
     esperado_lfs = (s.get("lfs") or {}).get("sha256")
     prev = manifiesto_crudo(RAW_HF)["archivos"].get(clave)
     if ya_descargado(prev, destino):
         return  # idempotente: ya esta con el tamano y el hash registrados
+    if not esperado_lfs and not s.get("blobId"):
+        raise RuntimeError(f"{rel}: el Hub no declara ni sha256 LFS ni blobId: no se puede verificar")
     if d["fuente"] == "lotsa":
-        C.comprobar_tope_lotsa(tam_subconjunto, bytes_lotsa_en_manifiesto() + int(s["size"]))
-    _guarda(int(s["size"]))
+        C.comprobar_tope_lotsa(tam_subconjunto, bytes_lotsa_en_manifiesto() + tam)
+    _guarda(tam)
+    url = url_hub(d["repo"], revision, rel)
+    temporal = destino + ".dl"  # http_get lo escribe como .dl.part; solo se mueve a `destino` si el tamano y el hash casan
+    if os.path.isfile(temporal):  # resto de una ejecucion interrumpida entre la descarga y la verificacion
+        os.remove(temporal)
     t0 = time.monotonic()
-    # force_download si ya hay un fichero que no coincide con lo registrado: la biblioteca daria por bueno uno corrupto del
-    # mismo tamano porque solo mira los metadatos de local_dir.
-    forzar = os.path.isfile(destino)
-    ruta = con_reintentos(lambda: hf_hub_download(
-        d["repo"], rel, repo_type="dataset", revision=revision, local_dir=local_dir, token=False, user_agent=C.UA,
-        force_download=forzar))
-    h = C.sha256_fichero(ruta)
-    if esperado_lfs:
-        if h != esperado_lfs:
-            os.remove(ruta)
-            raise RuntimeError(f"{rel}: sha256 {h} != LFS del Hub {esperado_lfs}")
-    else:
-        with open(ruta, "rb") as f:
-            if C.git_blob_sha1(f.read()) != s["blobId"]:
-                os.remove(ruta)
-                raise RuntimeError(f"{rel}: blob sha1 distinto de blobId del Hub")
+    http(url, destino=temporal)
+    try:
+        n = os.path.getsize(temporal)
+        if n != tam:
+            raise RuntimeError(f"{rel}: {n} bytes descargados != {tam} que declara el Hub")
+        h = C.sha256_fichero(temporal)
+        if esperado_lfs:
+            if h != esperado_lfs:
+                raise RuntimeError(f"{rel}: sha256 {h} != LFS del Hub {esperado_lfs}")
+        else:
+            with open(temporal, "rb") as f:
+                if C.git_blob_sha1(f.read()) != s["blobId"]:
+                    raise RuntimeError(f"{rel}: blob sha1 distinto de blobId del Hub")
+    except BaseException:
+        if os.path.isfile(temporal):
+            os.remove(temporal)
+        raise
+    os.replace(temporal, destino)
     _registrar(RAW_HF, clave, {
-        "bytes": os.path.getsize(ruta), "sha256": h, "url": f"https://huggingface.co/datasets/{d['repo']}/resolve/{revision}/{rel}",
-        "revision": revision, "verificado_contra": "LFS sha256 del Hub" if esperado_lfs else "git blob id del Hub",
+        "bytes": n, "sha256": h, "url": url, "revision": revision,
+        "verificado_contra": "LFS sha256 del Hub" if esperado_lfs else "git blob id del Hub",
         "fecha_descarga_utc": C.ahora_utc(), "fuente": "hub:" + d["repo"],
     })
-    print(f"  {rel}: {os.path.getsize(ruta) / 1e6:.1f} MB en {time.monotonic() - t0:.1f}s")
-    time.sleep(C.PAUSA_HOST)
+    print(f"  {rel}: {n / 1e6:.1f} MB en {time.monotonic() - t0:.1f}s")
 
 
 # --- Binance ---------------------------------------------------------------------------------------------------------

@@ -136,7 +136,11 @@ def correr(solo_hashes: bool = False) -> int:
             problemas.append(f"particion no disjunta en los parquet: {esc}")
         problemas += [f"filas releidas distintas del manifiesto: {x}" for x in esc["filas_distintas_del_manifiesto"]]
     if not solo_hashes:
-        k = refiltrar(problemas, esperados)
+        try:
+            k = refiltrar(problemas, esperados)
+        except (C.ParadaDisco, C.PresupuestoExcedido) as e:  # la copia temporal tambien pasa por la guarda de 100 GB
+            print(f"PARADA: {e}")
+            return 3
         print(f"verificar: filtro reaplicado sobre {k} datasets")
     for p in problemas:
         print("  PROBLEMA:", p)

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import email.utils
 import hashlib
 import json
 import os
@@ -111,27 +112,40 @@ def libre(unidad: str) -> int:
     return shutil.disk_usage(unidad).free
 
 
-def comprobar_discos(libre_fn=libre) -> dict:
-    """Mide C: y E: y para si alguno esta bajo su suelo. Devuelve las medidas."""
+def comprobar_discos(libre_fn=libre, reserva_e: int = 0) -> dict:
+    """Mide C: y E: y para si alguno esta bajo su suelo. `reserva_e` son los bytes que se van a escribir en E: ahora mismo: el
+    suelo de E: se comprueba DESPUES de escribirlos (para antes de bajar de 150 GiB, no cuando ya se ha bajado)."""
     c, e = libre_fn("C:/"), libre_fn("E:/")
     if c < C_LIBRE_MIN:
         raise ParadaDisco(f"C: tiene {c / 1e9:.2f} GB libres (< 2 GiB): parar y avisar")
-    if e < E_LIBRE_MIN:
-        raise ParadaDisco(f"E: tiene {e / 1e9:.1f} GB libres (< 150 GiB): parar y avisar")
+    if e - reserva_e < E_LIBRE_MIN:
+        raise ParadaDisco(f"E: tiene {e / 1e9:.1f} GB libres y se van a escribir {reserva_e / 1e9:.2f} GB (suelo 150 GiB): parar y avisar")
     return {"libre_C_bytes": c, "libre_E_bytes": e}
 
 
-def guarda(extra: int, usado_manifiestos: int, usado_cache_hf: int, libre_fn=libre) -> dict:
-    """Para ANTES de pasarse: manifiestos + cache HF + el siguiente fichero deben caber en el presupuesto."""
-    medidas = comprobar_discos(libre_fn)
+def guarda(extra: int, usado_manifiestos: int, usado_cache_hf: int, libre_fn=libre, presupuesto: int | None = None,
+           reserva_e: int | None = None, etiqueta: str = "siguiente") -> dict:
+    """Para ANTES de pasarse: manifiestos + cache HF + lo siguiente (`extra`) deben caber en el presupuesto (100 GB por defecto),
+    y C:/E: no pueden quedar por debajo de sus suelos. `reserva_e` (por defecto `extra`) son los bytes nuevos que caeran en E:."""
+    limite = PRESUPUESTO if presupuesto is None else presupuesto
+    medidas = comprobar_discos(libre_fn, extra if reserva_e is None else reserva_e)
     total = usado_manifiestos + usado_cache_hf + extra
-    if total > PRESUPUESTO:
+    if total > limite:
         raise PresupuestoExcedido(
             f"{total / 1e9:.2f} GB (manifiestos {usado_manifiestos / 1e9:.2f} + cache HF {usado_cache_hf / 1e9:.2f} + "
-            f"siguiente {extra / 1e9:.2f}) superan {PRESUPUESTO / 1e9:.0f} GB"
+            f"{etiqueta} {extra / 1e9:.2f}) superan {limite / 1e9:.0f} GB"
         )
     medidas.update(total_previsto_bytes=total)
     return medidas
+
+
+def guarda_lote(escrito: int, cota_lote: int, usado_previo: int, usado_cache_hf: int, libre_fn=libre,
+                presupuesto: int | None = None) -> dict:
+    """Guarda INCREMENTAL de la escritura de parquet, ANTES de cada lote: lo ya escrito en el dataset (`escrito`, bytes reales
+    del disco) + la cota superior del lote + lo previo (manifiestos) + la cache de HF no pueden pasar de 100 GB, y E: no puede
+    quedar por debajo de su suelo tras escribir el lote. Complementa la reserva previa (2 x crudo), que es solo una estimacion."""
+    return guarda(escrito + cota_lote, usado_previo, usado_cache_hf, libre_fn, presupuesto, reserva_e=cota_lote,
+                  etiqueta="ya escrito del dataset + cota del siguiente lote")
 
 
 def bytes_cache_hf(raiz: str = HF_CACHE, max_ficheros: int = MAX_FICHEROS_CACHE) -> int:
@@ -196,14 +210,23 @@ def espera_reintento(intento: int, retry_after: float | None = None) -> float:
     return min(base, ESPERA_MAX)
 
 
-def parse_retry_after(valor: str | None) -> float | None:
-    """Retry-After en segundos (la forma en fecha HTTP no se usa en estos hosts: se ignora)."""
+def parse_retry_after(valor: str | None, ahora: dt.datetime | None = None) -> float | None:
+    """Retry-After en segundos: en segundos enteros o como fecha HTTP (las dos formas de la RFC 9110); None si no se entiende."""
     if not valor:
         return None
     try:
         return max(0.0, float(valor.strip()))
     except ValueError:
+        pass
+    try:
+        t = email.utils.parsedate_to_datetime(valor.strip())
+    except (TypeError, ValueError, IndexError):
         return None
+    if t is None:
+        return None
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=dt.timezone.utc)
+    return max(0.0, (t - (ahora or dt.datetime.now(dt.timezone.utc))).total_seconds())
 
 
 class Ritmo:
@@ -222,50 +245,93 @@ class Ritmo:
 
 
 RITMO = Ritmo()
-PETICIONES = []  # registro de peticiones (url sin query sensible, estado) para el informe
+PETICIONES = []  # registro de peticiones (url inicial, estado) de esta ejecucion; nunca se guardan las URL firmadas de las redirecciones
+MAX_SALTOS = 5  # redirecciones que se siguen dentro de un intento
+REDIRECCIONES = (301, 302, 303, 307, 308)
 
 
-def http_get(url: str, *, permitir: tuple = (), destino: str | None = None, timeout: float = 60.0,
-             cabeceras: dict | None = None, abrir=urllib.request.urlopen, ritmo: Ritmo | None = None,
-             dormir=time.sleep) -> dict:
-    """GET con UA del proyecto, ritmo por host, 3 reintentos con espera exponencial y Retry-After.
+class _SinRedireccion(urllib.request.HTTPRedirectHandler):
+    """urllib sigue las redirecciones por su cuenta y sin pasar por el ritmo. Aqui no: devuelve el 3xx como HTTPError y http_get
+    sigue el Location a mano, de modo que CADA salto espera el ritmo de SU host (p. ej. el Hub y su CDN)."""
 
-    Devuelve {status, cabeceras, cuerpo (bytes; vacio si destino), bytes}. Los estados de `permitir` (p. ej. 404) se
-    devuelven en lugar de lanzar. Con `destino`, descarga a destino+'.part' (reanuda con Range) y renombra al terminar.
-    Un 4xx distinto de 408/429 no se reintenta. Nunca sortea bloqueos: si el servidor rechaza, se lanza ErrorRed.
-    """
-    ritmo = ritmo or RITMO
-    host = urllib.parse.urlsplit(url).netloc
-    ultimo_error = "sin intentos"
-    for intento in range(REINTENTOS + 1):
-        ritmo.esperar(host)
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+_OPENER = urllib.request.build_opener(_SinRedireccion)
+
+
+def abrir_defecto(req, timeout: float = 60.0):
+    return _OPENER.open(req, timeout=timeout)
+
+
+class _Reintentable(Exception):
+    """Fallo de un intento que merece otro (5xx, 408/429, conexion caida, respuesta truncada)."""
+
+    def __init__(self, motivo: str, retry_after: float | None = None):
+        super().__init__(motivo)
+        self.motivo, self.retry_after = motivo, retry_after
+
+
+def _longitud(hdr: dict) -> int | None:
+    try:
+        return int(hdr["content-length"])
+    except (KeyError, ValueError):
+        return None
+
+
+def _un_intento(url: str, *, permitir: tuple, destino: str | None, timeout: float, cabeceras: dict | None, abrir,
+                ritmo: "Ritmo") -> dict:
+    """Un intento: la cadena de redirecciones hasta la respuesta final. Lanza _Reintentable (otro intento) o ErrorRed (no)."""
+    parcial = (destino + ".part") if destino else None
+    actual, saltos = url, 0
+    while True:
+        ritmo.esperar(urllib.parse.urlsplit(actual).netloc)
         cab = {"User-Agent": UA, "Accept": "*/*"}
         cab.update(cabeceras or {})
-        parcial = (destino + ".part") if destino else None
         previo = 0
         if parcial and os.path.isfile(parcial):
             previo = os.path.getsize(parcial)
             if previo:
                 cab["Range"] = f"bytes={previo}-"
-        retry_after = None
         try:
-            with abrir(urllib.request.Request(url, headers=cab), timeout=timeout) as r:
+            with abrir(urllib.request.Request(actual, headers=cab), timeout=timeout) as r:
                 status = getattr(r, "status", 200)
                 hdr = {k.lower(): v for k, v in dict(r.headers).items()}
+                leidos = 0
                 if destino:
                     os.makedirs(os.path.dirname(destino), exist_ok=True)
                     modo = "ab" if (status == 206 and previo) else "wb"
                     with open(parcial, modo) as f:
                         for bloque in iter(lambda: r.read(1 << 20), b""):
                             f.write(bloque)
-                    os.replace(parcial, destino)
-                    cuerpo, n = b"", os.path.getsize(destino)
+                            leidos += len(bloque)
+                    cuerpo = b""
                 else:
                     cuerpo = r.read()
-                    n = len(cuerpo)
-            PETICIONES.append((url, status))
+                    leidos = len(cuerpo)
+            esperado = _longitud(hdr)
+            if esperado is not None and leidos < esperado:  # http.client no avisa de un cuerpo cortado: se reintenta (reanuda el .part)
+                raise _Reintentable(f"respuesta truncada ({leidos} de {esperado} bytes)")
+            if destino:
+                os.replace(parcial, destino)
+                n = os.path.getsize(destino)
+            else:
+                n = leidos
             return {"status": status, "cabeceras": hdr, "cuerpo": cuerpo, "bytes": n}
         except urllib.error.HTTPError as e:
+            if e.code in REDIRECCIONES and e.headers is not None and e.headers.get("Location"):
+                saltos += 1
+                nuevo = urllib.parse.urljoin(actual, e.headers.get("Location"))
+                e.close()
+                if saltos > MAX_SALTOS:
+                    PETICIONES.append((url, "REDIR"))
+                    raise ErrorRed(f"{url}: mas de {MAX_SALTOS} redirecciones (no se reintenta)") from None
+                if urllib.parse.urlsplit(url).scheme == "https" and urllib.parse.urlsplit(nuevo).scheme != "https":
+                    PETICIONES.append((url, "REDIR"))
+                    raise ErrorRed(f"{url}: redireccion a un destino que no es https (no se reintenta)") from None
+                actual = nuevo
+                continue
             if e.code in permitir:
                 PETICIONES.append((url, e.code))
                 cuerpo = e.read()
@@ -278,13 +344,34 @@ def http_get(url: str, *, permitir: tuple = (), destino: str | None = None, time
             if e.code == 416 and destino and previo:  # el .part ya estaba completo
                 os.replace(parcial, destino)
                 return {"status": 200, "cabeceras": {}, "cuerpo": b"", "bytes": os.path.getsize(destino)}
-            retry_after = parse_retry_after(e.headers.get("Retry-After") if e.headers else None)
-            ultimo_error = f"HTTP {e.code}"
-            if e.code not in (408, 429) and e.code < 500:
-                PETICIONES.append((url, e.code))
-                raise ErrorRed(f"{url}: {ultimo_error} (no se reintenta)") from None
+            if e.code in (408, 429) or e.code >= 500:
+                raise _Reintentable(f"HTTP {e.code}", parse_retry_after(e.headers.get("Retry-After") if e.headers else None)) from None
+            PETICIONES.append((url, e.code))
+            raise ErrorRed(f"{url}: HTTP {e.code} (no se reintenta)") from None
         except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as e:
-            ultimo_error = f"{type(e).__name__}: {e}"
+            raise _Reintentable(f"{type(e).__name__}: {e}") from None
+
+
+def http_get(url: str, *, permitir: tuple = (), destino: str | None = None, timeout: float = 60.0,
+             cabeceras: dict | None = None, abrir=abrir_defecto, ritmo: Ritmo | None = None,
+             dormir=time.sleep) -> dict:
+    """GET con UA del proyecto, ritmo por host, 3 reintentos con espera exponencial y Retry-After.
+
+    Devuelve {status, cabeceras, cuerpo (bytes; vacio si destino), bytes}. Los estados de `permitir` (p. ej. 404) se
+    devuelven en lugar de lanzar. Con `destino`, descarga a destino+'.part' (reanuda con Range) y renombra al terminar.
+    Un 4xx distinto de 408/429 no se reintenta. Nunca sortea bloqueos: si el servidor rechaza, se lanza ErrorRed.
+    Como mucho REINTENTOS + 1 = 4 intentos; un intento sigue las redirecciones (cada salto con el ritmo de su host) y un cuerpo
+    mas corto que su Content-Length cuenta como fallo del intento. La misma politica sirve a Binance, a las evidencias de
+    licencia y al Hub de Hugging Face."""
+    ritmo = ritmo or RITMO
+    ultimo_error, retry_after = "sin intentos", None
+    for intento in range(REINTENTOS + 1):
+        try:
+            r = _un_intento(url, permitir=permitir, destino=destino, timeout=timeout, cabeceras=cabeceras, abrir=abrir, ritmo=ritmo)
+            PETICIONES.append((url, r["status"]))
+            return r
+        except _Reintentable as e:
+            ultimo_error, retry_after = e.motivo, e.retry_after
         if intento < REINTENTOS:
             dormir(espera_reintento(intento, retry_after))
     PETICIONES.append((url, "ERR"))

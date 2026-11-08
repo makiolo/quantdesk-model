@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 import datetime as dt
+import functools
+import glob
 import io
 import json
 import os
 import shutil
 import urllib.error
+import urllib.parse
 import zipfile
 
 import numpy as np
@@ -325,19 +328,21 @@ def t_extremo_a_extremo(tmp):
         assert lados["chronos__sint/COPIA"] == lados["chronos__sint/F01"]  # el duplicado va al mismo lado
         h = []
         for k in (1, 2):
-            man = FI.procesar_dataset(e, an, lados, f"{tmp}/ds{k}", "2016-10-01", {"licencia": "x"}, [], guarda=_sin_guarda)
+            man = FI.procesar_dataset(e, an, lados, f"{tmp}/ds{k}", "2016-10-01", {"licencia": "x"}, [], guarda=_sin_guarda,
+                                      guarda_lote=_sin_guarda_lote)
             h.append((man["dataset_sha256"], man["contenido_sha256"]))
         assert h[0] == h[1], "reaplicar el filtro debe dar el mismo hash de dataset"
         # punto 2a: la guarda se aplica ANTES de escribir, con usado_previo y 2 x el crudo del dataset como estimacion
         vistas = []
         FI.procesar_dataset(e, an, lados, f"{tmp}/g1", "2016-10-01", {}, [{"bytes": 1000}], usado_previo=7,
-                            guarda=lambda extra, usado, cache: vistas.append((extra, usado)) or {})
+                            guarda=lambda extra, usado, cache: vistas.append((extra, usado)) or {}, guarda_lote=_sin_guarda_lote)
         assert vistas == [(2 * 1000, 7)], vistas
         cache0, C.bytes_cache_hf = C.bytes_cache_hf, lambda *a, **k: 0
         try:
             try:
                 FI.procesar_dataset(e, an, lados, f"{tmp}/g2", "2016-10-01", {}, [{"bytes": 60 * 10**9}], usado_previo=0,
-                                    guarda=lambda extra, usado, cache: C.guarda(extra, usado, cache, libre_fn=lambda u: 10**13))
+                                    guarda=lambda extra, usado, cache: C.guarda(extra, usado, cache, libre_fn=lambda u: 10**13),
+                                    guarda_lote=_sin_guarda_lote)
                 raise AssertionError("2 x 60 GB de estimacion debia superar el presupuesto")
             except C.PresupuestoExcedido:
                 pass
@@ -384,6 +389,10 @@ def t_extremo_a_extremo(tmp):
 
 
 def _sin_guarda(extra, usado, cache):
+    return {}
+
+
+def _sin_guarda_lote(escrito, cota, usado, cache):
     return {}
 
 
@@ -472,8 +481,74 @@ def t_cache_hf(tmp):
         pass
 
 
+class _Resp(io.BytesIO):
+    """Respuesta falsa de urllib: cuerpo, estado y cabeceras propios."""
+
+    def __init__(self, cuerpo: bytes, status: int = 200, headers: dict | None = None):
+        super().__init__(cuerpo)
+        self.status = status
+        self.headers = {"Content-Length": str(len(cuerpo))} if headers is None else headers
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def _http_error(url, code, cab=None):
+    return urllib.error.HTTPError(url, code, "x", cab or {}, io.BytesIO(b""))
+
+
+class _Mundo:
+    """Reloj y transporte falsos (sin red): el ritmo (1 peticion/s por host) y la espera entre reintentos avanzan el mismo reloj."""
+
+    def __init__(self, servidor):
+        self.t, self.esperas, self.peticiones, self.servidor = 0.0, [], [], servidor
+        self.ritmo = C.Ritmo(1.0, reloj=lambda: self.t, dormir=self._avanzar)
+
+    def _avanzar(self, s):
+        self.t += s
+
+    def dormir(self, s):
+        self.esperas.append(s)
+        self.t += s
+
+    def abrir(self, req, timeout=0):
+        self.peticiones.append((self.t, req.full_url, {k.lower(): v for k, v in req.header_items()}))
+        return self.servidor(self, req)
+
+    def http(self):
+        return functools.partial(C.http_get, abrir=self.abrir, ritmo=self.ritmo, dormir=self.dormir)
+
+    def a(self, prefijo):
+        return [p for p in self.peticiones if p[1].startswith(prefijo)]
+
+
+CDN = "https://cdn.hf.test/blob/abc?sig=SECRETA"  # el CDN firma la URL: no debe aparecer en el registro de peticiones
+
+
+def _hub_ok(contenidos: dict):
+    """Hub falso: resolve -> 302 al CDN -> 200 con el contenido del fichero."""
+    def servidor(mundo, req):
+        url = req.full_url
+        if url.startswith(R.HUB_BASE):
+            rel = url.split("/resolve/", 1)[1].split("/", 1)[1]
+            raise _http_error(url, 302, {"Location": f"https://cdn.hf.test/blob/{rel}?sig=SECRETA"})
+        return _Resp(contenidos[url.split("/blob/", 1)[1].split("?", 1)[0]])
+    return servidor
+
+
+def _ritmo_ok(mundo):
+    """Nunca dos peticiones al mismo host con menos de 1 s de diferencia."""
+    for host in {urllib.parse.urlsplit(p[1]).netloc for p in mundo.peticiones}:
+        t = [p[0] for p in mundo.peticiones if urllib.parse.urlsplit(p[1]).netloc == host]
+        assert all(b - a >= 1.0 - 1e-9 for a, b in zip(t, t[1:])), (host, t)
+
+
 def t_topes_lotsa(tmp):
-    """Punto 3: un subconjunto de LOTSA de mas de 2 GB, o un total de mas de 10 GB, se bloquea antes de bajar."""
+    """Punto 3: un subconjunto de LOTSA de mas de 2 GB, o cuyo total (el SUBCONJUNTO ENTERO, no cada fichero) llevaria LOTSA a mas de
+    10 GB, se bloquea antes de bajar su primer fichero."""
     GB = 10**9
     C.comprobar_tope_lotsa(2 * GB, 8 * GB)  # justo en el limite: pasa
     C.comprobar_tope_lotsa(GB, 10 * GB)
@@ -486,103 +561,387 @@ def t_topes_lotsa(tmp):
     assert issubclass(C.TopeLotsa, C.PresupuestoExcedido)
     base = f"{tmp}/hf_topes"
 
-    def ds(nombre, extras=()):
+    def ds(nombre, extras=(), archivos=None):
         return {"id": f"lotsa__{nombre}", "fuente": "lotsa", "repo": R.LOTSA_REPO, "nombre": nombre,
-                "archivos": [f"{nombre}/data.arrow"], "extras": list(extras)}
+                "archivos": archivos or [f"{nombre}/data.arrow"], "extras": list(extras)}
 
     contenido = b"x" * 1000
     sib = {"grande/data.arrow": {"size": 2_100_000_000}, "grande/state.json": {"size": 250},
            "pequeno/data.arrow": {"size": 1000, "lfs": {"sha256": C.sha256_bytes(contenido)}}}
     estado = {"datasets": {"lotsa__grande": {"estado": "verificada"}, "lotsa__pequeno": {"estado": "verificada"}}}
-    pedidas = []
-
-    def bajar_falso(repo, rel, **kw):
-        pedidas.append((rel, kw))
-        ruta = f"{kw['local_dir']}/{rel}"
-        os.makedirs(os.path.dirname(ruta), exist_ok=True)
-        with open(ruta, "wb") as f:
-            f.write(contenido)
-        return ruta
-
+    mundo = _Mundo(_hub_ok({"pequeno/data.arrow": contenido, "grande/data.arrow": contenido}))
     raw0, guarda0, sib0 = F.RAW_HF, F._guarda, F._siblings
     F.RAW_HF, F._guarda, F._siblings = base, lambda extra: None, lambda estado_lic, fuente: (sib, "rev")
     try:
-        omit = F.descargar_hub("lotsa", estado, datasets=[ds("grande", ["grande/state.json"]), ds("pequeno")], bajar=bajar_falso)
+        omit = F.descargar_hub("lotsa", estado, datasets=[ds("grande", ["grande/state.json"]), ds("pequeno")], http=mundo.http())
         assert [i for i, _ in omit] == ["lotsa__grande"] and "tope de LOTSA" in omit[0][1], omit
-        assert [r for r, _ in pedidas] == ["pequeno/data.arrow"], pedidas  # el de 2,1 GB no se pidio ni un byte
-        # punto 4: user_agent del proyecto, sin token, en serie
-        kw = pedidas[0][1]
-        assert kw["user_agent"] == C.UA == "quantdesk-lab-ingesta/0.1" and kw["token"] is False and kw["force_download"] is False
+        assert [p[1] for p in mundo.a(R.HUB_BASE)] == [F.url_hub(R.LOTSA_REPO, "rev", "pequeno/data.arrow")], mundo.peticiones
+        # el de 2,1 GB no se pidio ni un byte
         # total: con 9,5 GB de LOTSA ya registrados, un subconjunto de 1 GB lo llevaria por encima de 10 GB
         for i in range(19):
             F._registrar(base, f"hf/{R.LOTSA_REPO}/viejo{i}/d.arrow", {"bytes": GB // 2, "sha256": "x"})
         sib["otro/data.arrow"] = {"size": GB, "lfs": {"sha256": C.sha256_bytes(contenido)}}
         estado["datasets"]["lotsa__otro"] = {"estado": "verificada"}
-        pedidas.clear()
+        mundo.peticiones.clear()
         try:
-            F.descargar_hub("lotsa", estado, datasets=[ds("otro")], bajar=bajar_falso)
+            F.descargar_hub("lotsa", estado, datasets=[ds("otro")], http=mundo.http())
             raise AssertionError("debia parar por el tope de 10 GB de LOTSA")
         except C.TopeLotsa as e:
-            assert "10 GB" in str(e) and pedidas == []
+            assert "10 GB" in str(e) and mundo.peticiones == []
+        # revision 2 (MEDIA): un subconjunto de DOS ficheros cuyo total no cabe en el cupo, aunque el primero si cabria solo.
+        # Se reducen los topes (10 GB -> 3000 B, 2 GB -> 2000 B) para poder bajar de verdad los ficheros.
+        tot0, sub0 = C.LOTSA_TOTAL_MAX, C.LOTSA_SUBCONJUNTO_MAX
+        C.LOTSA_TOTAL_MAX, C.LOTSA_SUBCONJUNTO_MAX = 3000, 2000
+        try:
+            ctn = {"dos/a.arrow": b"a" * 800, "dos/b.arrow": b"b" * 800}
+            for k, v in ctn.items():
+                sib[k] = {"size": 800, "lfs": {"sha256": C.sha256_bytes(v)}}
+            dos = ds("dos", archivos=list(ctn))
+            estado["datasets"]["lotsa__dos"] = {"estado": "verificada"}
+
+            def con_registrado(nombre, registrado, bajado=()):
+                b = f"{tmp}/hf_{nombre}"
+                F.RAW_HF = b
+                F._registrar(b, f"hf/{R.LOTSA_REPO}/otros/x.arrow", {"bytes": registrado, "sha256": "x"})
+                for rel in bajado:  # un fichero del subconjunto ya bajado y registrado
+                    os.makedirs(os.path.dirname(f"{b}/{R.LOTSA_REPO}/{rel}"), exist_ok=True)
+                    with open(f"{b}/{R.LOTSA_REPO}/{rel}", "wb") as f:
+                        f.write(ctn[rel])
+                    F._registrar(b, f"hf/{R.LOTSA_REPO}/{rel}", {"bytes": 800, "sha256": C.sha256_bytes(ctn[rel])})
+                return b
+
+            b = con_registrado("tope_a", 1500)  # 1500 + 800 = 2300 <= 3000 (el 1.er fichero cabe), 1500 + 1600 = 3100 > 3000
+            m = _Mundo(_hub_ok(ctn))
+            try:
+                F.descargar_hub("lotsa", estado, datasets=[dos], http=m.http())
+                raise AssertionError("el subconjunto entero (3100 B) no cabe en 3000 B: debia parar antes del primer fichero")
+            except C.TopeLotsa:
+                assert m.peticiones == [] and not os.path.exists(f"{b}/{R.LOTSA_REPO}/dos"), "ni un byte del subconjunto"
+            b = con_registrado("tope_b", 1000)  # 1000 + 1600 = 2600 <= 3000: cabe y se bajan los dos
+            m = _Mundo(_hub_ok(ctn))
+            assert F.descargar_hub("lotsa", estado, datasets=[dos], http=m.http()) == []
+            assert len(m.a(R.HUB_BASE)) == 2 and F.bytes_lotsa_en_manifiesto() == 1000 + 1600
+            # solo cuenta lo PENDIENTE: con a.arrow ya bajado (1000 + 800 registrados) y b pendiente (800) son 2600; contarlo dos
+            # veces (3400) bloquearia sin motivo
+            b = con_registrado("tope_c", 1000, bajado=["dos/a.arrow"])
+            m = _Mundo(_hub_ok(ctn))
+            assert F.descargar_hub("lotsa", estado, datasets=[dos], http=m.http()) == []
+            assert [p[1] for p in m.a(R.HUB_BASE)] == [F.url_hub(R.LOTSA_REPO, "rev", "dos/b.arrow")], m.peticiones
+        finally:
+            C.LOTSA_TOTAL_MAX, C.LOTSA_SUBCONJUNTO_MAX = tot0, sub0
     finally:
         F.RAW_HF, F._guarda, F._siblings = raw0, guarda0, sib0
 
 
-def t_hf_reintentos():
-    """Punto 4: el envoltorio reintenta (3 reintentos), respeta Retry-After de la excepcion HTTP y no reintenta un 4xx."""
-    class Resp:
-        def __init__(self, st, ra):
-            self.status_code, self.headers = st, ({"Retry-After": ra} if ra else {})
+def t_hub_red(tmp):
+    """Punto 4 (revision 2): el Hub se descarga con GET propios y la MISMA politica que Binance: User-Agent del proyecto, ritmo de 1
+    peticion/s por host (tambien en las redirecciones al CDN), 3 reintentos con espera exponencial, Retry-After, URL fijada a una
+    revision, tamano y SHA-256 frente a lo que declara el Hub y rename atomico. Todo con un transporte falso, sin red."""
+    contenido = bytes(range(256)) * 20  # 5120 bytes
+    h = C.sha256_bytes(contenido)
+    rel = "fino/data.arrow"
+    d = {"id": "lotsa__fino", "fuente": "lotsa", "repo": R.LOTSA_REPO, "nombre": "fino", "archivos": [rel], "extras": ["fino/dos.arrow"]}
+    s = {"size": len(contenido), "lfs": {"sha256": h}}
+    clave = f"hf/{R.LOTSA_REPO}/{rel}"
+    url = F.url_hub(R.LOTSA_REPO, "rev1", rel)
+    assert url == "https://huggingface.co/datasets/Salesforce/lotsa_data/resolve/rev1/fino/data.arrow", url
+    base = f"{tmp}/hub_red"
+    destino = f"{base}/{R.LOTSA_REPO}/{rel}"
+    raw0, guarda0, sib0 = F.RAW_HF, F._guarda, F._siblings
+    F.RAW_HF, F._guarda = base, lambda extra: None
 
-    class ErrHttp(OSError):
-        def __init__(self, st, ra=None):
-            super().__init__(f"HTTP {st}")
-            self.response = Resp(st, ra)
-
-    n, esperas = [0], []
-
-    def dos_429():
-        n[0] += 1
-        if n[0] <= 2:
-            raise ErrHttp(429, "7")
-        return "ok"
-
-    assert F.con_reintentos(dos_429, dormir=esperas.append) == "ok" and esperas == [7.0, 7.0], esperas
-    n[0], esperas[:] = 0, []
-
-    def siempre_503():
-        n[0] += 1
-        raise ErrHttp(503)
+    def limpio():
+        shutil.rmtree(base, ignore_errors=True)
 
     try:
-        F.con_reintentos(siempre_503, dormir=esperas.append)
-        raise AssertionError("debia agotar los reintentos")
-    except ErrHttp:
-        assert n[0] == C.REINTENTOS + 1 and esperas == [2.0, 4.0, 8.0], (n, esperas)
-    n[0] = 0
+        # a) 429 con Retry-After dos veces y luego el exito (con redireccion al CDN): espera 7 s, 7 s; 3 GET al Hub
+        limpio()
+        n = [0]
 
-    def cuatrocientoscuatro():
-        n[0] += 1
-        raise ErrHttp(404)
+        def srv_429(m, req):
+            if req.full_url.startswith(R.HUB_BASE):
+                n[0] += 1
+                if n[0] <= 2:
+                    raise _http_error(req.full_url, 429, {"Retry-After": "7"})
+                raise _http_error(req.full_url, 302, {"Location": CDN})
+            return _Resp(contenido)
 
+        m = _Mundo(srv_429)
+        F._bajar_hub(d, rel, s, "rev1", m.http())
+        assert m.esperas == [7.0, 7.0], m.esperas  # Retry-After (7) manda sobre la espera exponencial (2, 4)
+        assert len(m.a(R.HUB_BASE)) == 3 and len(m.a("https://cdn.hf.test/")) == 1, m.peticiones
+        assert all(p[2]["user-agent"] == C.UA == "quantdesk-lab-ingesta/0.1" for p in m.peticiones)  # tambien en el CDN
+        _ritmo_ok(m)
+        assert open(destino, "rb").read() == contenido and not os.path.exists(destino + ".dl")
+        e = F.manifiesto_crudo(base)["archivos"][clave]
+        assert e["url"] == url and e["revision"] == "rev1" and e["sha256"] == h and e["bytes"] == len(contenido), e
+        assert all("SECRETA" not in u for u, _ in C.PETICIONES), "la URL firmada del CDN no se registra"
+        # g) idempotencia: con tamano y hash registrados no hay ni una peticion
+        m = _Mundo(srv_429)
+        F._bajar_hub(d, rel, s, "rev1", m.http())
+        assert m.peticiones == []
+
+        # b) 503 sin parar en el Hub: exactamente 3 reintentos (4 intentos), esperas 2, 4, 8; nada queda en disco ni en el manifiesto
+        limpio()
+        m = _Mundo(lambda m, req: (_ for _ in ()).throw(_http_error(req.full_url, 503)))
+        try:
+            F._bajar_hub(d, rel, s, "rev1", m.http())
+            raise AssertionError("debia agotar los reintentos")
+        except C.ErrorRed as e:
+            assert "4 intentos" in str(e), e
+        assert len(m.a(R.HUB_BASE)) == C.REINTENTOS + 1 == 4 and m.esperas == [2.0, 4.0, 8.0], (len(m.peticiones), m.esperas)
+        _ritmo_ok(m)
+        assert not os.path.exists(destino) and not os.path.exists(destino + ".dl") and F.manifiesto_crudo(base)["archivos"] == {}
+        # ... y descargar_hub lo trata como no bajado (se documenta) y no sigue con el resto del subconjunto
+        F._siblings = lambda estado_lic, fuente: ({rel: s, "fino/dos.arrow": s}, "rev1")
+        m = _Mundo(lambda m, req: (_ for _ in ()).throw(_http_error(req.full_url, 503)))
+        omit = F.descargar_hub("lotsa", {"datasets": {"lotsa__fino": {"estado": "verificada"}}}, datasets=[d], http=m.http())
+        assert [i for i, _ in omit] == [f"lotsa__fino:{rel}"] and len(m.a(R.HUB_BASE)) == 4, (omit, len(m.peticiones))
+        F._siblings = sib0
+
+        # c) el 503 llega del CDN tras la redireccion: cada intento son 2 GET (Hub + CDN) y nunca hay mas de 4 intentos
+        limpio()
+
+        def srv_cdn_503(m, req):
+            if req.full_url.startswith(R.HUB_BASE):
+                raise _http_error(req.full_url, 302, {"Location": CDN})
+            raise _http_error(req.full_url, 503)
+
+        m = _Mundo(srv_cdn_503)
+        try:
+            F._bajar_hub(d, rel, s, "rev1", m.http())
+            raise AssertionError("debia agotar los reintentos")
+        except C.ErrorRed:
+            pass
+        assert len(m.a(R.HUB_BASE)) == 4 and len(m.a("https://cdn.hf.test/")) == 4 and m.esperas == [2.0, 4.0, 8.0], m.peticiones
+        _ritmo_ok(m)
+
+        # d) cuerpo truncado (http.client no avisa): cuenta como fallo del intento y el siguiente reanuda con Range
+        limpio()
+        n = [0]
+
+        def srv_trunc(m, req):
+            if req.full_url.startswith(R.HUB_BASE):
+                raise _http_error(req.full_url, 302, {"Location": CDN})
+            n[0] += 1
+            if n[0] == 1:
+                return _Resp(contenido[:3000], headers={"Content-Length": str(len(contenido))})
+            assert req.headers.get("Range") == "bytes=3000-", req.headers
+            return _Resp(contenido[3000:], 206, {"Content-Length": str(len(contenido) - 3000)})
+
+        m = _Mundo(srv_trunc)
+        F._bajar_hub(d, rel, s, "rev1", m.http())
+        assert open(destino, "rb").read() == contenido and m.esperas == [2.0], m.esperas
+
+        # i) una redireccion (relativa) dentro del MISMO host, Hub -> Hub -> CDN: cada salto espera su turno de 1 s
+        limpio()
+
+        def srv_doble(m, req):
+            u = req.full_url
+            if u == url:
+                raise _http_error(u, 302, {"Location": "/api/resolve-cache/x"})
+            if u.startswith(R.HUB_BASE):
+                raise _http_error(u, 302, {"Location": CDN})
+            return _Resp(contenido)
+
+        m = _Mundo(srv_doble)
+        F._bajar_hub(d, rel, s, "rev1", m.http())
+        hub = m.a(R.HUB_BASE)
+        assert len(hub) == 2 and hub[1][1] == R.HUB_BASE + "/api/resolve-cache/x" and hub[1][0] - hub[0][0] >= 1.0, m.peticiones
+        _ritmo_ok(m)
+
+        # e) contenido que no casa con lo que declara el Hub: se rechaza y no queda nada (ni destino ni temporal ni manifiesto)
+        for malo, motivo in ((bytes([contenido[0] ^ 1]) + contenido[1:], "sha256"), (contenido + b"!", "bytes descargados")):
+            limpio()
+            m = _Mundo(_hub_ok({rel: malo}))
+            try:
+                F._bajar_hub(d, rel, s, "rev1", m.http())
+                raise AssertionError("debia rechazar un contenido que no casa con el Hub")
+            except RuntimeError as err:
+                assert motivo in str(err), err
+            assert not os.path.exists(destino) and not os.path.exists(destino + ".dl") and F.manifiesto_crudo(base)["archivos"] == {}
+        limpio()
+        pequeno = b'{"a": 1}'  # fichero sin LFS: se verifica con el git blob id
+        s2 = {"size": len(pequeno), "blobId": C.git_blob_sha1(pequeno)}
+        F._bajar_hub(d, "fino/dos.arrow", s2, "rev1", _Mundo(_hub_ok({"fino/dos.arrow": pequeno})).http())
+        assert F.manifiesto_crudo(base)["archivos"][f"hf/{R.LOTSA_REPO}/fino/dos.arrow"]["verificado_contra"] == "git blob id del Hub"
+        try:
+            F._bajar_hub(d, "fino/tres.arrow", {"size": 3}, "rev1", _Mundo(_hub_ok({})).http())
+            raise AssertionError("sin hash declarado por el Hub no se puede verificar")
+        except RuntimeError:
+            pass
+
+        # f) un 404 no se reintenta; h) una redireccion que no es https tampoco
+        limpio()
+        m = _Mundo(lambda m, req: (_ for _ in ()).throw(_http_error(req.full_url, 404)))
+        try:
+            F._bajar_hub(d, rel, s, "rev1", m.http())
+            raise AssertionError("404")
+        except C.ErrorRed:
+            assert len(m.peticiones) == 1 and m.esperas == []
+        m = _Mundo(lambda m, req: (_ for _ in ()).throw(_http_error(req.full_url, 302, {"Location": "http://cdn.hf.test/x"})))
+        try:
+            F._bajar_hub(d, rel, s, "rev1", m.http())
+            raise AssertionError("redireccion a http")
+        except C.ErrorRed as err:
+            assert "https" in str(err) and len(m.peticiones) == 1
+        # Retry-After en fecha HTTP, ademas de en segundos
+        t0 = dt.datetime(2026, 11, 8, 10, 0, 0, tzinfo=dt.timezone.utc)
+        assert C.parse_retry_after("Sun, 08 Nov 2026 10:00:30 GMT", t0) == 30.0
+        assert C.parse_retry_after("Sun, 08 Nov 2026 09:59:00 GMT", t0) == 0.0 and C.parse_retry_after("-3") == 0.0
+        assert C.parse_retry_after("ni idea", t0) is None
+    finally:
+        F.RAW_HF, F._guarda, F._siblings = raw0, guarda0, sib0
+        limpio()
+
+
+def t_sin_hf_hub():
+    """Punto 4: ningun modulo de la ingesta usa huggingface_hub para la red (hf_hub_download, snapshot_download, HfApi...): solo
+    scan_cache_dir (local) y la version."""
+    import ast
+
+    aqui = os.path.dirname(os.path.abspath(__file__))
+    n = 0
+    for ruta in glob.glob(aqui + "/*.py") + [os.path.join(os.path.dirname(aqui), "ingesta_publica.py")]:
+        if os.path.basename(ruta) == "selftests.py":
+            continue
+        n += 1
+        arbol = ast.parse(open(ruta, encoding="utf-8").read())
+        for nodo in ast.walk(arbol):
+            if isinstance(nodo, ast.ImportFrom) and (nodo.module or "").split(".")[0] == "huggingface_hub":
+                assert {a.name for a in nodo.names} <= {"scan_cache_dir"}, (ruta, [a.name for a in nodo.names])
+            if isinstance(nodo, ast.Attribute) and isinstance(nodo.value, ast.Name) and nodo.value.id == "huggingface_hub":
+                assert nodo.attr == "__version__", (ruta, nodo.attr)
+    assert n >= 8, n
+
+
+def t_guarda_incremental(tmp):
+    """Punto 2 (revision 2): la guarda de 100 GB se aplica ANTES de CADA lote con los bytes REALES ya escritos. Una escritura que
+    supera el presupuesto a mitad (la reserva previa pasa, el parquet real no) para y no deja ningun parquet parcial."""
+    GB = 10**9
+    libre = lambda u: {"C:/": 5 * GB, "E:/": 300 * GB}[u]  # noqa: E731
+    C.guarda_lote(40 * GB, 5 * GB, 10 * GB, 5 * GB, libre)
+    assert C.guarda_lote(80 * GB, 5 * GB, 10 * GB, 5 * GB, libre)["total_previsto_bytes"] == 100 * GB  # justo en el limite
+    for args, exc in (((80 * GB + 1, 5 * GB, 10 * GB, 5 * GB), C.PresupuestoExcedido),  # un byte mas
+                      ((0, 140 * GB, 0, 0), C.ParadaDisco)):  # E: quedaria bajo 150 GiB DESPUES de escribir el lote
+        try:
+            C.guarda_lote(*args, libre)
+            raise AssertionError(args)
+        except exc:
+            pass
     try:
-        F.con_reintentos(cuatrocientoscuatro, dormir=lambda s: None)
-    except ErrHttp:
-        assert n[0] == 1  # un 404 no se reintenta
-    n[0] = 0
-
-    def caida():
-        n[0] += 1
-        if n[0] == 1:
-            raise ConnectionResetError("cerrada")
-        return "ok"
-
-    assert F.con_reintentos(caida, dormir=lambda s: None) == "ok" and n[0] == 2
-    try:
-        F.con_reintentos(lambda: (_ for _ in ()).throw(ValueError("no es de red")), dormir=lambda s: None)
-        raise AssertionError("un ValueError no se reintenta")
-    except ValueError:
+        C.guarda_lote(0, 1, 0, 0, lambda u: {"C:/": C.C_LIBRE_MIN - 1, "E:/": 300 * GB}[u])
+        raise AssertionError("C: bajo su suelo")
+    except C.ParadaDisco:
         pass
+
+    # escritura real con series sinteticas (valores aleatorios: incompresibles) en lotes de 1200 filas
+    e = entrada(R.NO_FIN, id_="chronos__inc")
+    rng = np.random.default_rng(7)
+    sint = [LEC.Serie(f"S{i:02d}", diarias(ms(2010, 1, 1), 400)[0], rng.random(400)) for i in range(12)]
+    orig_series, orig_lote, cache0 = LEC.series, FI.FILAS_POR_LOTE, C.bytes_cache_hf
+    LEC.series, FI.FILAS_POR_LOTE = (lambda entry, con_ts=True: iter(sint)), 1000
+    C.bytes_cache_hf = lambda *a, **k: 0  # el presupuesto del test es de bytes: la cache real de HF no entra en la cuenta
+    try:
+        an = FI.analizar(e, CORTE, AHORA)
+        lados = {r["clave"]: "train" for r in an["registros"]}
+        salida = f"{tmp}/inc"
+        reg = []
+        man = FI.procesar_dataset(e, an, lados, salida, "2016-10-01", {}, [{"bytes": 1000}], guarda=_sin_guarda,
+                                  guarda_lote=lambda escrito, cota, usado, cache: reg.append((escrito, cota)) or {})
+        assert len(reg) == 5, reg  # 4 lotes de 1200 filas + el control de los pies al cerrar
+        assert reg[0][0] == 0 and all(reg[i][0] < reg[i + 1][0] for i in range(4)), reg  # bytes REALES, crecientes
+        assert all(reg[i + 1][0] - reg[i][0] <= reg[i][1] for i in range(4)), reg  # la cota es una cota: cada lote cabe en ella
+        total = man["ficheros"][0]["bytes"]
+        assert reg[4][0] <= total <= reg[4][0] + reg[4][1], (reg[4], total)  # lo escrito + los pies cabe en lo ultimo comprobado
+
+        # la reserva previa (2 x crudo = 2000 B) pasa; en el 3.er lote, lo ya escrito mas su cota supera el presupuesto: PARA
+        pres = reg[2][0] + reg[2][1] - 1
+        llamadas = []
+
+        def guarda_lote(escrito, cota, usado, cache):
+            llamadas.append(escrito)
+            return C.guarda_lote(escrito, cota, usado, cache, libre_fn=libre, presupuesto=pres)
+
+        try:
+            FI.procesar_dataset(e, an, lados, salida, "2016-10-01", {}, [{"bytes": 1000}], usado_previo=0,
+                                guarda=lambda extra, usado, cache: C.guarda(extra, usado, cache, libre_fn=libre, presupuesto=pres),
+                                guarda_lote=guarda_lote)
+            raise AssertionError("la escritura real supera el presupuesto a mitad: debia parar")
+        except C.PresupuestoExcedido as err:
+            assert "cota del siguiente lote" in str(err), err
+        assert len(llamadas) == 3 and llamadas[0] == 0 and llamadas[2] > 0, llamadas  # paro en el 3.er lote, con bytes ya escritos
+        # ya habia 2 lotes escritos y no queda NADA: ni un parquet parcial ni manifiesto (el dataset anterior se habia reemplazado)
+        assert os.listdir(salida) == [] and glob.glob(f"{salida}/**/*.parquet", recursive=True) == [], os.listdir(salida)
+
+        # sin dataset anterior: tras una parada a mitad (presupuesto o suelo de disco) o un fallo de lectura no queda ni un parquet
+        def lectura_rota(entry, con_ts=True):
+            yield from sint[:7]
+            raise OSError("lectura rota a mitad")
+
+        for nombre, falla in (("presupuesto", C.PresupuestoExcedido("sin presupuesto")), ("disco", C.ParadaDisco("sin disco")),
+                              ("lectura", None)):
+            salida2 = f"{tmp}/inc_{nombre}"
+            n = [0]
+
+            def gl(escrito, cota, usado, cache, falla=falla):
+                n[0] += 1
+                if falla is not None and n[0] == 2:
+                    raise falla
+                return {}
+
+            if falla is None:
+                LEC.series = lectura_rota
+            try:
+                FI.procesar_dataset(e, an, lados, salida2, "2016-10-01", {}, [], guarda=_sin_guarda, guarda_lote=gl)
+                raise AssertionError(nombre)
+            except (C.PresupuestoExcedido, C.ParadaDisco, OSError):
+                pass
+            assert glob.glob(f"{salida2}/**/*.parquet", recursive=True) == [] and os.listdir(salida2) == [], (nombre, os.listdir(salida2))
+            LEC.series = lambda entry, con_ts=True: iter(sint)
+        # el borrado reintenta si un fichero esta un instante en uso (Windows: antivirus, indexador) y avisa si no lo consigue
+        rmtree0, dormidos, fallos = shutil.rmtree, [], [0]
+
+        def rmtree_ocupado(ruta, ignore_errors=False):
+            fallos[0] += 1
+            if fallos[0] > 2:  # las dos primeras veces "no puede" borrar
+                rmtree0(ruta, ignore_errors=ignore_errors)
+
+        os.makedirs(f"{tmp}/ocupada/x")
+        shutil.rmtree = rmtree_ocupado
+        try:
+            assert FI.borrar_carpeta(f"{tmp}/ocupada", dormir=dormidos.append) and dormidos == [0.5, 1.0] and not os.path.exists(f"{tmp}/ocupada")
+            os.makedirs(f"{tmp}/ocupada/x")
+            fallos[0] = -100  # nunca puede
+            assert not FI.borrar_carpeta(f"{tmp}/ocupada", intentos=3, dormir=lambda s: None) and os.path.isdir(f"{tmp}/ocupada")
+        finally:
+            shutil.rmtree = rmtree0
+    finally:
+        LEC.series, FI.FILAS_POR_LOTE, C.bytes_cache_hf = orig_series, orig_lote, cache0
+
+
+def t_procesar_parada():
+    """Punto 5 (revision 2, BAJA): 'procesar' ante PresupuestoExcedido o ParadaDisco da 'PARADA: ...' y sale 3, sin traceback."""
+    import argparse
+    import contextlib
+    import importlib
+
+    ip = importlib.import_module("ingesta_publica")
+    correr0, estado0 = FI.correr, ip._estado_licencias
+    ip._estado_licencias = lambda: {"datasets": {}}
+    try:
+        for exc in (C.PresupuestoExcedido("101.00 GB superan 100 GB"), C.ParadaDisco("E: sin espacio"), C.CacheNoMedible("cache")):
+            def correr_falso(*a, exc=exc, **k):
+                raise exc
+
+            FI.correr = correr_falso
+            for llamada in (lambda: ip.cmd_procesar(argparse.Namespace(corte="2016-10-01")), lambda: ip.main(["procesar"])):
+                salida = io.StringIO()
+                with contextlib.redirect_stdout(salida):
+                    rc = llamada()
+                assert rc == 3 and salida.getvalue().startswith("PARADA: ") and str(exc) in salida.getvalue(), (rc, salida.getvalue())
+    finally:
+        FI.correr, ip._estado_licencias = correr0, estado0
 
 
 def t_verificar(tmp):
@@ -637,12 +996,13 @@ def correr():
     os.makedirs(tmp)
     try:
         for nombre, f in (("decidir", t_decidir), ("particion", t_particion), ("guarda", t_guarda), ("red", t_red),
-                          ("hf_reintentos", t_hf_reintentos)):
+                          ("sin_hf_hub", t_sin_hf_hub), ("procesar_parada", t_procesar_parada)):
             f()
             print(f"  ok {nombre}")
         for nombre, f in (("lectores", t_lectores), ("licencias", t_licencias), ("extremo_a_extremo", t_extremo_a_extremo),
-                          ("binance_idempotencia", t_binance_idempotencia), ("cache_hf", t_cache_hf),
-                          ("topes_lotsa", t_topes_lotsa), ("verificar", t_verificar)):
+                          ("guarda_incremental", t_guarda_incremental), ("binance_idempotencia", t_binance_idempotencia),
+                          ("cache_hf", t_cache_hf), ("topes_lotsa", t_topes_lotsa), ("hub_red", t_hub_red),
+                          ("verificar", t_verificar)):
             f(tmp)
             print(f"  ok {nombre}")
     finally:

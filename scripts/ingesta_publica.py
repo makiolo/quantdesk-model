@@ -11,7 +11,13 @@ Orden obligatorio: licencias -> descargar -> procesar -> informe. Sin licencia v
 
 Almacen (fuera de Git, todo bajo E:/quantdesk-lab): data/public/<fuente>/ (crudo), datasets/TI-13-PUB/<dataset>/ (parquet +
 manifest.json), runs/TI-13-PUB/ (estado). El filtro se reaplica sobre lo crudo con otro --corte sin volver a descargar.
-Solo biblioteca estandar mas lo instalado en el .venv (pyarrow, pandas, numpy, huggingface-hub).
+Solo biblioteca estandar mas lo instalado en el .venv (pyarrow, pandas, numpy; huggingface-hub solo para medir su cache y su version).
+
+Red: todo GET (Hub incluido) sale por un unico cliente: User-Agent quantdesk-lab-ingesta/0.1, 1 peticion/s por host, 3 reintentos
+con espera exponencial y Retry-After. Disco: 100 GB para TI-13-PUB; C: >= 2 GiB y E: >= 150 GiB libres.
+
+Codigos de salida: 0 ok; 1 --verificar con problemas; 2 uso incorrecto o BLOQUEADO (sin licencias.json); 3 PARADA por el presupuesto de
+100 GB, un suelo de C:/E: o una cache no medible (mensaje 'PARADA: ...'; lo ya escrito queda consistente: sin parquet parcial).
 """
 from __future__ import annotations
 
@@ -25,9 +31,6 @@ sys.path.insert(0, HERE)
 from setup_env import LAB_ENV  # noqa: E402  (cachés y temporales del laboratorio: HF_HOME, TMPDIR, TEMP...)
 
 os.environ.update(LAB_ENV)  # el sitecustomize del venv ya lo hace; esto cubre un lanzamiento con otro interprete
-# Descargas del Hub por HTTP normal, en serie y con el User-Agent del proyecto: sin el transporte Xet (hf_xet), que abre sus
-# propias conexiones y no da control sobre el ritmo ni la cabecera. Debe fijarse antes de importar huggingface_hub.
-os.environ["HF_HUB_DISABLE_XET"] = "1"
 
 from ingesta_publica_lib import common as C  # noqa: E402
 from ingesta_publica_lib import registro as R  # noqa: E402
@@ -75,7 +78,11 @@ def cmd_procesar(a) -> int:
     from ingesta_publica_lib import filtro
 
     estado = _estado_licencias()
-    r = filtro.correr(a.corte, estado, C.DATASETS, informes_dir=C.INFORMES_FUERA)
+    try:
+        r = filtro.correr(a.corte, estado, C.DATASETS, informes_dir=C.INFORMES_FUERA)
+    except (C.ParadaDisco, C.PresupuestoExcedido) as e:  # la guarda de 100 GB / suelos de disco: parada controlada, no traceback
+        print(f"PARADA: {e}")
+        return 3
     p = r["resumen"]["particion"]["en_parquet"]
     print(f"procesar: {len(r['manifiestos'])} datasets, corte {a.corte}; en los parquet escritos: series_id en train y val "
           f"{p['ids_en_ambos_lados']}, contenidos en train y val {p['contenidos_en_ambos_lados']}")

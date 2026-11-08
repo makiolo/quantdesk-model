@@ -136,16 +136,30 @@ def informe_md(mans: dict, resumen: dict, lic: dict, corte: str) -> list:
         mayor = max(lotsa, key=lotsa.get)
         L_ += ["", f"- Topes de LOTSA (se comprueban antes de cada descarga con el tamano que declara el Hub): total {_gb(sum(lotsa.values()))} "
                f"de {_gb(C.LOTSA_TOTAL_MAX)}; mayor subconjunto `{mayor}` {_mb(lotsa[mayor])} de {_gb(C.LOTSA_SUBCONJUNTO_MAX)}."]
-    L_ += ["", "## Limites conocidos de las descargas", "",
-           "- shortcut: huggingface_hub reintenta por dentro (hasta 5 veces, espera de 1 a 8 s, Retry-After solo dentro de su ciclo) y no "
-           "deja configurarlo; `fuentes.con_reintentos` anade 3 reintentos externos con espera exponencial y el Retry-After de la "
-           "excepcion HTTP, en lugar de un transporte propio. Subir a GET propios (como Binance) si hiciera falta control total del ritmo.",
-           "- Desde el intento 2 las descargas del Hub van en serie, con `user_agent=quantdesk-lab-ingesta/0.1` (la biblioteca lo antepone a "
-           "su cadena `hf_hub/...; python/...`) y con el transporte Xet desactivado (`HF_HUB_DISABLE_XET=1`). Los ficheros del Hub que "
-           "ya estaban descargados (intento 1) se bajaron con el agente por defecto de la biblioteca y no se repitieron; su integridad "
-           "consta por el SHA-256 LFS del Hub (tabla de hashes).",
-           "- Los GET propios (APIs de licencias, Zenodo, GitHub, Binance) usan el User-Agent del proyecto, 1 peticion/s por host, 3 "
-           "reintentos con espera exponencial y Retry-After.", "",
+    L_ += ["", "## Politica de red, guardas de disco y migracion", "",
+           "- Red: un unico cliente HTTP (`common.http_get`, biblioteca estandar) para TODA la red, el Hub de Hugging Face incluido: "
+           f"User-Agent `{C.UA}`, 1 peticion por segundo y host (tambien en cada salto de una redireccion, p. ej. del Hub a su CDN), "
+           "3 reintentos tras el primer intento (4 intentos como maximo por fichero) con espera exponencial 2, 4, 8 s y `Retry-After` "
+           "(en segundos o fecha HTTP, tope 60 s), descarga a un temporal reanudable (`Range`), cuerpo truncado = intento fallido y "
+           "rename atomico solo tras verificar.",
+           "- Hub: desde el intento 3 no se usa `hf_hub_download` ni `HfApi` (`huggingface_hub` reintenta por dentro y no es configurable). "
+           "Cada fichero se pide a `https://huggingface.co/datasets/<repo>/resolve/<commit sha>/<ruta>`, fijada a la revision de arriba "
+           "(el commit que da la API del Hub, registrado en cada entrada del manifiesto), y se verifica tamano y SHA-256 LFS (o git blob id "
+           "en los ficheros pequenos) contra lo que declara esa API antes de moverlo a su sitio. Los tamanos y metadatos de la API "
+           "(`/api/datasets/<repo>?blobs=true`) se pidieron con ese mismo cliente en `licencias` (evidencia con su SHA-256); "
+           "`huggingface_hub` solo se usa para medir su cache local (`scan_cache_dir`, sin red) y anotar su version.",
+           "- Migracion: ninguna. La ruta del crudo no cambia (`E:/quantdesk-lab/data/public/hf/<repo>/<ruta>`); los ficheros que los "
+           "intentos 1 y 2 bajaron con `hf_hub_download` (los del intento 1 con el agente por defecto de la biblioteca) conservan su entrada "
+           "y su SHA-256 en `raw_manifest.json` y no se vuelven a pedir (la idempotencia es por tamano y hash), y `--verificar` los "
+           "recalcula. La cache de `huggingface_hub` (`E:/quantdesk-lab/cache/hf`) ya no recibe nada nuevo, pero la guarda sigue contando "
+           "lo que contiene (cifra de la seccion Espacio). Los metadatos `.cache/huggingface/` que dejo `hf_hub_download` dentro de cada "
+           "carpeta del crudo quedan sin uso (86 ficheros y 9,7 KB medidos el 2026-11-08, sin ningun `.incomplete`; no son datos).",
+           "- Guardas de disco (100 GB para todo TI-13-PUB; C: >= 2 GiB y E: >= 150 GiB libres, comprobados tras la escritura prevista): "
+           "antes de bajar un subconjunto entero y de cada fichero; antes de procesar un dataset (reserva de 2 x su crudo) y, ademas, ANTES "
+           "DE CADA LOTE de parquet, con los bytes reales ya escritos + una cota superior del lote + manifiestos + cache de HF. Si salta, "
+           "`procesar` imprime `PARADA: ...` y sale 3, tras cerrar los writers y borrar la carpeta del dataset (sin parquet parcial ni "
+           "manifiesto; el borrado reintenta si Windows tiene un fichero en uso un instante y avisa si no lo consigue).",
+           "- LOTSA: el tope de 10 GB se reserva con el tamano declarado de lo que falta del subconjunto ANTES de bajar su primer fichero.", "",
            "## Datasets obtenidos", "",
            "| dataset | fuente | series (tronco / adaptadores) | puntos tronco / adaptadores | rango (UTC) | frecuencia | bytes crudo | bytes procesado | descarga (UTC) | SHA-256 del dataset |",
            "|---|---|---|---|---|---|---|---|---|---|"]

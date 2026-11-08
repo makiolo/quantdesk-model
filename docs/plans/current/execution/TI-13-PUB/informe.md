@@ -1,6 +1,6 @@
 # TI-13-PUB: informe de ingesta publica
 
-- Generado: 2026-11-08T11:53:59Z (UTC). `--corte`: **2016-10-01**. Sal/semilla de la particion: `TI-13-PUB/SPRINT-01/v1` (val 10%).
+- Generado: 2026-11-08T13:01:57Z (UTC). `--corte`: **2016-10-01**. Sal/semilla de la particion: `TI-13-PUB/SPRINT-01/v1` (val 10%).
 - Versiones: python 3.12.3, pyarrow 26.0.1, pandas 3.1.1, numpy 2.5.4, huggingface-hub 2.4.0. Motor del entorno: quantdesk 69fdb39d (commit `69fdb39d0b67969dbdafa77f5da656511342f175`; no se usa en esta ingesta).
 - Revisiones fijadas del Hub: chronos_datasets `eeecad0b82a8c237e212ce6f8d1abecb513e2cec`, lotsa_data `8191fd29eb5cf906ec55effca44d8059888b615d`.
 - Formato procesado (provisional hasta TI-03-FMT): parquet zstd, columnas `series_id` (str, `dataset/id`), `ts` (timestamp ms UTC), `value` (float64; en cripto = cierre) y, en cripto, `open, high, low, close, volume, quote_volume, n_trades`. Un fichero por `<parte>.<split>.parquet` (parte = `tronco` o `adaptadores`; split = `train` o `val`) y un `manifest.json` por dataset.
@@ -34,11 +34,13 @@ Los datasets y manifiestos estan en `E:/quantdesk-lab/datasets/TI-13-PUB/<datase
 
 - Topes de LOTSA (se comprueban antes de cada descarga con el tamano que declara el Hub): total 0.327 GB de 10.000 GB; mayor subconjunto `temperature_rain_with_missing` 90.0 MB de 2.000 GB.
 
-## Limites conocidos de las descargas
+## Politica de red, guardas de disco y migracion
 
-- shortcut: huggingface_hub reintenta por dentro (hasta 5 veces, espera de 1 a 8 s, Retry-After solo dentro de su ciclo) y no deja configurarlo; `fuentes.con_reintentos` anade 3 reintentos externos con espera exponencial y el Retry-After de la excepcion HTTP, en lugar de un transporte propio. Subir a GET propios (como Binance) si hiciera falta control total del ritmo.
-- Desde el intento 2 las descargas del Hub van en serie, con `user_agent=quantdesk-lab-ingesta/0.1` (la biblioteca lo antepone a su cadena `hf_hub/...; python/...`) y con el transporte Xet desactivado (`HF_HUB_DISABLE_XET=1`). Los ficheros del Hub que ya estaban descargados (intento 1) se bajaron con el agente por defecto de la biblioteca y no se repitieron; su integridad consta por el SHA-256 LFS del Hub (tabla de hashes).
-- Los GET propios (APIs de licencias, Zenodo, GitHub, Binance) usan el User-Agent del proyecto, 1 peticion/s por host, 3 reintentos con espera exponencial y Retry-After.
+- Red: un unico cliente HTTP (`common.http_get`, biblioteca estandar) para TODA la red, el Hub de Hugging Face incluido: User-Agent `quantdesk-lab-ingesta/0.1`, 1 peticion por segundo y host (tambien en cada salto de una redireccion, p. ej. del Hub a su CDN), 3 reintentos tras el primer intento (4 intentos como maximo por fichero) con espera exponencial 2, 4, 8 s y `Retry-After` (en segundos o fecha HTTP, tope 60 s), descarga a un temporal reanudable (`Range`), cuerpo truncado = intento fallido y rename atomico solo tras verificar.
+- Hub: desde el intento 3 no se usa `hf_hub_download` ni `HfApi` (`huggingface_hub` reintenta por dentro y no es configurable). Cada fichero se pide a `https://huggingface.co/datasets/<repo>/resolve/<commit sha>/<ruta>`, fijada a la revision de arriba (el commit que da la API del Hub, registrado en cada entrada del manifiesto), y se verifica tamano y SHA-256 LFS (o git blob id en los ficheros pequenos) contra lo que declara esa API antes de moverlo a su sitio. Los tamanos y metadatos de la API (`/api/datasets/<repo>?blobs=true`) se pidieron con ese mismo cliente en `licencias` (evidencia con su SHA-256); `huggingface_hub` solo se usa para medir su cache local (`scan_cache_dir`, sin red) y anotar su version.
+- Migracion: ninguna. La ruta del crudo no cambia (`E:/quantdesk-lab/data/public/hf/<repo>/<ruta>`); los ficheros que los intentos 1 y 2 bajaron con `hf_hub_download` (los del intento 1 con el agente por defecto de la biblioteca) conservan su entrada y su SHA-256 en `raw_manifest.json` y no se vuelven a pedir (la idempotencia es por tamano y hash), y `--verificar` los recalcula. La cache de `huggingface_hub` (`E:/quantdesk-lab/cache/hf`) ya no recibe nada nuevo, pero la guarda sigue contando lo que contiene (cifra de la seccion Espacio). Los metadatos `.cache/huggingface/` que dejo `hf_hub_download` dentro de cada carpeta del crudo quedan sin uso (86 ficheros y 9,7 KB medidos el 2026-11-08, sin ningun `.incomplete`; no son datos).
+- Guardas de disco (100 GB para todo TI-13-PUB; C: >= 2 GiB y E: >= 150 GiB libres, comprobados tras la escritura prevista): antes de bajar un subconjunto entero y de cada fichero; antes de procesar un dataset (reserva de 2 x su crudo) y, ademas, ANTES DE CADA LOTE de parquet, con los bytes reales ya escritos + una cota superior del lote + manifiestos + cache de HF. Si salta, `procesar` imprime `PARADA: ...` y sale 3, tras cerrar los writers y borrar la carpeta del dataset (sin parquet parcial ni manifiesto; el borrado reintenta si Windows tiene un fichero en uso un instante y avisa si no lo consigue).
+- LOTSA: el tope de 10 GB se reserva con el tamano declarado de lo que falta del subconjunto ANTES de bajar su primer fichero.
 
 ## Datasets obtenidos
 

@@ -28,6 +28,7 @@ CRITERIO_D11 = (
 # Valores de dominio por serie que cuentan como financieros (criterio conservador: lo desconocido tambien).
 DOMINIOS_NO_FIN = {"demographic"}  # unico dominio de M4/M3/M1 claramente no economico
 
+HUB_BASE = "https://huggingface.co"
 _CHRONOS_REPO = "autogluon/chronos_datasets"
 _LOTSA_REPO = "Salesforce/lotsa_data"
 LOTSA_REPO = _LOTSA_REPO
@@ -152,10 +153,10 @@ NO_OBTENIDAS = ["stooq", "yahoo", "fred"]
 
 # Evidencias externas (id -> url). Los registros de Zenodo y las API del Hub se derivan de DATASETS.
 URL_EVIDENCIAS = {
-    "hf_chronos_api": f"https://huggingface.co/api/datasets/{_CHRONOS_REPO}?blobs=true",
-    "hf_chronos_readme": f"https://huggingface.co/datasets/{_CHRONOS_REPO}/raw/main/README.md",
-    "hf_lotsa_api": f"https://huggingface.co/api/datasets/{_LOTSA_REPO}?blobs=true",
-    "hf_lotsa_readme": f"https://huggingface.co/datasets/{_LOTSA_REPO}/raw/main/README.md",
+    "hf_chronos_api": f"{HUB_BASE}/api/datasets/{_CHRONOS_REPO}?blobs=true",
+    "hf_chronos_readme": f"{HUB_BASE}/datasets/{_CHRONOS_REPO}/raw/main/README.md",
+    "hf_lotsa_api": f"{HUB_BASE}/api/datasets/{_LOTSA_REPO}?blobs=true",
+    "hf_lotsa_readme": f"{HUB_BASE}/datasets/{_LOTSA_REPO}/raw/main/README.md",
     "github_m4_licencia": "https://api.github.com/repos/Mcompetitions/M4-methods/license",
     "binance_terms": "https://raw.githubusercontent.com/binance/binance-public-data/master/TERMS_AND_CONDITIONS.md",
     "binance_readme": "https://raw.githubusercontent.com/binance/binance-public-data/master/README.md",
