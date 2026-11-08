@@ -144,4 +144,21 @@ dd43fa94, HANDOFF relevo 1 (`674344b`). Ningún hijo vivo; ningún WIP sin commi
 | TI-13-PUB intento 3 | autor | Claude Sonnet 5.5 xhigh | entregada | `e001a97` | intento 112. Guarda incremental por lote con bytes reales y borrado del parcial; Hub con el cliente HTTP propio (sin `hf_hub_download` ni `HfApi`, revisión fijada); reserva del subconjunto LOTSA entero; PARADA con salida 3 en `procesar`. Autor: selftest ok, suite 6 OK, `--verificar` OK con hashes de dataset idénticos; 11 mutaciones rompen el selftest. Dudas declaradas: si la guarda salta a mitad se pierde el procesado anterior (regenerable desde el crudo); cota de lote muy conservadora |
 | TI-13-PUB intento 3 | verificación de la raíz | — | verde | `e001a97` | `git archive e001a97` en `E:/quantdesk-lab/tmp/verif-e001a97`: commit sólo con las 9 rutas autorizadas; `--selftest` ok; suite 6 OK / 0 FALLO; `--verificar` OK (1805 ficheros, 130.066.541 filas releídas, 36 datasets, filtro reaplicado); `hf_hub_download`/`HfApi` sólo aparecen en texto y docstrings |
 | TI-13-PUB revisión 3 | revisor | Codex gpt-5.6-terra high (sólo lectura) | RECHAZAR | — | intento 114 (el 112 del autor, cerrado como rechazado). Hub, tope LOTSA y PARADA: corregidos; guarda de lotes y pies: corregida, la llama «parcial» por los auxiliares. Decisión de la raíz (A12): **se corrigen** los temporales `.part` abandonados que no cuenta la guarda (ALTA → MEDIA, acotado por el tamaño de fichero) y el `Retry-After` > 60 s acortado (MEDIA; la ficha pide respetarlo: se para sin reintentar). `manifest.json`/CSV sin guarda: ALTA → **BAJA** (KB frente a una cota de lote con cientos de MB de margen); se pide una reserva fija. **Refutado**: bloqueo al reparar LOTSA corrupto cerca del tope (falla del lado seguro; se declara). Perder el procesado anterior si salta la guarda: aceptado por el revisor y por la raíz |
-| TI-13-PUB intento 4 | autor | Claude Sonnet 5.5 xhigh | en curso | | intento 115, cambio acotado sobre `e001a97` |
+| TI-13-PUB intento 4 | autor | Claude Sonnet 5.5 xhigh | aceptada | `7ea6d94` | intento 115: temporales de descarga en la guarda (se conservan para reanudar con Range), `Retry-After` > 60 s para sin reintentar, reserva fija de 64 MiB para auxiliares; limitación LOTSA declarada |
+| TI-13-PUB intento 4 | verificación de la raíz | — | verde | `7ea6d94` | `git archive 7ea6d94`: commit sólo con rutas autorizadas; `--selftest` ok; suite 6 OK / 0 FALLO; `--verificar` OK (1805 ficheros, 130.066.541 filas releídas, 0 series y 0 contenidos compartidos entre train y val, filtro reaplicado sobre 36 datasets) |
+| TI-13-PUB revisión 4 | revisor | Codex gpt-5.6-terra high (sólo lectura) | ACEPTAR | — | intento 116: los 3 puntos corregidos con selftests significativos; sin regresiones ni defectos nuevos |
+
+### Cierre de TI-13-PUB (2026-11-08) — CERRADA
+
+- HEAD verificado por la raíz: `7ea6d94` (entregas `cd4e4ba`, `4a56315`, `e001a97`, `7ea6d94`; cuatro intentos de autor y
+  cuatro revisiones de Codex: 108, 110 y 114 RECHAZAR, 116 ACEPTAR).
+- Pruebas (raíz, copia aislada): `--selftest` ok; `run_selftests.py` 6 OK / 0 FALLO; `--verificar` OK.
+- Datos: 36 datasets en `E:/quantdesk-lab/datasets/TI-13-PUB/`, crudo en `E:/quantdesk-lab/data/public/`; 1,005 GB de
+  100 GB (crudo 0,573 + procesado 0,432); LOTSA 0,327 GB de 10 GB. Revisiones fijadas del Hub: chronos_datasets
+  `eeecad0b…2cec`, lotsa_data `8191fd29…615d`. Corte D-11 provisional `--corte 2016-10-01` (decisión de la raíz; lo fija
+  el usuario al definir el backtest; el filtro se reaplica sin volver a descargar).
+- Informes (sha256): `informe.md` `62272c6c…f4bb`, `licencias.md` `8b11a8f6…faf5`, `filtro.md` `2edf6c7d…236b`, en
+  `docs/plans/current/execution/TI-13-PUB/`. Script `scripts/ingesta_publica.py` sha256 `626848f3…` (paquete
+  `scripts/ingesta_publica_lib/`).
+- Limitaciones declaradas: si la guarda salta a mitad de procesar, el procesado anterior del dataset se pierde
+  (regenerable desde el crudo); la reparación de un LOTSA corrupto cerca del tope de 10 GB se bloquea de más.
