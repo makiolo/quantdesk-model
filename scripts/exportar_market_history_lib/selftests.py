@@ -114,7 +114,7 @@ def prueba_limpieza() -> None:
     c = L.nuevo_contador(len(filas))
     out = L.limpiar_ohlcv(marco(filas), corte, "identicos", c)
     assert c["excluidas"] == {"duplicado": 1, "infinito": 1, "volumen_negativo": 1, "precio_no_positivo": 1,
-                              "ohlc_incoherente": 1, "nulo_o_nan": 1, "posterior_al_corte_por_fecha": 1}, c["excluidas"]
+                              "high_menor_que_low": 1, "nulo_o_nan": 1, "posterior_al_corte_por_fecha": 1}, c["excluidas"]
     assert len(out) == 4 and c["filas_finales"] == 4 and c["volumen_cero"] == 1
     assert out["ts_ms"].tolist() == [ms(10, 26), ms(10, 28), ms(10, 30), ms(10, 31)], out["ts_ms"].tolist()
     assert c["huecos"]["total"]["huecos"] == 1 and c["huecos"]["total"]["barras_ausentes"] == 1, c["huecos"]["total"]
@@ -132,6 +132,13 @@ def prueba_limpieza() -> None:
         pass
     else:
         raise AssertionError("verificar_identidad debe fallar si las cuentas no cuadran")
+    # open/close fuera de [low, high] se conserva y se cuenta aparte (no se corrige ni se quita)
+    c = L.nuevo_contador(2)
+    out = L.limpiar_ohlcv(marco([("A", ms(10, 26), 1.0, 1.2, 0.9, 1.1, 5.0, None, ms(10, 27)),
+                                 ("A", ms(10, 27), 1.3, 1.2, 0.9, 1.1, 5.0, None, ms(10, 28))]), corte, "identicos", c)
+    assert len(out) == 2 and c["excluidas"] == {}, c["excluidas"]
+    x = c["detalle"]["ohlc_incoherente_conservada"]
+    assert x["filas"] == 1 and abs(x["max_desvio_relativo"] - 0.1 / 1.1) < 1e-12, x
     # huecos con calendario FX: viernes -> lunes es cierre semanal; faltar un jueves no
     ts = [ms(10, 22), ms(10, 23), ms(10, 26), ms(10, 28)]  # jue, vie, lun, mie
     h = L.huecos(pd.DataFrame({"instrument": ["A"] * 4, "interval_ms": [DIA] * 4, "ts_ms": ts}), "fx")["total"]
@@ -276,7 +283,7 @@ def prueba_exportar_lago(tmp: str) -> None:
     assert [x["schema"] for x in t.values()] == ["ohlcv/v1", "ohlcv/v1", "custom/v1", "custom/v1"]
     d1 = t["lago_ohlcv_1d"]["limpieza"]
     assert d1["filas_origen"] == 19 and d1["excluidas"] == {
-        "version_en_curso": 2, "version_posterior_descartada": 1, "nulo_o_nan": 1, "precio_no_positivo": 1, "ohlc_incoherente": 1,
+        "version_en_curso": 2, "version_posterior_descartada": 1, "nulo_o_nan": 1, "precio_no_positivo": 1, "high_menor_que_low": 1,
         "posterior_al_corte_por_disponibilidad": 1, "posterior_al_corte_por_fecha": 3}, d1["excluidas"]
     assert d1["huecos"]["total"]["huecos"] == 1 and d1["huecos"]["total"]["barras_ausentes"] == 1
     assert d1["huecos"]["por_instrumento"]["BBB|86400000"]["mayor_hueco_barras"] == 1
@@ -301,6 +308,15 @@ def prueba_exportar_lago(tmp: str) -> None:
     assert reg["validacion"]["ok"] and reg["validacion"]["tablas_no_consumibles_causalmente"] == []
     assert reg["validacion"]["lookahead"]["violaciones_por_fila"] == 0 and reg["validacion"]["politica"]["ok"]
     assert all(tb["hash_verified"] for tb in reg["validacion"]["describe"]["tablas"])
+    # proxy de disponibilidad: el cierre de la barra; la de `_recv_ts` posterior al corte (AAA 10-30) pasa a entrar
+    cod, out, err = cli(*base[:-1], "lago_p", "--salida-raiz", raiz1, "--disponibilidad-ohlcv", "cierre", runs=runs)
+    assert cod == 0, (out, err)
+    pp = {x["table_id"]: x for x in leer(raiz1, "lago_p")["tablas"]}
+    assert pp["lago_ohlcv_1d"]["filas"] == 10 and "posterior_al_corte_por_disponibilidad" not in pp["lago_ohlcv_1d"]["limpieza"]["excluidas"]
+    assert "proxy" in pp["lago_ohlcv_1d"]["disponibilidad"]["declarada"] and pp["lago_rates_quotes"]["filas"] == 7
+    pr = pq.read_table(os.path.join(raiz1, "lago_p", "lago_ohlcv_1d.parquet")).to_pandas()
+    assert (pr["available_at_ms"] == pr["ts_ms"] + pr["interval_ms"]).all()
+    assert "proxy" in json.load(open(os.path.join(raiz1, "lago_p", "manifest.json"), encoding="utf-8"))["description"]
     # misma exportacion otra vez: mismo hash y mismos bytes
     cod, out, err = cli(*base, "--salida-raiz", raiz2, "--repeticion", runs=runs)
     assert cod == 0, (out, err)
@@ -476,7 +492,8 @@ def prueba_integracion_con_descarga(tmp: str) -> None:
     p = leer(raiz, "lago_i")
     filas = {t["table_id"]: t["filas"] for t in p["tablas"]}
     # 1d: 30 dias (1-30 oct) por simbolo; el 31 se recibe pasado el corte; 1 al 7 de nov cierran despues. Eventos: hasta el 1 nov incluido
-    assert filas == {"lago_ohlcv_1d": 60, "lago_ohlcv_1h": 30, "lago_rates_quotes": 32, "lago_performance": 32}, filas
+    # performance usa `_recv_ts` (ts + 25 h): el 31 de octubre y el 1 de noviembre se reciben pasado el corte
+    assert filas == {"lago_ohlcv_1d": 60, "lago_ohlcv_1h": 30, "lago_rates_quotes": 32, "lago_performance": 30}, filas
     d1 = p["tablas"][0]["limpieza"]["excluidas"]
     assert d1 == {"posterior_al_corte_por_disponibilidad": 2, "posterior_al_corte_por_fecha": 14}, d1
     assert p["origenes"][0]["fuente"]["filas_por_topic"]["market.ohlcv"] == 3 * 38 and p["origenes"][0]["fuente"]["ficheros"] == 5

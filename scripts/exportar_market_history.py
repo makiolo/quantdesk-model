@@ -14,11 +14,13 @@ disponibilidad y politica de look-ahead sobre el feed).
 Reglas (el detalle y las cifras de cada exportacion quedan en `procedencia.json` del dataset y en el informe):
 - Corte: `--corte AAAA-MM-DD` es el instante AAAA-MM-DDT00:00:00Z. Una fila entra solo si su cierre (inicio + intervalo; el
   propio instante en tablas de eventos) y su `available_at_ms` son <= corte; el resto se cuenta y no entra.
-- Disponibilidad: por fila y nunca inventada. Binance: el cierre de la vela. Lago: `_recv_ts` (ohlcv), `scraped_at_ms` (rates) o
-  `_ts` (performance); si el lago no trae la marca, la tabla queda sin declarar y se dice que no es consumible causalmente.
-  `default_lag_ms` queda siempre en null.
-- Limpieza contada, sin rellenar huecos ni aproximar: nulos, no finitos, precios <= 0, volumen < 0, OHLC incoherente,
-  versiones repetidas de una barra (se queda la primera ya cerrada segun la recepcion en qn), filas posteriores al corte.
+- Disponibilidad: por fila y nunca inventada. Binance: el cierre de la vela. Lago: `_recv_ts` (ohlcv y performance) o
+  `scraped_at_ms` (rates); si el lago no trae la marca, la tabla queda sin declarar y se dice que no es consumible causalmente.
+  Con `--disponibilidad-ohlcv cierre` las barras del lago llevan como disponibilidad su cierre: es un proxy declarado como tal,
+  no un campo del lago. `default_lag_ms` queda siempre en null.
+- Limpieza contada, sin rellenar huecos ni aproximar: nulos, no finitos, precios <= 0, volumen < 0, high < low (se excluyen),
+  open/close fuera de [low, high] (se conservan y se cuentan), versiones repetidas de una barra (se queda la primera ya
+  cerrada segun la recepcion en qn), filas posteriores al corte.
 - Universo: lo que hay hoy en la fuente, con el sesgo de supervivencia declarado (D-07) en el manifest y en `procedencia.json`.
 - Determinismo: orden estable de filas y tablas, ninguna marca de ejecucion dentro del dataset; dos exportaciones del mismo
   origen y corte dan el mismo `logical_hash` y los mismos bytes.
@@ -143,7 +145,7 @@ def exportar(a: argparse.Namespace) -> int:
         print(f"exportar: {destino} ya existe (usa --sobrescribir para rehacerlo)", file=sys.stderr)
         return 2
     try:
-        origenes = ([S.cargar_binance(a.ti13)] if a.binance else []) + ([S.cargar_lago(a.lago)] if a.lago else [])
+        origenes = ([S.cargar_binance(a.ti13)] if a.binance else []) + ([S.cargar_lago(a.lago, a.disponibilidad_ohlcv == "cierre")] if a.lago else [])
     except (ValueError, OSError, KeyError) as e:
         print(f"exportar: BLOQUEADO: {type(e).__name__}: {e}", file=sys.stderr)
         return 2
@@ -153,7 +155,7 @@ def exportar(a: argparse.Namespace) -> int:
             c = t["contador"]
             try:
                 if t["schema"] == "ohlcv/v1":
-                    final = L.limpiar_ohlcv(t["frame"], corte_ms, t["duplicados"], c, t["calendario"])
+                    final = L.limpiar_ohlcv(t["frame"], corte_ms, t["duplicados"], c, t["calendario"], t.get("disp_cierre", False))
                 else:
                     final = L.limpiar_custom(t["frame"], corte_ms, c)
             except (ValueError, AssertionError) as e:
@@ -218,7 +220,8 @@ def imprimir_resumen(destino: str, proc: dict, val: dict, registro: dict) -> Non
               f"{t['primera']} -> {t['ultima']}  {t['logical_hash']}")
     print(f"  data_py describe: ok con hashes verificados; politica de look-ahead ok={val['politica']['ok']}; "
           f"violaciones por fila={val['lookahead']['violaciones_por_fila']}; "
-          f"no consumibles causalmente: {val['tablas_no_consumibles_causalmente'] or 'ninguna'}")
+          f"no consumibles causalmente: {val['tablas_no_consumibles_causalmente'] or 'ninguna'}; "
+          f"tablas vacias tras el corte: {val['tablas_vacias'] or 'ninguna'}")
 
 
 def revalidar(a: argparse.Namespace) -> int:
@@ -240,6 +243,9 @@ def main() -> int:
     ap.add_argument("--binance", action="store_true", help="velas 1d y 1h de Binance de TI-13-PUB")
     ap.add_argument("--ti13", default=TI13, help="raiz de datasets/TI-13-PUB")
     ap.add_argument("--lago", help="directorio del volcado de descarga_lago.py")
+    ap.add_argument("--disponibilidad-ohlcv", choices=("recepcion", "cierre"), default="recepcion",
+                    help="disponibilidad de las barras del lago: `recepcion` (_recv_ts, estricta, por defecto) o `cierre` (proxy: "
+                         "el cierre de la barra; no lo respalda ningun campo del lago)")
     ap.add_argument("--nombre", help="dataset_id y nombre del directorio (por defecto <fuentes>_c<corte>)")
     ap.add_argument("--salida-raiz", default=SALIDA_RAIZ, help="directorio que contiene los datasets (raiz del FileVendor)")
     ap.add_argument("--runs", help="donde dejar el registro de la ejecucion (por defecto runs/TI-02-DATA)")

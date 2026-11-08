@@ -63,11 +63,18 @@ def _detalle_limpieza(t: dict) -> list:
         out.append(f"  - Campo `date` frente a `_ts` (se usa `_ts`): {x['filas_con_date']} filas con `date`, "
                    f"{x['dia_utc_distinto']} cambian de dia UTC; desfase `date - _ts` en segundos (valor: filas) "
                    f"{x['desfase_date_menos_ts_en_segundos']}; ejemplos {x['ejemplos_de_dia_distinto']}.")
-        out.append(f"  - `_recv_ts` presente en {carga['filas_con_recv_ts']} filas, anterior a `_ts` en "
-                   f"{carga['recv_ts_anterior_a_ts']}; `_ts` con resolucion inferior al ms en {carga['ts_con_resolucion_inferior_al_ms']}.")
+        out.append(f"  - `_recv_ts` presente en {carga['filas_con_recv_ts']} de {carga['filas_leidas']} filas, entre "
+                   f"{carga['recv_ts_primero']} y {carga['recv_ts_ultimo']}, anterior a `_ts` en {carga['recv_ts_anterior_a_ts']}; "
+                   f"`_ts` con resolucion inferior al ms en {carga['ts_con_resolucion_inferior_al_ms']}.")
     if "sin_campo_de_disponibilidad" in carga:
         out.append(f"  - Filas sin campo de disponibilidad: {carga['sin_campo_de_disponibilidad']}; con `_ts` distinto del campo "
-                   f"de disponibilidad: {carga['disponibilidad_distinta_de__ts']}.")
+                   f"de disponibilidad: {carga['disponibilidad_distinta_de__ts']}; con `_ts` igual a la medianoche de la fecha del "
+                   f"dato: {carga['filas_con__ts_igual_a_la_fecha']}; disponibilidad entre {carga['disponibilidad_primera']} y "
+                   f"{carga['disponibilidad_ultima']}.")
+    if "ohlc_incoherente_conservada" in d:
+        x = d["ohlc_incoherente_conservada"]
+        out.append(f"  - Barras con open o close fuera de [low, high] (se conservan, no se corrigen): {x['filas']}; desvio relativo "
+                   f"al cierre, mediana {x['mediana_desvio_relativo']:.3g} y maximo {x['max_desvio_relativo']:.3g}.")
     return out
 
 
@@ -84,6 +91,14 @@ def generar(raiz: str, runs: str, nombres: list) -> str:
          "- Generado por `exportar_market_history.py --informe` a partir de `procedencia.json` y del registro de cada ejecucion.",
          "- Reglas: el corte es el instante `AAAA-MM-DDT00:00:00Z`; una fila entra solo si su cierre y su `available_at_ms` son "
          "menores o iguales; `default_lag_ms` queda nulo; los huecos no se rellenan; nada se descarta sin contarlo.", ""]
+    L += [_fila(["dataset", "corte", "filas por tabla", "tablas vacias tras el corte", "disponibilidad proxy", "dataset_hash"]),
+          "|---|---|---|---|---|---|"]
+    for n, proc, reg, _ in docs:
+        proxies = [t["table_id"] for t in proc["tablas"] if "proxy" in t["disponibilidad"]["declarada"]]
+        L.append(_fila([f"`{n}`", proc["corte"], ", ".join(f"{t['table_id']} {t['filas']}" for t in proc["tablas"]),
+                        ", ".join(reg["validacion"].get("tablas_vacias", [])) or "ninguna", ", ".join(proxies) or "no",
+                        f"`{proc['dataset_hash'][:23]}...`"]))
+    L.append("")
     for n, proc, reg, rep in docs:
         L += [f"## Dataset `{n}`", "",
               f"- Corte (`--corte`): **{proc['corte']}** ({proc['corte_utc']}); `dataset_hash` `{proc['dataset_hash']}`.",
@@ -101,6 +116,9 @@ def generar(raiz: str, runs: str, nombres: list) -> str:
                 L.append(f"- Fuente lago de qn: base `{f['base']}`, entorno `{f['env']}`, rango pedido {f['desde']} a {f['hasta']}, "
                          f"volcado del {f['fecha_utc']} ({f['ficheros']} ficheros), manifest sha256 `{f['manifest_sha256']}`; "
                          f"`descarga_lago.py` sha256 `{str(f['descarga_lago_sha256'])[:16]}...` (python {f['python_descarga']}).")
+                L.append(f"  - Paso 1, en mini con `QN_URLS`, `QN_TOKEN` y `QN_ENV={f['env']}` en el entorno: "
+                         f"`python3 descarga_lago.py --desde {f['desde']} --hasta {f['hasta']} --salida <directorio>`; despues se copia "
+                         f"a `{f['volcado']}` y el paso 2 es el comando exacto de arriba.")
         L += ["", _fila(["tabla", "esquema", "instrumentos", "frecuencias", "primera", "ultima", "filas", "logical_hash"]),
               "|---|---|---|---|---|---|---|---|"]
         for t in proc["tablas"]:
@@ -139,7 +157,8 @@ def generar(raiz: str, runs: str, nombres: list) -> str:
               f"cierre y disponibilidad <= corte, disponibilidad >= cierre, revision 0): "
               + ("sin incidencias." if not any(x["problemas"] for x in val["parquet"].values()) else str(val["parquet"])),
               f"- Violaciones de look-ahead por fila: **{val['lookahead']['violaciones_por_fila']}**; tablas no consumibles "
-              f"causalmente: {val['tablas_no_consumibles_causalmente'] or 'ninguna'}.", ""]
+              f"causalmente: {val['tablas_no_consumibles_causalmente'] or 'ninguna'}; tablas vacias tras el corte (ninguna fila "
+              f"cumple cierre y disponibilidad <= corte): {val['tablas_vacias'] or 'ninguna'}.", ""]
         L += ["### Universo y sesgo de supervivencia (D-07)", ""]
         for o in proc["origenes"]:
             L.append(f"- {o['nombre']}: {o['universo']['texto']}")

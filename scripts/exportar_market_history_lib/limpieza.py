@@ -72,13 +72,15 @@ def elegir_version(df: pd.DataFrame, clave: list, orden_por: list, conservar: st
     return quitar(df, descarta, motivo, c)
 
 
-def limpiar_ohlcv(df: pd.DataFrame, corte_ms: int, duplicados: str, c: dict, calendario: str | None = None) -> pd.DataFrame:
+def limpiar_ohlcv(df: pd.DataFrame, corte_ms: int, duplicados: str, c: dict, calendario: str | None = None,
+                  disp_cierre: bool = False) -> pd.DataFrame:
     """Aplica los pasos a una tabla ohlcv/v1 en construccion y devuelve el DataFrame final, con las columnas de la tabla.
 
     `df`: instrument, interval_ms, ts_ms, open..volume, available_at_ms (Int64), orden y, en el lago, recv_ms (Int64).
     `duplicados`: 'identicos' (solo se admiten filas repetidas iguales) o 'recepcion' (el lago: primera version ya cerrada
     segun la marca de recepcion de qn; sin marca, la ultima del orden de qn y la disponibilidad queda sin declarar).
     `calendario`: 'fx' separa los huecos del cierre semanal en el informe; None trata todo hueco como anomalo (24x7).
+    `disp_cierre`: sustituye la disponibilidad por el cierre de la barra (proxy declarado como tal; solo para el lago).
     """
     df = df.sort_values(CLAVE_OHLCV + ["orden"], kind="mergesort")
     # 1. validez de los valores
@@ -90,8 +92,9 @@ def limpiar_ohlcv(df: pd.DataFrame, corte_ms: int, duplicados: str, c: dict, cal
     df = quitar(df, np.isinf(df[list(NUMERICAS)].to_numpy(dtype=float)).any(axis=1), "infinito", c)
     df = quitar(df, (df[list(PRECIOS)] <= 0).any(axis=1), "precio_no_positivo", c)
     df = quitar(df, df["volume"] < 0, "volumen_negativo", c)
-    alto, bajo = df[["open", "close", "low"]].max(axis=1), df[["open", "close", "high"]].min(axis=1)
-    df = quitar(df, (df["high"] < alto) | (df["low"] > bajo), "ohlc_incoherente", c)
+    # high < low es una barra imposible y se excluye; open/close fuera de [low, high] se conserva tal como la publica la fuente
+    # (corregirla seria aproximar y quitarla abriria huecos): se cuenta aparte sobre las filas finales
+    df = quitar(df, df["high"] < df["low"], "high_menor_que_low", c)
     # 2. una fila por (instrumento, intervalo, inicio de barra)
     cierre = df["ts_ms"] + df["interval_ms"]
     valores = list(NUMERICAS)
@@ -108,6 +111,8 @@ def limpiar_ohlcv(df: pd.DataFrame, corte_ms: int, duplicados: str, c: dict, cal
             raise ValueError(f"filas repetidas con valores distintos y sin criterio para elegir: {c['detalle']['duplicado']}")
     # 3. corte: ni el cierre de la barra ni su disponibilidad pueden ser posteriores
     cierre = df["ts_ms"] + df["interval_ms"]
+    if disp_cierre:  # la disponibilidad es un proxy, no un dato del lago: el cierre de la barra (ver el selftest y el informe)
+        df["available_at_ms"] = (df["ts_ms"] + df["interval_ms"]).astype("Int64")
     df = quitar(df, cierre > corte_ms, "posterior_al_corte_por_fecha", c)
     df = quitar(df, df["available_at_ms"] > corte_ms, "posterior_al_corte_por_disponibilidad", c)
     # 4. invariante: nunca disponible antes del cierre
@@ -116,6 +121,13 @@ def limpiar_ohlcv(df: pd.DataFrame, corte_ms: int, duplicados: str, c: dict, cal
         raise AssertionError(f"{int(antes.sum())} barras con available_at_ms anterior a su cierre")
     df = df.sort_values(["ts_ms", "instrument"], kind="mergesort").reset_index(drop=True)
     c["volumen_cero"] = int((df["volume"] == 0).sum())
+    fuera = como_mascara((df["high"] < df[["open", "close"]].max(axis=1)) | (df["low"] > df[["open", "close"]].min(axis=1)))
+    if fuera.any():
+        sobra = np.maximum.reduce([(df[k] - df["high"]).clip(lower=0).to_numpy() for k in ("open", "close")]
+                                  + [(df["low"] - df[k]).clip(lower=0).to_numpy() for k in ("open", "close")])
+        rel = (sobra / df["close"].to_numpy())[fuera]  # cuanto se sale del rango [low, high], relativo al cierre
+        c["detalle"]["ohlc_incoherente_conservada"] = {"filas": int(fuera.sum()), "max_desvio_relativo": float(rel.max()),
+                                                       "mediana_desvio_relativo": float(np.median(rel))}
     out = pd.DataFrame({
         "instrument": df["instrument"].astype(object), "ts_ms": df["ts_ms"].astype("int64"),
         "interval_ms": df["interval_ms"].astype("int64"), "open": df["open"].astype("float64"),

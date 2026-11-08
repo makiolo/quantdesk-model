@@ -107,7 +107,9 @@ def validar(dir_dataset: str, vendor_root: str, dataset_id: str, tablas: list, c
         resumen["ejemplos_de_violacion"] = rep["violations"][:3]
         resumen["revisiones_conservadas"] = len(ar["revisions"]["kept"])
         resumen["revisiones_descartadas"] = len(ar["revisions"]["dropped"])
-        resumen["consumible_causal"] = bool(rep["rows"] and rep["declared"] == rep["rows"] and not rep["violations"])
+        # None = tabla vacia (nada que consumir ni que declarar); False = hay filas sin disponibilidad declarada o con violaciones
+        resumen["consumible_causal"] = (None if rep["rows"] == 0 else
+                                        bool(rep["declared"] == rep["rows"] and not rep["violations"]))
         out["disponibilidad"][t["table_id"]] = resumen
         if rep["violations"]:
             problemas.append(f"{t['table_id']}: {len(rep['violations'])} violaciones DPOL-AVL-002")
@@ -120,8 +122,9 @@ def validar(dir_dataset: str, vendor_root: str, dataset_id: str, tablas: list, c
     out["politica"] = {"ok": pol["ok"], "descriptor_hash": pol["descriptor_hash"], "report_hash": pol["report_hash"],
                        "violaciones": [{"code": v["code"], "severity": v["severity"], "instrument": v.get("instrument"),
                                         "detail": v["detail"][:200]} for v in pol["violations"]]}
-    sin_disp = [k for k, v in out["disponibilidad"].items() if not v["consumible_causal"]]
+    sin_disp = [k for k, v in out["disponibilidad"].items() if v["consumible_causal"] is False]
     out["tablas_no_consumibles_causalmente"] = sin_disp
+    out["tablas_vacias"] = [k for k, v in out["disponibilidad"].items() if v["consumible_causal"] is None]
     codigos = {v["code"] for v in out["politica"]["violaciones"] if v["severity"] == "error"}
     inesperados = codigos - ({"DPOL-AVL-001"} if sin_disp else set())
     if inesperados:

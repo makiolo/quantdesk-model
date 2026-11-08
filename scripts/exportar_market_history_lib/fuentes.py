@@ -177,7 +177,19 @@ def abrir_volcado(directorio: str) -> dict:
     return m
 
 
-def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int) -> tuple[list, int]:
+DISP_OHLCV_PROXY = {
+    "campo": "cierre de la barra, ts_ms + interval_ms (PROXY)", "declarada": "por fila (proxy, no evidenciada por el lago)",
+    "justificacion": (
+        "PROXY elegido con --disponibilidad-ohlcv cierre. El lago solo conserva `_recv_ts`, la recepcion en qn, y qn se relleno "
+        "con el historico de golpe (ver el primer `_recv_ts` de la tabla en la seccion de limpieza): con ese campo ninguna barra "
+        "anterior queda disponible antes de esa fecha. Aqui se declara el cierre de la barra, la cota inferior de lo que pudo "
+        "saberse, con el mismo criterio que Binance: una barra de un feed publico existe al cerrar. No lo respalda ningun "
+        "campo del lago (no se conoce cuando se leyo cada barra de yfinance) y los valores son los recibidos despues, que pueden "
+        "diferir de lo visible al cierre (ver la diferencia relativa entre versiones). Es optimista; el dataset estricto es el "
+        "que usa `_recv_ts`.")}
+
+
+def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: bool = False) -> tuple[list, int]:
     por_iv: dict = {}
     orden = orden0
     for fich in sorted(topic["ficheros"], key=lambda x: x["ruta"]):
@@ -189,7 +201,7 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int) -> tuple[list,
                                                             "recv_ms", "orden")},
                                    "leidas": 0, "sin_ts": 0, "sub_ms": 0, "con_recv": 0, "recv_antes_de_ts": 0,
                                    "desfases": Counter(), "con_date": 0, "mismo_dia": 0, "ejemplos_dia": [],
-                                   "fuentes": Counter()})
+                                   "fuentes": Counter(), "recv_min": None, "recv_max": None})
         cols = a["cols"]
         for r in leer_ndjson(os.path.join(directorio, *fich["ruta"].split("/"))):
             a["leidas"] += 1
@@ -202,6 +214,9 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int) -> tuple[list,
             recv = a_ms(r.get("_recv_ts"))
             a["con_recv"] += recv is not None
             a["recv_antes_de_ts"] += recv is not None and recv < ts
+            if recv is not None:
+                a["recv_min"] = recv if a["recv_min"] is None else min(a["recv_min"], recv)
+                a["recv_max"] = recv if a["recv_max"] is None else max(a["recv_max"], recv)
             cols["instrument"].append(et["symbol"])
             cols["ts_ms"].append(ts)
             for k in ("open", "high", "low", "close", "volume"):
@@ -230,16 +245,19 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int) -> tuple[list,
         con_recv = a["con_recv"] > 0
         tablas.append({
             "table_id": f"lago_ohlcv_{iv}", "schema": "ohlcv/v1", "frame": marco, "duplicados": "recepcion", "calendario": "fx",
+            "disp_cierre": disp_cierre,
             "contador": nuevo_contador(a["leidas"], {"sin_ts_valido": a["sin_ts"]} if a["sin_ts"] else {}),
             "carga": {"filas_leidas": a["leidas"], "ts_con_resolucion_inferior_al_ms": a["sub_ms"],
                       "filas_con_recv_ts": a["con_recv"], "recv_ts_anterior_a_ts": a["recv_antes_de_ts"],
+                      "recv_ts_primero": iso_ms(a["recv_min"]) if a["recv_min"] is not None else None,
+                      "recv_ts_ultimo": iso_ms(a["recv_max"]) if a["recv_max"] is not None else None,
                       "source": dict(a["fuentes"]),
                       "date_frente_a_ts": {
                           "filas_con_date": a["con_date"], "mismo_dia_utc": a["mismo_dia"],
                           "dia_utc_distinto": a["con_date"] - a["mismo_dia"],
                           "desfase_date_menos_ts_en_segundos": {str(k): v for k, v in a["desfases"].most_common(8)},
                           "ejemplos_de_dia_distinto": a["ejemplos_dia"]}},
-            "disponibilidad": {
+            "disponibilidad": DISP_OHLCV_PROXY if disp_cierre else {
                 "campo": "_recv_ts (instante en que qn recibio la version elegida de la barra)" if con_recv else None,
                 "declarada": "por fila" if con_recv else "no declarada",
                 "justificacion": (
@@ -262,7 +280,8 @@ def _json_dato(d: dict) -> str:
 def _cargar_lago_eventos(directorio: str, topic: dict, orden0: int, cfg: dict) -> tuple[dict | None, int]:
     """rates.quotes y performance como custom/v1: una fila por observacion, con su payload en `data_json`."""
     cols = {k: [] for k in ("instrument", "custom_type", "ts_ms", "available_at_ms", "data_json", "orden")}
-    c = {"leidas": 0, "excluidas": Counter(), "disp_ausente": 0, "disp_distinta_de_ts": 0, "fuentes": Counter()}
+    c = {"leidas": 0, "excluidas": Counter(), "disp_ausente": 0, "disp_distinta_de_ts": 0, "fuentes": Counter(),
+         "ts_igual_a_fecha": 0, "disp_min": None, "disp_max": None}
     orden = orden0
     nombres = set()
     for fich in sorted(topic["ficheros"], key=lambda x: x["ruta"]):
@@ -284,6 +303,10 @@ def _cargar_lago_eventos(directorio: str, topic: dict, orden0: int, cfg: dict) -
                 continue
             disp = a_ms(r.get(cfg["campo_disp"]))
             c["disp_ausente"] += disp is None
+            if disp is not None:
+                c["disp_min"] = disp if c["disp_min"] is None else min(c["disp_min"], disp)
+                c["disp_max"] = disp if c["disp_max"] is None else max(c["disp_max"], disp)
+            c["ts_igual_a_fecha"] += a_ms(r.get("_ts")) == ts
             if cfg["campo_disp"] != "_ts":
                 propio = a_ms(r.get("_ts"))
                 c["disp_distinta_de_ts"] += propio is not None and disp is not None and propio != disp
@@ -305,7 +328,11 @@ def _cargar_lago_eventos(directorio: str, topic: dict, orden0: int, cfg: dict) -
         "table_id": cfg["table_id"], "schema": "custom/v1", "frame": marco,
         "contador": nuevo_contador(c["leidas"], dict(c["excluidas"])),
         "carga": {"filas_leidas": c["leidas"], "sin_campo_de_disponibilidad": c["disp_ausente"],
-                  "disponibilidad_distinta_de__ts": c["disp_distinta_de_ts"], "source": dict(c["fuentes"])},
+                  "disponibilidad_distinta_de__ts": c["disp_distinta_de_ts"],
+                  "filas_con__ts_igual_a_la_fecha": c["ts_igual_a_fecha"],
+                  "disponibilidad_primera": iso_ms(c["disp_min"]) if c["disp_min"] is not None else None,
+                  "disponibilidad_ultima": iso_ms(c["disp_max"]) if c["disp_max"] is not None else None,
+                  "source": dict(c["fuentes"])},
         "disponibilidad": {"campo": cfg["campo_disp"], "declarada": "por fila", "justificacion": cfg["justificacion"]},
     }, orden
 
@@ -319,22 +346,25 @@ EVENTOS_LAGO = [
          "`_ts` vale lo mismo). `valuation_date` es la fecha a la que se refiere la cotizacion y fija `ts_ms` (00:00 UTC). "
          "Una fecha de valoracion puede volver a leerse otro dia: se conserva la primera lectura.")},
     {"topic": "market.performance", "table_id": "lago_performance", "campo_fecha": "date", "campo_valor": "performance",
-     "campo_disp": "_ts",
+     "campo_disp": "_recv_ts",
      "instrumento": lambda et: f"{et['symbol']}.{et['period']}",
      "justificacion": (
-         "El productor (market_scrapper/market_sink.py::publish_performance) pone en `_ts` el instante de la lectura de la "
-         "matriz de rendimiento (now), que es el unico instante de captura que conserva; `date` es la fecha de la matriz y fija "
-         "`ts_ms` (00:00 UTC). Una fecha puede volver a leerse otro dia: se conserva la primera lectura.")},
+         "El productor (market_scrapper/market_sink.py::publish_performance) pretende poner en `_ts` el instante de la lectura, "
+         "pero en el volcado real `_ts` es la medianoche de `date` en casi todas las filas (el historico se cargo con esa marca; "
+         "ver `filas_con__ts_igual_a_la_fecha`): no es un instante de captura y declararla como disponibilidad adelantaria cada "
+         "rendimiento diario a las 00:00 del propio dia. Solo `_recv_ts` (recepcion en qn) esta respaldado, asi que es la "
+         "disponibilidad; `date` fija `ts_ms` (00:00 UTC). Una fecha puede volver a leerse otro dia: se conserva la primera lectura.")},
 ]
 
 
-def cargar_lago(directorio: str) -> dict:
-    """Volcado del lago: ohlcv (por intervalo) a ohlcv/v1 y rates.quotes / performance a custom/v1 (hay una tabla que encaja)."""
+def cargar_lago(directorio: str, disp_cierre: bool = False) -> dict:
+    """Volcado del lago: ohlcv (por intervalo) a ohlcv/v1 y rates.quotes / performance a custom/v1 (hay una tabla que encaja).
+    `disp_cierre`: la disponibilidad de ohlcv es el cierre de la barra (proxy) en vez de `_recv_ts`."""
     m = abrir_volcado(directorio)
     tablas, orden = [], 0
     universo = {}
     if "market.ohlcv" in m["topics"]:
-        nuevas, orden = _cargar_lago_ohlcv(directorio, m["topics"]["market.ohlcv"], orden)
+        nuevas, orden = _cargar_lago_ohlcv(directorio, m["topics"]["market.ohlcv"], orden, disp_cierre)
         tablas += nuevas
         universo["market.ohlcv"] = sorted({f"{f['etiquetas'].get('interval')}:{f['etiquetas'].get('symbol')}"
                                            for f in m["topics"]["market.ohlcv"]["ficheros"]})
