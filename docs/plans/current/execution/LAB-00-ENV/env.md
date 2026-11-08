@@ -71,7 +71,8 @@ Decisiones:
 - Serie sintética: `Engine.simulate` de un `Hmm` de 2 estados `GbmP` (semilla 42), 400 días, `ObservedSeries(observable="SYN.SPOT")`.
 - Calibración: `Engine.calibrate(template, series, HmmCalibrationOptions(seed=7))`, plantilla `Hmm` de 2 estados.
 - Caminos: 200 streams `Engine.open_stream(res, 42+i, policy="from_calibration_end").advance_many(dts)` con 20 pasos de 1/252 años.
-- Verificaciones: forma `(200, 20, 1)`, valores finitos y positivos (GBM_P), determinismo (misma semilla, mismos valores).
+- Verificaciones de la calibración (campos de `HmmDiagnostics`/`CalibrationDiagnostics` de la API de 69fdb39d): la log-verosimilitud por iteración (`loglik_per_iteration`) sube desde la inicial; `pi_estimated` y `transition_matrix_estimated` son distribuciones válidas; `transition_matrix_estimated` se aparta de la plantilla (|dP| > 1e-3, no es no-op); otra serie da otra calibración (|dP| o |dLL| > 1e-6). Muestreo: forma `(200, 20, 1)`, valores finitos y positivos (GBM_P), determinismo (misma semilla, mismos valores) y distinto muestreo con la calibración de la otra serie.
+- Rueda: sha256 del fichero real (hashlib) = SHA256SUMS = `--hash` del lock; cada fichero instalado tiene el sha256 de su RECORD (59 ficheros, 5 `.pyd`).
 
 ## Salida de las comprobaciones
 
