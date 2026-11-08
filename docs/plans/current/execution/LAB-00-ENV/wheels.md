@@ -39,10 +39,10 @@ La pasada registrada es el mismo `--commit` redirigido a `E:/quantdesk-lab/tmp/b
 
 Pasos internos del script:
 
-1. `git -c core.autocrlf=false --no-optional-locks -C S:/projects/quantdesk archive --format=tar` a `E:/quantdesk-lab/tmp/build-b/<commit>.tar`. Extracción en `E:/quantdesk-lab/build/<commit>/` y verificación fichero a fichero.
-2. Entorno MSVC: `vcvars64.bat` de VS 2022 BuildTools, fusionado con el entorno de lab.
+1. `git -c core.autocrlf=false --no-optional-locks -C S:/projects/quantdesk archive --format=tar` a `E:/quantdesk-lab/tmp/build-b/<commit>.tar`. Extracción en `E:/quantdesk-lab/build/<commit>/`, que debe estar vacío (si no, se para), y verificación fichero a fichero con detección de sobrantes.
+2. Entorno MSVC: `vcvars64.bat` de VS 2022 BuildTools, fusionado con el entorno de lab. `git`, `vswhere` y `vcvars64` se lanzan con ese entorno sellado (TEMP/TMP/TMPDIR en E:), no con el heredado de C:.
 3. `D:/miniconda312/python.exe -m pip wheel E:/quantdesk-lab/build/<commit> --no-deps --wheel-dir E:/quantdesk-lab/tmp/build-b/wheel-out --config-settings build-dir=E:/quantdesk-lab/build/<commit>/_skbuild`.
-4. Nueva verificación del árbol, publicación en `E:/quantdesk-lab/wheels/` (sin sobrescribir) y `SHA256SUMS`.
+4. Nueva verificación del árbol (sin sobrantes salvo `_skbuild` y `target`), publicación en `E:/quantdesk-lab/wheels/` (sin sobrescribir), `SHA256SUMS` y comprobación: se relee el fichero y se recalcula el SHA-256 de cada rueda; si no coincide, se para.
 
 Entorno de lab (`lab_env`):
 
@@ -89,7 +89,16 @@ RUSTUP_HOME usado: `S:/Apps/Home/.rustup`, que sólo tenía `settings.toml` y la
 - Red durante el build: pip (dependencias de build desde PyPI), FetchContent de nanobind y Corrosion desde GitHub, y en la venv pydantic y jsonschema desde PyPI, con caché en E:.
 - Espacio: C: libre 9.58 GiB al empezar y 3.53 GiB al terminar. La bajada no está atribuida: las salidas del build van a E:, y los temporales de pip que estaban en C: se borraron. E: tiene 315 GiB libres.
 - Tamaño del build no medido: `timeout 20 du -sh E:/quantdesk-lab/build/69fdb39d0b67969dbdafa77f5da656511342f175` cortó a los 20 s.
+- Re-ejecutar el mismo commit exige vaciar `E:/quantdesk-lab/build/<commit>/` a mano: el script se para si ese directorio tiene contenido y no borra nada.
 
 ## Motor (sólo lectura)
 
 Órdenes sobre `S:/projects/quantdesk`: `archive`, `rev-parse`, `cat-file`, `log`, `tag` y `status --short` con `--no-optional-locks`. No se escribió nada. El `git status` del motor cambió durante la sesión por trabajo de otra sesión. La diferencia respecto a la foto de las 01:06 está en `E:/quantdesk-lab/tmp/build-b/status-diff.txt`.
+
+## Revisión independiente (correcciones sin compilación real)
+
+Tras la revisión independiente de LAB-00-ENV (Codex terra) se corrigieron tres puntos de `scripts/build_wheels.py`, sin recompilar la rueda: (1) git y vswhere se lanzan con el entorno sellado de lab; (2) la extracción exige un directorio vacío y la verificación del árbol detecta ficheros sobrantes, salvo bajo `_skbuild` y `target`; (3) SHA256SUMS se relee y se recalcula el SHA-256 de cada rueda; el selftest cubre un hash que no coincide y una rueda sin entrada.
+
+Ejercitado: `--selftest` con `.venv/Scripts/python` (OK); `verify_tree` sobre el árbol ya construido (6865 ficheros, sin malos ni sobrantes) y `sums_check` sobre `E:/quantdesk-lab/wheels/` (sin diferencias).
+
+No ejercitado: una compilación real con estas correcciones. Se hará al subir de commit del motor; hasta entonces el camino completo del script (archive, build, publicación) no se ha probado con esta versión.
