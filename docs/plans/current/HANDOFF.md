@@ -35,8 +35,9 @@ Recuperación en frío (RECOVERY-20261108-133223): la raíz anterior murió haci
 - TI-12-MT5 espera la puerta 2; TI-09-ARCH, las cifras de TI-01-INV (puerta 1).
 
 ## En vuelo
-- TI-02-DATA, autor fase 1 (Agent en segundo plano de la sesión dd43fa94; intento BDD 119). Si esta sesión muere, el
-  hijo muere con ella: comprobar `git log` por commits `TI-02-DATA:` y relanzar desde la ficha.
+- TI-02-DATA, revisión 1 por Opus 5.5 (Agent en segundo plano de la sesión dd43fa94; intento BDD 120) sobre
+  `a3d6a0e` y `f4d3ebe`. Salida en `E:/quantdesk-lab/tmp/TI-02-DATA/revision1/revision.md`. Si esta sesión muere,
+  relanzar la revisión desde EXECUTION, ola 3. El autor (intento 119) entregó las dos fases; token 34 revocado.
 
 ## Decisiones
 - Raíz (A12): los 4 hallazgos de la revisión 2 de TI-13-PUB se corrigen en un intento 3 (los dos ALTA son requisitos

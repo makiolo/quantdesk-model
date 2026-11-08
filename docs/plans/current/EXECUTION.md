@@ -232,3 +232,54 @@ dd43fa94, HANDOFF relevo 1 (`674344b`). Ningún hijo vivo; ningún WIP sin commi
      de TI-13-PUB) a `engine.market-history/v1`.
   - El token se emite cuando la raíz haya leído entero el paso 1 y su selftest esté en verde, y se revoca en cuanto
     termine la descarga. La revisión de otro modelo cubre después los dos pasos.
+
+### TI-02-DATA — fase 1 y descarga del lago (2026-11-08)
+
+- Autor: Sonnet 5.5 xhigh, intento BDD 119. Commit `a3d6a0e`, fase 1:
+  - `scripts/descarga_lago.py`, sha256 `1989f121…dace`;
+  - `scripts/exportar_market_history.py` y `scripts/exportar_market_history_lib/`;
+  - exportación de Binance con `--corte 2026-11-01`, `dataset_hash` `sha256:d765d560…b744`.
+- Verificación de la raíz:
+  - los dos `--selftest` dan `selftest ok` sobre `git archive a3d6a0e`;
+  - `run_selftests.py` da 8 OK y 0 FALLO en HEAD, con los scripts idénticos a `a3d6a0e`;
+  - la raíz leyó entero `descarga_lago.py`: sólo hace GET, la credencial va sólo en la cabecera y se sanea en errores,
+    filas y manifiesto, y 401/403 paran sin reintentar;
+  - su selftest también pasa en mini con `python3 -I -S` (Python 3.12.3, mismo sha256).
+- Token `ti02-lago-20261108`, id 34, `main`, `sub:market.>`. Lo autorizó el usuario («emite otro token de solo
+  lectura»), con la misma concesión que el 32.
+  - Emitido en mini a las 20:02:45Z.
+  - Revocado a las 20:04:02Z: `revocado`, el listado da 0 y el fichero se borró con `shred`. El secreto no salió de mini.
+- Descarga en mini contra macold (las tres réplicas con `/health` ok), `--desde 2024-10-01 --hasta 2026-11-07`. Duró
+  unos 70 s y terminó con `completo: true` y sin avisos.
+  - Filas: ohlcv 56 instrumentos y 30 662 filas; rates.quotes 103 y 18 128; performance 64 y 6 656.
+  - Copiado a `E:/quantdesk-lab/data/lago/2026-11-08/`: 223 ficheros con el hash correcto, y `manifest.json` con
+    sha256 `74ca1e91…bf6`.
+  - Log en `E:/quantdesk-lab/runs/TI-02-DATA/descarga-run.log`. `~/ti02` se borró de mini.
+
+### TI-02-DATA — fase 2 (2026-11-08)
+
+- Commit `f4d3ebe` del autor: exportación del lago y `informe.md` final, generado desde los manifiestos.
+- **Hallazgo con datos reales:** la historia de ohlcv entró en qn de una vez, el 2026-11-01. El primer `_recv_ts` es
+  2026-11-01T03:01Z en 1 h y 23:02Z en 1 d. Con la disponibilidad estricta (`_recv_ts`) el dataset con corte 2026-11-01 sale
+  con ohlcv vacío. Performance usa `_recv_ts` (desde 2026-11-03), porque su `_ts` es la medianoche de `date`, y también
+  sale vacío. Rates usa `scraped_at_ms`, que coincide con `_ts` en todas las filas.
+- Datasets en `E:/quantdesk-lab/datasets/TI-02-DATA/`:
+
+  | dataset | qué es | `dataset_hash` |
+  |---|---|---|
+  | `lago_c20261101` | estricto | `cce80ad2…` |
+  | `lago_cierre_c20261101` | proxy: disponibilidad = cierre de la barra, como en Binance; ningún campo del lago lo respalda | `31db814d…` |
+  | `lago_c20261107` | estricto, con corte posterior | `54083edb…` |
+  | `binance_c20261101` | Binance de TI-13-PUB | `d765d560…` |
+
+  Cada dataset se exportó dos veces con los mismos bytes.
+- Verificación de la raíz:
+  - sobre `git archive f4d3ebe`, los dos `--selftest` dan `selftest ok`;
+  - los scripts de HEAD son idénticos a `f4d3ebe`;
+  - la raíz reexportó `lago_cierre_c20261101` desde el árbol fijo, a un directorio propio, y el `manifest.json` sale
+    idéntico byte a byte;
+  - `data_py describe` verifica los hashes, la política de look-ahead da ok y hay 0 violaciones.
+- Revisión 1: Codex está al 95 % semanal (reinicio el 2026-11-11), así que revisa Claude Opus 5.5, un modelo distinto
+  del autor (Sonnet; LAUNCH §2). Intento BDD 120. La raíz le pide comprobar, entre otras cosas, que rates aparece desde
+  2014 (`valuation_date` del histórico que trae cada captura) cuando el inventario lo situaba en 2025-12.
+- Incidente menor del autor: una edición de código hecha con un heredoc de Bash, contra la regla. No escribió datos.
