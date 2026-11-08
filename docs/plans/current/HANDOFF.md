@@ -46,13 +46,24 @@ ninguno (los dos hijos de la sesión anterior terminaron: Codex revisión 2 con 
   «command not found» y un tar por stdout). La raíz escribe ficheros sólo con Write/Edit.
 
 ## Preguntas abiertas al usuario
-- Puerta 1 (TI-01-INV): el usuario ejecuta `scripts/inventario_options_chain.py` con su `QN_URLS`/`QN_TOKEN`.
-- Puerta 2 (TI-12-MT5): el usuario abre y autentica el terminal MT5.
+- Puerta 1 resuelta: TI-01-INV CERRADA. Decide el usuario:
+  - qué hacer con TI-09-ARCH, porque `market.options.chain` está vacío en `main`;
+  - si emite otro token de sólo lectura para que TI-02-DATA exporte del lago (el de TI-01-INV, id 32, ya está
+    revocado).
+- Puerta 2 (TI-12-MT5): el usuario abre y autentica el terminal MT5 («luego lo resuelvo»).
 
 ## Conocimiento promovido
 nada nuevo: el proyecto no tiene herramienta de conocimiento (SPRINT_PROJECT §1).
 
 ## Siguiente paso
-Hecho en este tramo: TI-13-PUB CERRADA en `7ea6d94` y TS-00-PREC CERRADA en `5afc795` (detalle en EXECUTION). Ola 2
-sin trabajo lanzable: TI-12-MT5 espera la puerta 2 y TI-09-ARCH las cifras de TI-01-INV (puerta 1); la ola 3
-(TI-02-DATA) necesita TI-01-INV. Siguiente paso: esperar al usuario en las puertas 1 y 2; no hay hijos en vuelo.
+Hecho en este tramo:
+- TI-13-PUB CERRADA en `7ea6d94` y TS-00-PREC en `5afc795`.
+- TI-01-INV CERRADA: la raíz ejecutó el inventario con el token 32, ya revocado. Las cadenas de opciones están vacías
+  en qn y la flota no tiene GPU (EXECUTION, «Cierre de TI-01-INV»).
+
+Siguiente paso: esperar al usuario.
+- Con su decisión sobre el token de lectura, lanzar TI-02-DATA (ola 3) con ohlcv, rates y performance.
+- TI-09-ARCH, según lo que decida.
+- TI-12-MT5, tras la puerta 2.
+
+No hay hijos en vuelo.

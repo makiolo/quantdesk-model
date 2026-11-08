@@ -90,7 +90,7 @@ carpeta sólo tiene `settings.toml`, así que B tendrá que instalar allí la to
 - Desviaciones: en la primera pasada entraron ~230 MB en la caché de pip de usuario de C: y pip usó TMPDIR en C: durante
   la compilación (corregido en los scripts, no reejecutado); recompilar con el script corregido al subir de motor.
 
-### TI-01-INV — parte de código aceptada; falta la puerta de usuario 1
+### TI-01-INV — parte de código aceptada (puerta 1 resuelta el 2026-11-08: ver «Cierre de TI-01-INV» en la ola 2)
 
 - Script `scripts/inventario_options_chain.py` en `cb46ce2`, sha256 `7a9811c72876620e1eb7441ee0d5db8e071dd82fa7bf251e8bfe9976d45f9310`;
   selftest OK, sale 2 sin credenciales, `--max-symbols -1` rechazado. Sin probar contra qn real.
@@ -180,3 +180,30 @@ dd43fa94, HANDOFF relevo 1 (`674344b`). Ningún hijo vivo; ningún WIP sin commi
   con redondeo en cada frontera de capa (medida 2) y para σ_loc por Dupire (medida 3), no: pierden e4m3 y e5m2, con y
   sin escala (e4m3 pierde 4 métricas y e5m2 6). bf16, f16 y f32 no pierden en ninguna medida. Vol de la vol y delta por
   AAD: no medidas (AAD requiere engine-nn). Salvedades en el §5 del informe (emulación, modelo pequeño, n = 5).
+
+### Cierre de TI-01-INV (2026-11-08) — CERRADA
+
+- Puerta 1: el usuario pide a la raíz que emita un token de qn siguiendo la documentación de quantdesk-network. La raíz
+  sigue la skill `qn-token` y el usuario confirma nombre, entorno y concesión exactos antes de emitir.
+  - Token `ti01-inventario-20261108`, id 32, `main`, `sub:market.>`, emitido en mini a las 15:48:58Z.
+  - Revocado a las 15:58:26Z: listado 0, fichero borrado con `shred`. El secreto no salió de mini.
+  - Intento BDD 118, de la raíz (ejecución del script ya revisado en `cb46ce2`; no hay código nuevo que revisar).
+- Primera ejecución, descartada: contra mini, en `stopping` por un redespliegue ajeno (503 en `market.rates.quotes`).
+  Repetida contra macold (`/health` 200): completa, 7816 GET, sin errores.
+- Comprobación de la raíz: una sonda de sólo lectura confirma que `market.options.chain` (esquema v2) y
+  `market.options.fx` no tienen **ninguna fila** en `main` entre 2024-01-01 y 2027-01-01, ni siquiera sin filtro de
+  etiquetas. La misma consulta sobre rates sí devuelve filas.
+- GPU de la flota, medida por ssh y sólo leyendo: mini, silver y macold sólo tienen gráficos integrados de Intel, sin
+  NVIDIA.
+- Evidencia:
+  - `docs/plans/current/execution/TI-01-INV/informe.md` (salida sin tocar, sha256 `75095098…c4fe`) y `anexo-raiz.md`
+    (procedencia, sonda, GPU y lectura para el sprint);
+  - JSON en `E:/quantdesk-lab/runs/TI-01-INV/inventario-macold.json` (sha256 `99dcc5cd…67fc`).
+- Cifras:
+  - ohlcv: 28 cruces FX diarios desde 2024-11-01, con una cobertura del 99 % y sin huecos; los horarios sólo desde
+    2026-10-18. 6047 duplicados de 30 665 filas.
+  - rates.quotes (103 nodos) y performance (64), desde 2025-12-04: hueco de 118–120 días hábiles entre 2026-04 y
+    2026-09; cobertura del 34–44 %.
+- Consecuencia: **TI-09-ARCH no tiene datos de origen.** La cadena de opciones nunca llegó a qn, y lo que no llegó no se
+  recupera (12-A). Queda a decisión del usuario (pregunta abierta en el HANDOFF). TI-02-DATA puede arrancar con ohlcv,
+  rates y performance.
