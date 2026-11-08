@@ -1,10 +1,11 @@
 """Inventario de SOLO LECTURA del lago de quantdesk-network (tarea TI-01-INV).
 
 Por cada topic cuyo nombre case con --topics (por defecto `market.*`) que la credencial puede leer, y por cada instrumento
-(combinación de etiquetas que lista /latest): tipo de lectura, esquema, clave de instrumento, columna y unidad de la marca
-temporal, primera y última fecha, frecuencia observada (paso mediano dentro del día y filas por día hábil), días hábiles con
-datos frente a esperables, huecos de al menos --gap días hábiles y calidad básica (duplicados por clave+marca, nulos, no
-finitos y negativos donde no tienen sentido). Sólo hace GET; nunca publica. Sólo biblioteca estándar.
+(combinación completa de etiquetas que lista /latest): tipo de lectura, esquema, etiquetas declaradas y de agrupación,
+marca temporal (`_ts` del lago; si falta, el campo de contenido que la sustituye, declarado), primera y última fecha,
+frecuencia observada (paso mediano dentro del día y filas por día hábil), días hábiles con datos frente a esperables,
+huecos de al menos --gap días hábiles y calidad básica (duplicados por clave+marca en todo el rango, nulos, no finitos y
+negativos donde no tienen sentido). Sólo hace GET; nunca publica. Sólo biblioteca estándar.
 
 Variables: QN_URLS (bases separadas por comas, p. ej. http://192.168.1.48:8790/qn; se usa la primera), QN_TOKEN (permiso de
 lectura sobre market.>) y QN_ENV (entorno, por defecto main). La credencial sólo se lee de QN_TOKEN; nunca se imprime ni se
@@ -18,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import fnmatch
+import hashlib
 import json
 import math
 import os
@@ -31,8 +33,9 @@ import urllib.request
 from collections import Counter
 from datetime import date, datetime, timedelta, timezone
 
-EXCLUIR_CLAVE = ("venue", "exchange", "source", "feed", "env")  # etiquetas que no identifican el instrumento
-TIEMPO = ("ts", "ts_corrected", "date", "time", "timestamp")  # columnas de marca, por prioridad
+PRIMARIA = "_ts"  # marca del lago (ns) que lleva todo objeto de qn
+TIEMPO = ("ts", "ts_corrected", "date", "time", "timestamp")  # campos de tiempo de contenido, por prioridad (fallback)
+CONTENIDO = ("date", "time", "timestamp", "ts", "ts_corrected")  # campos de contenido que se comparan con `_ts`
 CLAVE_CONTRATO = ("maturity", "strike", "right", "option_type", "id")  # campos que distinguen filas de una misma marca
 NO_NEGATIVO = re.compile(r"price|precio|volume|volumen|bid|ask|open|high|low|close|\blast\b", re.I)
 NO_FINITO = ("NaN", "Infinity", "-Infinity")  # cómo el servidor escribe los no finitos en JSON
@@ -106,8 +109,9 @@ def parse_ts(v) -> tuple[datetime | None, str | None]:
 
 
 def row_time(row: dict) -> tuple[datetime | None, str | None, str | None]:
-    """(marca, columna, unidad) de la fila: la primera columna de tiempo por prioridad con valor válido."""
-    orden = [k for k in TIEMPO if k in row] + [k for k in row if "ts" in k.lower() and k not in TIEMPO]
+    """(marca, columna, unidad). Usa `_ts` si existe y es válida; si no, el primer campo de tiempo de contenido válido."""
+    orden = [k for k in (PRIMARIA,) + TIEMPO if k in row]
+    orden += [k for k in row if "ts" in k.lower() and k not in orden and k != PRIMARIA]
     for k in orden:
         t, u = parse_ts(row[k])
         if t is not None:
@@ -116,7 +120,7 @@ def row_time(row: dict) -> tuple[datetime | None, str | None, str | None]:
 
 
 def row_day(row: dict) -> date | None:
-    """Fecha de la fila: el campo `date` del objeto o, si falta, la marca de evento."""
+    """Fecha de la fila: su marca (`_ts` si existe; si no, el campo `date` u otro de tiempo)."""
     t = row_time(row)[0]
     return t.date() if t else None
 
@@ -153,11 +157,12 @@ def months(a: date, b: date):
         d = nxt
 
 
-def detectar_clave(tags: list[str]) -> str | None:
-    """Clave de instrumento: `symbol` si el topic lo tiene; si no, la primera etiqueta que no sea de venue o fuente."""
-    if "symbol" in tags:
-        return "symbol"
-    return next((t for t in tags if t not in EXCLUIR_CLAVE), None)
+def claves_reales(declaradas: list[str], combos: list[tuple]) -> dict:
+    """Etiquetas declaradas del topic frente a las que agrupan: la agrupación usa la combinación completa que trae /latest."""
+    usadas = sorted({k for combo in combos for k, _ in combo})
+    sin_valor = sum(1 for combo in combos if {k for k, _ in combo} != set(usadas))
+    return {"declaradas": sorted(declaradas), "agrupacion": usadas, "instrumentos_sin_alguna_etiqueta": sin_valor,
+            "declaradas_sin_valor_en_latest": sorted(set(declaradas) - set(usadas))}
 
 
 def aplanar(node: dict, prefijo: str = "") -> list[tuple[str, str]]:
@@ -195,20 +200,38 @@ def fmt_paso(s: float | None) -> str:
 
 
 class Acumulador:
-    """Estadísticas de un topic, acumuladas mes a mes y por instrumento."""
+    """Estadísticas de un topic, acumuladas por peticiones (todo el rango) y por instrumento."""
 
     def __init__(self):
         self.dias, self.filas, self.filas_dia, self.pasos = set(), 0, Counter(), []
-        self.duplicados, self.nulos, self.no_finitos, self.negativos = 0, Counter(), Counter(), Counter()
+        self.duplicados, self.claves = 0, set()  # `claves`: resúmenes de clave+marca vistos en todo el topic
+        self.nulos, self.no_finitos, self.negativos = Counter(), Counter(), Counter()
         self.tiempo, self.fuera_rango, self.sin_marca = Counter(), 0, 0
+        self.contenido = {}  # campo de contenido -> {filas, difieren, ejemplos}, frente al día UTC de `_ts`
         self.instr = {}
+
+
+def comparar_contenido(acc: Acumulador, etiqueta: str, r: dict, t: datetime) -> None:
+    """Campos de contenido de tiempo frente a `_ts`: cuántas filas cambian de día UTC y algunos ejemplos."""
+    for f in CONTENIDO:
+        if f not in r:
+            continue
+        tc = parse_ts(r[f])[0]
+        if tc is None:
+            continue
+        st = acc.contenido.setdefault(f, {"filas": 0, "difieren": 0, "ejemplos": []})
+        st["filas"] += 1
+        if tc.date() != t.date():
+            st["difieren"] += 1
+            if len(st["ejemplos"]) < 3:
+                st["ejemplos"].append(f"{etiqueta}: _ts={t.isoformat()} {f}={str(r[f])[:40]}")
 
 
 def procesar(acc: Acumulador, etiqueta: str, res: dict) -> None:
     """Acumula una respuesta de un instrumento: días, filas, paso, duplicados, nulos, unidades y valores imposibles."""
     ins = acc.instr.setdefault(etiqueta, {"dias": set(), "filas": 0, "mat": set(), "strk": set()})
     columnas = [c["name"] for c in res.get("columns", [])]
-    marcas, vistos = [], Counter()
+    marcas = []
     for r in res.get("rows", []):
         ins["filas"] += 1
         acc.filas += 1
@@ -220,13 +243,17 @@ def procesar(acc: Acumulador, etiqueta: str, res: dict) -> None:
             acc.tiempo[(col, uni)] += 1
             if not ANIO_MIN <= t.year <= ANIO_MAX:
                 acc.fuera_rango += 1
+            if col == PRIMARIA:
+                comparar_contenido(acc, etiqueta, r, t)
             marcas.append(t)
         else:
             acc.sin_marca += 1
-        clave = (repr(t), tuple(repr(r.get(c)) for c in CLAVE_CONTRATO if c in r))
-        if vistos[clave]:
+        contrato = tuple(repr(r.get(c)) for c in CLAVE_CONTRATO if c in r)
+        huella = hashlib.blake2b(repr((etiqueta, repr(t), contrato)).encode(), digest_size=16).digest()
+        if huella in acc.claves:
             acc.duplicados += 1
-        vistos[clave] += 1
+        else:
+            acc.claves.add(huella)
         for c in columnas:
             v = r.get(c)
             if v is None:
@@ -277,6 +304,7 @@ def resumen(acc: Acumulador, gap: int, meta: dict) -> dict:
                filas_por_dia_habil_mediana=statistics.median(habiles_filas) if habiles_filas else None,
                duplicados=acc.duplicados, nulos=dict(acc.nulos), no_finitos=dict(acc.no_finitos),
                negativos=dict(acc.negativos), tiempo=[[c, u, n] for (c, u), n in sorted(acc.tiempo.items())],
+               contenido={f: dict(st) for f, st in sorted(acc.contenido.items())},
                fuera_de_rango=acc.fuera_rango, sin_marca=acc.sin_marca,
                por_instrumento={et: resumen_instrumento(ins, gap) for et, ins in sorted(acc.instr.items())})
     if not acc.dias:
@@ -296,7 +324,7 @@ def inventariar(base: str, acceso: str, env: str, info: dict, a, desde: date, ha
     nombre, kind = info["topic"], info.get("kind")
     sch = get(base, acceso, env, f"/topics/{nombre}/schema", {}, peticiones)
     spec = sch.get("schema") or {}
-    tags = info.get("tags") or sch.get("tags") or []
+    declaradas = info.get("tags") or sch.get("tags") or []
     if kind == "series":
         lectura = f"/series/{nombre}/rows"
         esquema = [f"{c['name']} ({c.get('agg')})" for c in spec.get("columns", [])]
@@ -306,17 +334,17 @@ def inventariar(base: str, acceso: str, env: str, info: dict, a, desde: date, ha
     else:
         raise RuntimeError(f"tipo de topic desconocido: {kind!r}")
     lat = get(base, acceso, env, f"/topics/{nombre}/latest", {}, peticiones)
-    combos = sorted({tuple(sorted((it.get("tags") or {}).items())) for it in lat.get("items", [])})
-    listados = len(combos)
-    if a.max_symbols:
-        combos = combos[: a.max_symbols]
+    combos_todas = sorted({tuple(sorted((it.get("tags") or {}).items())) for it in lat.get("items", [])})
+    claves = claves_reales(declaradas, combos_todas)
+    combos = combos_todas[: a.max_symbols] if a.max_symbols else combos_todas
     acc = Acumulador()
     for combo in combos:
         etiqueta = ",".join(f"{k}={v}" for k, v in combo) or SIN_FILTRO
         for m0, m1 in months(desde, hasta):
             leer(base, acceso, env, lectura, combo, m0, m1, peticiones, acc, etiqueta)
-    meta = {"kind": kind, "lectura": lectura, "tags": tags, "clave": detectar_clave(tags), "esquema": esquema,
-            "instrumentos_listados": listados, "instrumentos_leidos": len(combos), "error": None}
+    meta = {"kind": kind, "lectura": lectura, "claves": claves, "esquema": esquema,
+            "instrumentos_listados": len(combos_todas), "instrumentos_leidos": len(combos),
+            "subconjunto": f"--max-symbols {a.max_symbols} (sólo prueba)" if a.max_symbols else None, "error": None}
     return resumen(acc, a.gap, meta)
 
 
@@ -355,7 +383,11 @@ def fmt_dict(d: dict) -> str:
 
 
 def txt_tiempo(t: dict) -> str:
-    txt = "; ".join(f"columna `{c}` en {u}: {n} filas" for c, u, n in t["tiempo"]) or "ninguna fila con marca válida"
+    partes = []
+    for c, u, n in t["tiempo"]:
+        origen = "" if c == PRIMARIA else " (sin `_ts`: fallback a campo de contenido)"
+        partes.append(f"columna `{c}` en {u}: {n} filas{origen}")
+    txt = "; ".join(partes) or "ninguna fila con marca válida"
     if len({u for _, u, _ in t["tiempo"] if u != "iso"}) > 1:
         txt += " — AMBIGUO: varias unidades numéricas en el mismo topic, revisar"
     if t["fuera_de_rango"]:
@@ -363,6 +395,28 @@ def txt_tiempo(t: dict) -> str:
     if t["sin_marca"]:
         txt += f"; {t['sin_marca']} filas sin marca válida"
     return txt
+
+
+def txt_contenido(t: dict) -> str:
+    if not t["contenido"]:
+        return "sin comparación: no hay `_ts` en las filas, la marca es el campo de contenido indicado arriba"
+    partes = [f"`{f}`: {st['difieren']} de {st['filas']} filas difieren de `_ts` en el día UTC"
+              for f, st in t["contenido"].items()]
+    ej = [e for st in t["contenido"].values() for e in st["ejemplos"]][:3]
+    return "; ".join(partes) + ("; ejemplos: " + " | ".join(ej) if ej else "")
+
+
+def txt_claves(c: dict, subconjunto) -> list[str]:
+    out = [f"- Etiquetas declaradas: {', '.join(c['declaradas']) or 'ninguna'}; agrupación por: "
+           f"{' + '.join(c['agrupacion']) or 'ninguna (un único instrumento)'} (combinación completa que trae /latest)"]
+    if c["instrumentos_sin_alguna_etiqueta"]:
+        out.append(f"- AVISO: {c['instrumentos_sin_alguna_etiqueta']} instrumentos no traen todas las etiquetas de la "
+                   "agrupación; se leen sin ese filtro y pueden mezclar datos")
+    if c["declaradas_sin_valor_en_latest"]:
+        out.append(f"- AVISO: etiquetas declaradas sin valor en /latest: {', '.join(c['declaradas_sin_valor_en_latest'])}")
+    if subconjunto:
+        out.append(f"- Subconjunto: {subconjunto}; no es el inventario completo")
+    return out
 
 
 def render_md(report: dict) -> str:
@@ -373,16 +427,18 @@ def render_md(report: dict) -> str:
            f"- Base: {c['base']} (entorno `{c['env']}`). La credencial no figura en este informe.",
            f"- Topics: patrón `{c['patron']}`; instrumentos por topic: {c['max_symbols'] or 'todos'}",
            f"- Huecos: tramos de {c['gap']} o más días hábiles sin datos; los festivos cuentan como hueco (cota superior)",
+           f"- Duplicados: clave = etiquetas del instrumento + marca + campos de contrato, contados en todo el rango pedido",
            f"- Peticiones GET hechas: {len(c['peticiones'])} (lista completa en el JSON, sin cabeceras)", ""]
-    cabeceras = ["topic", "lectura", "clave", "instrumentos", "primera", "última", "días hábiles con datos", "cobertura",
-                 "paso mediano", "filas por instrumento y día hábil", "duplicados", "nulos", "no finitos", "negativos",
-                 "huecos", "estado"]
+    cabeceras = ["topic", "lectura", "etiquetas agrupadas", "instrumentos", "primera", "última",
+                 "días hábiles con datos", "cobertura", "paso mediano", "filas por instrumento y día hábil",
+                 "duplicados", "nulos", "no finitos", "negativos", "huecos", "estado"]
     L = cab + ["## Resumen por topic", "", fila(cabeceras), "|" + "---|" * len(cabeceras)]
     for n, t in tops.items():
         if t.get("error"):
             L.append(fila([n, t.get("lectura")] + [None] * 13 + [f"ERROR: {t['error']}"]))
             continue
-        L.append(fila([n, t["lectura"], t["clave"], f"{t['instrumentos_leidos']}/{t['instrumentos_listados']}",
+        L.append(fila([n, t["lectura"], " + ".join(t["claves"]["agrupacion"]) or "–",
+                       f"{t['instrumentos_leidos']}/{t['instrumentos_listados']}",
                        t["primera"], t["ultima"], f"{t['dias_habiles']}/{t['esperables']}", pct(t["cobertura"]),
                        fmt_paso(t["paso_mediano_s"]), fmt_num(t["filas_por_dia_habil_mediana"]), t["duplicados"],
                        sum(t["nulos"].values()), sum(t["no_finitos"].values()), sum(t["negativos"].values()),
@@ -393,11 +449,11 @@ def render_md(report: dict) -> str:
         if t.get("error"):
             L += [f"- ERROR: {t['error']}"]
             continue
-        etiq = ", ".join(t["tags"]) or "ninguna"
-        L += [f"- Tipo: {t['kind']}; lectura `{t['lectura']}`; etiquetas: {etiq}; "
-              f"clave de instrumento: {t['clave'] or 'ninguna (un único instrumento)'}",
-              f"- Esquema ({'columnas' if t['kind'] == 'series' else 'campos'}): {', '.join(t['esquema']) or 'sin datos'}",
-              f"- Marca temporal: {txt_tiempo(t)}"]
+        L += [f"- Tipo: {t['kind']}; lectura `{t['lectura']}`"]
+        L += txt_claves(t["claves"], t["subconjunto"])
+        L += [f"- Esquema ({'columnas' if t['kind'] == 'series' else 'campos'}): {', '.join(t['esquema']) or 'sin datos'}",
+              f"- Marca temporal: {txt_tiempo(t)}",
+              f"- Campos de contenido frente a `_ts`: {txt_contenido(t)}"]
         if not t["primera"]:
             L += ["- Sin datos en el rango pedido"]
             continue
@@ -408,9 +464,8 @@ def render_md(report: dict) -> str:
               f"- Frecuencia: paso mediano dentro del día {fmt_paso(t['paso_mediano_s'])}; filas por instrumento y día "
               f"hábil (mediana) {fmt_num(t['filas_por_dia_habil_mediana'])}",
               f"- Huecos de {c['gap']} o más días hábiles: {len(t['huecos'])}{txt_huecos}",
-              f"- Calidad: duplicados (etiquetas + marca + campos de contrato) {t['duplicados']}; nulos "
-              f"{fmt_dict(t['nulos'])}; no finitos {fmt_dict(t['no_finitos'])}; negativos donde no tienen sentido "
-              f"{fmt_dict(t['negativos'])}", "",
+              f"- Calidad: duplicados {t['duplicados']}; nulos {fmt_dict(t['nulos'])}; no finitos "
+              f"{fmt_dict(t['no_finitos'])}; negativos donde no tienen sentido {fmt_dict(t['negativos'])}", "",
               fila(["instrumento", "primera", "última", "días hábiles", "esperables", "cobertura", "filas", "huecos",
                     "vencimientos", "strikes"]),
               "|" + "---|" * 10]
@@ -488,14 +543,25 @@ def selftest() -> None:
         assert unidad_de(v) == u, (u, v)
         assert parse_ts(v) == (datetime(2026, 1, 5, 10, tzinfo=timezone.utc), u), (u, parse_ts(v))
     assert parse_ts("2026-01-05T10:00:00Z")[1] == "iso"
+    # `_ts` manda: objeto con date y _ts que discrepan -> la marca es `_ts` y `date` se compara aparte
+    ns = sec * 10**9
+    obj = {"_ts": ns, "date": "2026-01-06"}
+    assert row_time(obj) == (datetime(2026, 1, 5, 10, tzinfo=timezone.utc), "_ts", "ns"), row_time(obj)
+    assert row_day(obj) == date(2026, 1, 5)
+    assert row_time({"_ts": None, "date": "2026-03-02"})[1] == "date"  # sin `_ts` válida cae al campo de contenido
+    acc3 = Acumulador()
+    procesar(acc3, "L", {"columns": [], "rows": [obj]})
+    assert acc3.tiempo == Counter({("_ts", "ns"): 1}), acc3.tiempo
+    assert acc3.contenido["date"]["difieren"] == 1 and len(acc3.contenido["date"]["ejemplos"]) == 1, acc3.contenido
     # saneado de errores: sin credencial, sin espacios sobrantes y acotado
     ruido = 'error {"message":"Bearer SECRETO-X"}' + " x" * 400
     s = sanear(ruido, "SECRETO-X")
     assert "SECRETO-X" not in s and "[redactado]" in s and len(s) <= 301, s
-    # clave de instrumento desde las etiquetas del topic
-    assert detectar_clave(["venue", "symbol"]) == "symbol"
-    assert detectar_clave(["exchange", "contract_id"]) == "contract_id"
-    assert detectar_clave([]) is None
+    # etiquetas: declaradas frente a las que agrupan (combinación completa de /latest)
+    c1 = claves_reales(["venue", "symbol"], [(("symbol", "EURUSD"), ("venue", "ecn")), (("symbol", "EURUSD"),)])
+    assert c1["agrupacion"] == ["symbol", "venue"] and c1["instrumentos_sin_alguna_etiqueta"] == 1, c1
+    c2 = claves_reales(["symbol", "contract"], [(("symbol", "X"),)])
+    assert c2["declaradas_sin_valor_en_latest"] == ["contract"], c2
     # JSON Schema de objeto aplanado a hojas escalares
     esq = {"type": "object", "properties": {"price": {"type": "number"}, "book": {"type": "object", "properties": {
         "n": {"type": "integer"}}}, "tags": {"type": "array"}}}
@@ -517,11 +583,18 @@ def selftest() -> None:
     assert acc.negativos == Counter({"volume": 1}), acc.negativos
     assert acc.filas == 3 and len(acc.pasos) == 1 and abs(acc.pasos[0] - 59.876544) < 1e-6, acc.pasos
     assert acc.tiempo == Counter({("ts", "iso"): 3}), acc.tiempo
+    # duplicado entre dos peticiones distintas del mismo instrumento (no sólo dentro de una respuesta)
+    fila_rep = {"ts": "2026-01-05T10:00:00Z", "price": 1.0}
+    acc5 = Acumulador()
+    procesar(acc5, "symbol=Z", {"columns": [], "rows": [fila_rep]})
+    procesar(acc5, "symbol=Z", {"columns": [], "rows": [fila_rep]})
+    assert acc5.duplicados == 1, acc5.duplicados
     # la mediana de filas por día sólo usa días hábiles: un sábado con muchas filas no la altera
     procesar(acc, "symbol=Y", {"columns": [], "rows": [{"ts": "2026-01-10T10:00:00Z"} for _ in range(50)]})
-    tema = resumen(acc, 3, {"kind": "series", "lectura": "/series/market.x/rows", "tags": ["symbol"],
-                            "clave": "symbol", "esquema": ["price (last)"], "instrumentos_listados": 2,
-                            "instrumentos_leidos": 2, "error": None})
+    tema = resumen(acc, 3, {"kind": "series", "lectura": "/series/market.x/rows",
+                            "claves": claves_reales(["symbol"], [(("symbol", "X"),), (("symbol", "Y"),)]),
+                            "esquema": ["price (last)"], "instrumentos_listados": 2, "instrumentos_leidos": 2,
+                            "subconjunto": None, "error": None})
     assert tema["filas_por_dia_habil_mediana"] == 3, tema["filas_por_dia_habil_mediana"]
     # lectura partida por el servidor y error de día único
     _selftest_lectura()
@@ -534,7 +607,8 @@ def selftest() -> None:
     md = render_md(rep)
     assert "| topic |" in md and "## Consultas reproducibles" in md and "## GPU de los nodos: pendiente" in md, md
     assert "ERROR: HTTP 400: prueba / con barra" in md and "| market.x |" in md
-    assert "columna `ts` en iso: 53 filas" in md, md
+    assert "columna `ts` en iso: 53 filas (sin `_ts`: fallback a campo de contenido)" in md, md
+    assert "agrupación por: symbol" in md, md
     print("selftest ok")
 
 
