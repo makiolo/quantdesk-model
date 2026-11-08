@@ -57,6 +57,14 @@ def sanear(texto: str, acceso: str, maximo: int = 300) -> str:
     return texto if len(texto) <= maximo else texto[:maximo] + "…"
 
 
+def positivo(texto: str) -> int:
+    """Entero >= 1 para argparse: un límite de 0 o negativo recortaría en silencio."""
+    n = int(texto)
+    if n < 1:
+        raise argparse.ArgumentTypeError(f"debe ser un entero >= 1, no {texto}")
+    return n
+
+
 def ts_qn(d: date) -> str:
     """Inicio del día UTC en RFC3339 con zona: el servidor rechaza from/to como YYYY-MM-DD."""
     return f"{d.isoformat()}T00:00:00Z"
@@ -102,7 +110,7 @@ def parse_ts(v) -> tuple[datetime | None, str | None]:
             return datetime.fromtimestamp(v / DIVISOR[u], tz=timezone.utc), u
         if isinstance(v, str) and len(v) >= 10:
             d = datetime.fromisoformat(re.sub(r"(\.\d{6})\d+", r"\1", v.strip().replace("Z", "+00:00")))
-            return (d if d.tzinfo else d.replace(tzinfo=timezone.utc)), "iso"
+            return (d.astimezone(timezone.utc) if d.tzinfo else d.replace(tzinfo=timezone.utc)), "iso"
     except (ValueError, OverflowError, OSError):
         return None, None
     return None, None
@@ -543,6 +551,21 @@ def selftest() -> None:
         assert unidad_de(v) == u, (u, v)
         assert parse_ts(v) == (datetime(2026, 1, 5, 10, tzinfo=timezone.utc), u), (u, parse_ts(v))
     assert parse_ts("2026-01-05T10:00:00Z")[1] == "iso"
+    # ISO con zona: el día se saca en UTC (00:30 del 6 a +02:00 es el 5 en UTC, igual que _ts 2026-01-05T00:00Z)
+    assert parse_ts("2026-01-06T00:30:00+02:00")[0] == datetime(2026, 1, 5, 22, 30, tzinfo=timezone.utc)
+    acc6 = Acumulador()
+    medianoche = int(datetime(2026, 1, 5, 0, 0, tzinfo=timezone.utc).timestamp()) * 10**9
+    procesar(acc6, "L", {"columns": [], "rows": [{"_ts": medianoche, "date": "2026-01-06T00:30:00+02:00"}]})
+    assert acc6.contenido["date"]["filas"] == 1 and acc6.contenido["date"]["difieren"] == 0, acc6.contenido
+    # --max-symbols: sólo enteros >= 1; 0 y negativos se rechazan (no recortan en silencio)
+    assert positivo("2") == 2
+    for malo in ("0", "-3"):
+        try:
+            positivo(malo)
+        except argparse.ArgumentTypeError:
+            pass
+        else:
+            raise AssertionError(f"--max-symbols {malo} debe rechazarse")
     # `_ts` manda: objeto con date y _ts que discrepan -> la marca es `_ts` y `date` se compara aparte
     ns = sec * 10**9
     obj = {"_ts": ns, "date": "2026-01-06"}
@@ -618,7 +641,7 @@ def main() -> int:
     ap.add_argument("--hasta", default=date.today().isoformat())
     ap.add_argument("--gap", type=int, default=3, help="huecos de al menos N días hábiles")
     ap.add_argument("--topics", default="market.*", help="patrón de nombres de topic (fnmatch)")
-    ap.add_argument("--max-symbols", type=int, default=0, help="instrumentos por topic como máximo (0 = todos)")
+    ap.add_argument("--max-symbols", type=positivo, default=None, help="instrumentos por topic como máximo (por defecto todos)")
     ap.add_argument("--json", help="guardar el inventario completo en este fichero")
     ap.add_argument("--informe", help="escribir el informe Markdown en este fichero")
     ap.add_argument("--selftest", action="store_true")
