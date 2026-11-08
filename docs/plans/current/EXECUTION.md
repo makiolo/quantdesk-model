@@ -96,3 +96,28 @@ carpeta sólo tiene `settings.toml`, así que B tendrá que instalar allí la to
   selftest OK, sale 2 sin credenciales, `--max-symbols -1` rechazado. Sin probar contra qn real.
 - Pendiente: el usuario lo ejecuta con su `QN_URLS`/`QN_TOKEN` y genera el informe; la tarea cierra cuando el informe
   con cifras esté en `docs/plans/current/execution/TI-01-INV/`.
+
+## Ola 2 (2026-11-08)
+
+Cuota antes de la ola (api): Claude 48 % con el 76,8 % de la ventana (reinicio 2026-11-10 00:00 UTC); Codex 72 % con
+el 58,5 % (reinicio 2026-11-11 06:41 UTC). Disco: C: 2,9 GB libres; E: 315 GB. Contexto de la raíz: 26 % (tras una
+compactación). El usuario pide lanzar la ola 2 mientras la puerta 1 sigue abierta.
+
+- En paralelo (rutas disjuntas, ninguna toca el lock): TS-00-PREC (L6) y TI-13-PUB (L5), autores Claude Sonnet 5.5
+  xhigh (LAUNCH §2 para niveles L5–L6 del plan; la A2 señaló que Haiku max sólo lo admite la tabla global); revisión de
+  otro proveedor (Codex). TI-12-MT5 espera a la puerta 2; TI-09-ARCH, a las cifras de TI-01-INV (puerta 1).
+- Decisión de la raíz (provisional): el primer corte de backtest del filtro D-11 de TI-13-PUB es el parámetro
+  `--corte`, por defecto 2016-10-01 (inicio del histórico local de 10 años, PLAN_TSFM_FINANZAS D-07); el filtro se
+  reaplica sobre lo crudo sin volver a descargar. Lo fija el usuario cuando se defina el backtest.
+- Decisión de la raíz: en TS-00-PREC la delta por AAD de la medida 3 queda «no medida» (no hay AAD hasta engine-nn);
+  SPRINT.md sólo pide cono → σ_loc.
+- Incidente de la raíz (A9, tercero): un heredoc con backticks para añadir esta sección falló en el shell sin escribir
+  nada; rehecho con Edit.
+
+| Entrega | Rol | Modelo / esfuerzo | Resultado | Commit | Nota |
+|---|---|---|---|---|---|
+| TS-00-PREC y TI-13-PUB (fichas) | revisión A2 | Claude Haiku 5.5 high (sólo lectura) | corregidas | — | intentos 90 y 91. TS: umbral de semillas fijado (sd ddof=1, n=5; medida 1 max de sd de los dos tipos; 2–3 RMS de sd entre modelos f64), Dupire fijado (años, recentrado, sin extrapolar colas), redondeo único con saturación, sin reentreno, tolerancia GARCH, hash canónico y `--verificar`. TI: lista cerrada de subconjuntos y criterio D-11, licencia antes de descargar, LOTSA ≤ 10 GB, caché HF en la guarda, ritmo 1 req/s. Ambas: `git commit -F f -- rutas`, tmp propio, aceptación por `git show` de sus commits |
+| TS-00-PREC intento 1 | autor | Claude Sonnet 5.5 xhigh | en curso | | intento 95 |
+| TI-13-PUB intento 1 | autor | Claude Sonnet 5.5 xhigh | rechazada | `cd4e4ba` | intento 96 (la BDD lo guarda como «aceptada» porque la raíz lo cerró al recibir la entrega, antes de verificar; no se puede reabrir; el rechazo vale aquí y en el 109). Verificación de la raíz sobre `git archive cd4e4ba` en `E:/quantdesk-lab/tmp/verif-cd4e4ba` (unión al `.venv`): `--selftest` ok, `run_selftests.py` 5 OK / 0 FALLO, `--verificar` OK (1805 ficheros, 130.066.541 filas, filtro reaplicado sobre 36 datasets con el mismo hash), commit sólo con rutas autorizadas. Datos: 36 datasets, 1,0 GB |
+| TI-13-PUB revisión 1 | revisor | Codex gpt-5.6-terra high (sólo lectura) | RECHAZAR | — | intento 108. 6 ALTA, 3 confirmadas por la raíz en el código: idempotencia de Binance sólo por tamaño; guarda de 100 GB sin contar los parquet procesados y caché HF truncada a partir de 20.000 ficheros; sin tope LOTSA de 2/10 GB; HF sin User-Agent ni control de reintentos; `--verificar` no compara filas y pasa en vacío. Sin fuga D-11 ni credenciales |
+| TI-13-PUB intento 2 | autor | Claude Sonnet 5.5 xhigh | en curso | | intento 109, mismo autor reanudado con el diagnóstico |
