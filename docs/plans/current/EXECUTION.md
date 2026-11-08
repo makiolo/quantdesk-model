@@ -51,9 +51,48 @@ corrían `cargo test` de otra sesión sobre `S:\projects\quantdesk\rust\target` 
 `%LOCALAPPDATA%\Temp` ocupaba 12 GB. La raíz no borra nada ajeno: pregunta al usuario. Intentos BDD 6 y 7 cerrados
 como `bloqueada`. Sin commit: `requirements.in` (A) y `scripts/build_wheels.py` (B, `--selftest` OK) quedan en el árbol.
 
+Instrucción del usuario (2026-11-08): **no usar `du` sobre árboles grandes ni matarlo a medias** (deja
+`du.exe.stackdump`); `df -h` para espacio. Segundo incidente de backticks (sed con comillas simples): el shell de la
+herramienta los ejecuta igualmente; regla para la raíz y las fichas: ningún backtick en órdenes Bash.
+
 Instrucción del usuario (2026-11-08): **en toda orden que use Rust, `RUSTUP_HOME=S:\Apps\Home\.rustup`**. Esa
 carpeta sólo tiene `settings.toml`, así que B tendrá que instalar allí la toolchain 1.97.1 (rustfmt y clippy) que pide
 `rust/rust-toolchain.toml`. La descarga va a S:, que tiene 93 GB libres.
 
 | LAB-00-ENV-A fase 1 | L4 | autor | Claude Haiku 5.5 high | 23:38 | 00:46 | bloqueada (C: < 2 GB) | — | intento 6; venv de herramientas en E:, versiones resueltas: torch 2.15.0+cpu, pyarrow 26.0.1, ml_dtypes 0.6.0, arch 8.0.0, MetaTrader5 5.0.6231, chronos-forecasting 2.3.2 |
 | LAB-00-ENV-B | L5 | autor | Claude Haiku 5.5 max | 23:38 | 00:51 | bloqueada (C: < 2 GB) | — | intento 7; parado por la guarda antes de compilar |
+
+### Intentos y revisiones (2026-11-08)
+
+| Entrega | Rol | Modelo / esfuerzo | Resultado | Commit | Nota |
+|---|---|---|---|---|---|
+| LAB-00-ENV-A fase 1 | autor | Claude Haiku 5.5 high | entregada | 4298979 | intento BDD 15 (reanudación) |
+| LAB-00-ENV-B | autor | Claude Haiku 5.5 max | entregada | a581355 | intento 16; rueda en 3071 s |
+| TI-01-INV intento 1 | autor | Claude Haiku 5.5 high | rechazada | f8f53ad | from/to no RFC3339 (ALTA, verificado en qn-server `parse_recv_ts`; el script original tenía el mismo fallo), límite de filas, mediana con fines de semana, unidades, HTTPError sin sanear |
+| TI-01-INV | revisión | Codex gpt-5.6-luna high | RECHAZAR | — | intento 39 |
+| LAB-00-ENV-A fase 2 | autor | Claude Haiku 5.5 high | entregada | 33e91fd | intento 38 |
+| LAB-00-ENV (A+B) | revisión | Codex gpt-5.6-terra high | RECHAZAR | — | intento 45: 2 ALTA **refutados** (sandbox de sólo lectura sin temporal escribible; fuera, 4 OK), 5 MEDIA válidos |
+| TI-01-INV intento 2 | autor | Claude Haiku 5.5 high | rechazada | 29b4c5c | revisión 46: marca `date` antes que `_ts` (ALTA; decisión de raíz: `_ts` principal), duplicados por respuesta, clave sin justificar |
+| TI-01-INV intento 3 | autor | Claude Haiku 5.5 high | aceptada con condiciones | d3d9f55 | revisión 56 (luna): UTC en ISO con zona, `--max-symbols` ≥ 1 → cb46ce2, verificado por la raíz |
+| LAB-00-ENV correcciones | autor A / B | Claude Haiku 5.5 high | aceptadas | 6b5ac1e / a9a7223 | sha256 real + RECORD + HMM no-op; entorno sellado, extracción a vacío, verificación de SHA256SUMS |
+| LAB-00-ENV (correcciones) | revisión | Codex gpt-5.6-terra high | ACEPTAR CON CONDICIONES | — | intento 61: verificación de sums parcialmente tautológica (mitigada por el cruce con el lock en humo); camino de build no reejecutado con el script corregido (declarado en wheels.md) |
+
+### Cierre de LAB-00-ENV (2026-11-08) — CERRADA
+
+- HEAD verificado por la raíz: `cb46ce2` (entregas 4298979, 33e91fd, 6b5ac1e de A; a581355, a9a7223 de B).
+- Pruebas (raíz, fuera de sandbox): `run_selftests.py` 4 OK / 0 FALLO; `smoke_env.py --selftest --require-engine` 21 OK /
+  0 SALTADAS, con HMM loglik 1293,788 → 1308,932 (76 it., converged), |P−P0| = 0,094, 200 × 20 finitos y determinista;
+  torch `2.15.0+cpu`, CUDA None; reproducción en venv limpio con `pip freeze` idéntico (63 líneas, del autor).
+- Hashes: rueda `quantdesk-0.0.0-cp312-cp312-win_amd64.whl` sha256
+  `28c1ed662a79a1075a11e544a0f4fe3f10be70d0a9917a4abbf6eccad4c3c3fd` (quantdesk `69fdb39d`); `requirements.lock`
+  sha256 `af7f943dd11e442144277fb20afd83bb7bfc36b1dc315fccb6163e76f4312382`.
+- Detalle: `docs/plans/current/execution/LAB-00-ENV/{env.md,wheels.md}`.
+- Desviaciones: en la primera pasada entraron ~230 MB en la caché de pip de usuario de C: y pip usó TMPDIR en C: durante
+  la compilación (corregido en los scripts, no reejecutado); recompilar con el script corregido al subir de motor.
+
+### TI-01-INV — parte de código aceptada; falta la puerta de usuario 1
+
+- Script `scripts/inventario_options_chain.py` en `cb46ce2`, sha256 `7a9811c72876620e1eb7441ee0d5db8e071dd82fa7bf251e8bfe9976d45f9310`;
+  selftest OK, sale 2 sin credenciales, `--max-symbols -1` rechazado. Sin probar contra qn real.
+- Pendiente: el usuario lo ejecuta con su `QN_URLS`/`QN_TOKEN` y genera el informe; la tarea cierra cuando el informe
+  con cifras esté en `docs/plans/current/execution/TI-01-INV/`.
