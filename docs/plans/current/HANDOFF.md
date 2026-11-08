@@ -1,0 +1,56 @@
+# HANDOFF de la raíz — relevo 1
+
+## Relevo
+- Número: 1
+- Sale: sesión 6c94f479-4b88-440a-8616-ef71c1a57e56, claude-opus-5-5, contexto 30.5 %
+- Escrito: 2026-11-08T13:34:19+01:00
+- HEAD al escribir: 4adda7bef93eef6efacfe730ea1a1eb6eb177a40
+- LAUNCH: docs/plans/current/LAUNCH.md · bloque del coordinador: LAUNCH §2–§4 (raíz, cupo, olas y reglas de ficha) y §8
+- Relevos anteriores: `git log --follow -- docs/plans/current/HANDOFF.md`
+
+## Arranque
+1. `D:/miniconda312/python.exe -X utf8 C:/Users/makiolo/.claude/skills/sprint/tools/claude_or.py handoff accept docs/plans/current/HANDOFF.md`: valida este archivo y anota tu sesión.
+2. Lee sólo esto: este archivo, el bloque del coordinador del LAUNCH, `docs/plans/SPRINT_PROJECT.md` (y las
+   políticas que liste), la skill global `sprint` (`C:/Users/makiolo/.claude/skills/sprint/SKILL.md`, `references/launch.md`,
+   `references/handoff.md`) y las fichas de los hijos en vuelo. El resto, cuando haga falta y delegando.
+3. `git status`, el estado del gate o candados de SPRINT_PROJECT «Comandos» y `git log --oneline 4adda7bef93e..HEAD`.
+4. Adopta los hijos en vuelo: comprueba su proceso y su salida y vigílala; no relances un ID vivo.
+5. Lanza el vigía de caché con `run_in_background` desde la raíz del repo:
+   `D:/miniconda312/python.exe -X utf8 C:/Users/makiolo/.claude/skills/sprint/scripts/cache_heartbeat.py` (`references/handoff.md`, «Latido de caché»).
+6. Busca en la memoria del proyecto (SPRINT_PROJECT «Identidad») las palabras clave del siguiente paso.
+7. Commit del HANDOFF con la aceptación y continúa con «Siguiente paso».
+
+## Estado
+Recuperación en frío (RECOVERY-20261108-133223): la raíz anterior murió hacia las 13:11 sin relevar. Ola 2 en curso.
+- Cerradas antes: LAB-00-ENV (`cb46ce2`). TI-01-INV: código aceptado (`cb46ce2`), falta la puerta de usuario 1.
+- TI-13-PUB intento 2 (`4a56315`): verificación de la raíz en verde (selftest, suite 5 OK, `--verificar` OK con 1805
+  ficheros y 130.066.541 filas). Revisión 2 de Codex (intento BDD 110, terminada a las 13:10 y cerrada ahora como
+  rechazada): **RECHAZAR**; 4 de 6 corregidos; quedan ALTA guarda de 100 GB por estimación (2 × crudo, sin guarda
+  incremental al escribir parquet), ALTA reintentos internos de `hf_hub_download` fuera de control (la ficha pide 3
+  reintentos, Retry-After y ≤ 1 req/s), MEDIA tope total de LOTSA por fichero (descarga parcial), BAJA `procesar` sin
+  PARADA controlada. Salida en `E:/quantdesk-lab/tmp/TI-13-PUB/revision2_out.md`.
+- TS-00-PREC intento 1 (BDD 95): el autor commiteó `4adda7b` a las 13:10 y su sesión murió antes de informar. Logs del
+  autor: selftest ok (8 pruebas), `run_selftests.py` 6 OK / 0 FALLO. Sin verificar por la raíz ni revisar.
+- TI-12-MT5 espera la puerta 2; TI-09-ARCH, las cifras de TI-01-INV (puerta 1).
+
+## En vuelo
+ninguno (los dos hijos de la sesión anterior terminaron: Codex revisión 2 con salida completa; autor de TS-00-PREC con commit `4adda7b`).
+
+## Decisiones
+- Raíz (A12): los 4 hallazgos de la revisión 2 de TI-13-PUB se corrigen en un intento 3 (los dos ALTA son requisitos
+  literales de la ficha: guarda de 100 GB y ritmo/reintentos). Para el Hub, GET propios con el mismo cliente de
+  Binance, como propone el propio comentario `shortcut:` del autor. Versionado en EXECUTION.md (ola 2).
+- Raíz: TS-00-PREC sigue el protocolo normal: verificación de la raíz sobre `git archive 4adda7b` + revisión de Codex.
+- Incidente A9 (cuarto): un heredoc con backticks en Bash ejecutó los fragmentos (sin escrituras ni cambios; sólo
+  «command not found» y un tar por stdout). La raíz escribe ficheros sólo con Write/Edit.
+
+## Preguntas abiertas al usuario
+- Puerta 1 (TI-01-INV): el usuario ejecuta `scripts/inventario_options_chain.py` con su `QN_URLS`/`QN_TOKEN`.
+- Puerta 2 (TI-12-MT5): el usuario abre y autentica el terminal MT5.
+
+## Conocimiento promovido
+nada nuevo: el proyecto no tiene herramienta de conocimiento (SPRINT_PROJECT §1).
+
+## Siguiente paso
+Lanzar TI-13-PUB intento 3 (autor Sonnet 5.5 xhigh con la ficha y el diagnóstico de la revisión 2) y, en paralelo,
+verificar TS-00-PREC sobre `git archive 4adda7b` y lanzar su revisión con Codex (sólo lectura).
