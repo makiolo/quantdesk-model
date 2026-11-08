@@ -53,5 +53,6 @@ ninguno (los dos hijos de la sesión anterior terminaron: Codex revisión 2 con 
 nada nuevo: el proyecto no tiene herramienta de conocimiento (SPRINT_PROJECT §1).
 
 ## Siguiente paso
-Lanzar TI-13-PUB intento 3 (autor Sonnet 5.5 xhigh con la ficha y el diagnóstico de la revisión 2) y, en paralelo,
-verificar TS-00-PREC sobre `git archive 4adda7b` y lanzar su revisión con Codex (sólo lectura).
+Hecho en este tramo: TI-13-PUB CERRADA en `7ea6d94` y TS-00-PREC CERRADA en `5afc795` (detalle en EXECUTION). Ola 2
+sin trabajo lanzable: TI-12-MT5 espera la puerta 2 y TI-09-ARCH las cifras de TI-01-INV (puerta 1); la ola 3
+(TI-02-DATA) necesita TI-01-INV. Siguiente paso: esperar al usuario en las puertas 1 y 2; no hay hijos en vuelo.
