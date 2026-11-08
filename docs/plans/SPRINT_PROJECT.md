@@ -10,7 +10,7 @@ genérica de la skill. Mantenerlo corto: la parte principal se lee en cada invoc
 - Proyecto: `quantdesk-model` (mismo nombre que usan los `DEPENDENCIAS.md` de otros proyectos).
 - Qué es: **laboratorio Python** de datos y modelos del TSFM de `quantdesk` (adquisición y exportación de
   datos, datasets congelados con hash, bancos y referencias externas, configuraciones de ejecuciones,
-  informes, fichas de modelo, almacén de artefactos). Git local sin remoto (§2); datos fuera de Git (§11).
+  informes, fichas de modelo, almacén de artefactos). Git con remoto y sin push (§2); datos fuera de Git (§11).
 - Repositorio: `S:/Projects/quantdesk-model`
 - Raíz de planes: `docs/plans/`
 - Backlog del laboratorio (tareas, comprobaciones y calendario): [backlog/README.md](backlog/README.md).
@@ -25,8 +25,9 @@ genérica de la skill. Mantenerlo corto: la parte principal se lee en cada invoc
 
 ## 2. Git
 
-- Repositorio Git local, rama `main`, **sin remoto** (decisión del usuario, 2026-11-07). Commits por
-  fase y tag de cierre `sprint-NN` como en la skill; sin push.
+- Repositorio Git, rama `main`, con remoto `origin` (`git@github.com:makiolo/quantdesk-model.git`), pero
+  **sin push**: ni la raíz ni los hijos empujan (usuario, 2026-11-08; corrige el «sin remoto» del
+  2026-11-07). Commits por fase y tag de cierre `sprint-NN` como en la skill.
 - `.gitignore`: `.sprint-runtime/`, entornos, `data/`, `runs/`, `artifacts/` y pesos/datasets
   (`*.parquet`, `*.safetensors`, `*.ckpt`, `*.pt`). Los datasets y artefactos no van a Git: se
   registran por ruta y SHA-256 en los informes.

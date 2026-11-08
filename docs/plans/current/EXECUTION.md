@@ -34,7 +34,8 @@ Decisiones de la raíz (A12):
 - `py -3.12` no existe: el `.venv` se crea con `D:/miniconda312/python.exe` (3.12.3, el mismo base que el venv de
   quantdesk), sin instalar nada en él.
 - Hallazgo: el repo **sí tiene remoto** `origin` (`git@github.com:makiolo/quantdesk-model.git`), al contrario de
-  SPRINT_PROJECT §2. Se sigue sin push; pendiente de que el usuario confirme cuál es la verdad.
+  SPRINT_PROJECT §2. **Resuelto (usuario, 2026-11-08):** el remoto es correcto y no se hace push; SPRINT_PROJECT §1–§2 y
+  LAUNCH §4 corregidos.
 - TI-01-INV (extensión del script) espera a que LAB-00-ENV-A entregue la fase 1: A ejecuta el `--selftest` de
   `scripts/inventario_options_chain.py` y no se edita a la vez.
 

@@ -58,7 +58,7 @@ Preparado el 2026-11-07 al activar el sprint. Escribirlo no lanza nada: el usuar
   ~3 GB libres: si baja de 2 GB, parar y avisar. TI-13-PUB dentro de 100 GB.
 - **Credenciales:** ninguna en repo, informes, prompts ni chat.
 - **Fichas:** plantilla `ficha.md`, en `.git/sprint-runtime/s01/<ID>/ficha.md`, escritas con Write o script, nunca
-  heredoc. Commit por tarea sólo de las rutas autorizadas; sin push (repo sin remoto).
+  heredoc. Commit por tarea sólo de las rutas autorizadas; sin push (el repo tiene remoto `origin`, pero no se empuja: usuario, 2026-11-08).
 - **Evidencia:** cada dataset e informe con SHA-256, semilla, fecha de corte y versión del motor (DoD §8).
 
 ## 5. Cuota y costes
