@@ -207,3 +207,28 @@ dd43fa94, HANDOFF relevo 1 (`674344b`). Ningún hijo vivo; ningún WIP sin commi
 - Consecuencia: **TI-09-ARCH no tiene datos de origen.** La cadena de opciones nunca llegó a qn, y lo que no llegó no se
   recupera (12-A). Queda a decisión del usuario (pregunta abierta en el HANDOFF). TI-02-DATA puede arrancar con ohlcv,
   rates y performance.
+
+### TI-09-ARCH — RETIRADA (2026-11-08)
+
+- Usuario, 2026-11-08: «lo quitamos del sprint hasta que tengamos más datos». No se lanzó ningún intento.
+- Estado en la BDD: `retirada`. SPRINT.md la marca en la fila 3 y en §6 Exclusiones. En el backlog pasa a «Esperando
+  datos». La fila de cobertura de `next/SPRINT.md` queda condicionada a entregar antes la parte de laboratorio.
+- Las dependencias de tarea de DEPENDENCIAS.md (OC-01/02/03, OCS-02) siguen siendo válidas para cuando vuelva.
+
+## Ola 3 (2026-11-08)
+
+- Cuota semanal antes de la ola (`claude-or quota --weekly`, 2026-11-08):
+  - Claude: 54 % consumido, con el 82,9 % de la ventana transcurrido; reinicio el 2026-11-10 00:00 UTC.
+  - Codex: 91 % consumido, con el 64,7 % transcurrido; reinicio el 2026-11-11 06:41 UTC.
+  - Alcanza para la autoría de TI-02-DATA. A Codex le queda poco: la revisión irá a Codex sólo si le queda margen al
+    llegar; si no, a Claude Opus 5.5, que es otro modelo que el autor (LAUNCH §2), y queda anotado.
+- Token: el usuario autoriza otro token de sólo lectura igual al de TI-01-INV («emite otro token de solo lectura»).
+- **Decisión de la raíz (A13):** TI-02-DATA se parte en dos pasos, porque la skill `qn-token` obliga a usar el token en
+  el host donde se emite (mini) y el exportador necesita el `.venv` de Windows (pyarrow, `data_py`):
+  1. `scripts/descarga_lago.py`: sólo biblioteca estándar. La raíz lo ejecuta en mini con el token y copia a
+     `E:/quantdesk-lab/data/lago/` el volcado crudo, con su manifiesto y sus SHA-256. El volcado no contiene el
+     token.
+  2. `scripts/exportar_market_history.py`: en el `.venv`, sin red ni token. Pasa el volcado (y las velas de Binance
+     de TI-13-PUB) a `engine.market-history/v1`.
+  - El token se emite cuando la raíz haya leído entero el paso 1 y su selftest esté en verde, y se revoca en cuanto
+    termine la descarga. La revisión de otro modelo cubre después los dos pasos.
