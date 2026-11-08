@@ -22,7 +22,7 @@ import sys
 import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from setup_env import LAB, under_lab  # noqa: E402
+from setup_env import LAB, REPO, under_lab  # noqa: E402
 
 DIRECT = {
     "pyarrow": "pyarrow",
@@ -75,6 +75,84 @@ def check_lab_paths() -> None:
     record("OK" if os.path.isfile(pip_ini) else "FALLO", "pip.ini del venv", pip_ini)
 
 
+WHEEL_NAME = "quantdesk-0.0.0-cp312-cp312-win_amd64.whl"
+# Commit de quantdesk del que se compila la rueda (LAB-00-ENV-B, a581355).
+WHEEL_SOURCE_COMMIT = "69fdb39d0b67969dbdafa77f5da656511342f175"
+WHEEL_SUMS = LAB + "/wheels/SHA256SUMS"
+ENGINE_MODULES = ("quantdesk", "data_py", "market_py", "findsl_py", "strategy_py")
+# Comprobacion HMM de docs/plans (backlog 2.1): serie sintetica de 400 dias, 200 caminos a 20 dias.
+HMM_DAYS = 400
+HMM_PATHS = 200
+HMM_HORIZON = 20
+HMM_SEED = 42
+
+
+def check_wheel_pin() -> None:
+    """La rueda instalada debe ser la de SHA256SUMS y su hash debe estar en requirements.lock."""
+    sums = {}
+    with open(WHEEL_SUMS, encoding="utf-8") as f:
+        for line in f:
+            parts = line.split()
+            if len(parts) == 2:
+                sums[parts[1]] = parts[0]
+    digest = sums.get(WHEEL_NAME)
+    if digest is None:
+        record("FALLO", "rueda en SHA256SUMS", f"{WHEEL_NAME} no aparece en {WHEEL_SUMS}")
+        return
+    with open(os.path.join(REPO, "requirements.lock"), encoding="utf-8") as f:
+        lock = f.read()
+    ok = f"--hash=sha256:{digest}" in lock
+    record("OK" if ok else "FALLO", "rueda en requirements.lock", f"sha256 {digest} (commit {WHEEL_SOURCE_COMMIT})")
+
+
+def check_hmm() -> None:
+    """Calibra un Hmm con Engine.calibrate y muestrea 200 caminos de 20 dias con open_stream."""
+    import numpy as np
+    import quantdesk as q
+
+    eng = q.Engine(n_paths=1, n_steps=1, seed=0)
+    obs = "SYN.SPOT"
+    t = [i / 252.0 for i in range(HMM_DAYS)]
+    truth = q.Hmm(
+        states=(q.GbmP(s0=1.0, mu=0.02, sigma=0.08, observable=obs), q.GbmP(s0=1.0, mu=-0.05, sigma=0.2, observable=obs)),
+        initial_probabilities=(0.6, 0.4),
+        transition_matrix=((0.95, 0.05), (0.08, 0.92)),
+        transition_interval=1.0 / 252.0,
+    )
+    sim = np.asarray(eng.simulate(truth, t, 1, HMM_SEED).values, dtype=np.float64)
+    if sim.shape[:2] != (1, HMM_DAYS) or not np.isfinite(sim).all():
+        record("FALLO", "serie sintetica", f"forma {sim.shape} o valores no finitos")
+        return
+    series = q.ObservedSeries(observable=obs, times=tuple(t), values=tuple(float(x) for x in sim[0, :, 0]))
+    template = q.Hmm(
+        states=(q.GbmP(s0=1.0, mu=0.0, sigma=0.1, observable=obs), q.GbmP(s0=1.0, mu=0.0, sigma=0.3, observable=obs)),
+        initial_probabilities=(0.5, 0.5),
+        transition_matrix=((0.9, 0.1), (0.1, 0.9)),
+        transition_interval=1.0 / 252.0,
+    )
+    res = eng.calibrate(template, series, q.HmmCalibrationOptions(seed=7))
+    dts = [1.0 / 252.0] * HMM_HORIZON
+    paths = np.empty((HMM_PATHS, HMM_HORIZON, 1), dtype=np.float64)
+    for i in range(HMM_PATHS):
+        block = eng.open_stream(res, HMM_SEED + i, policy="from_calibration_end").advance_many(dts)
+        values = np.asarray(block.values, dtype=np.float64)
+        if values.shape != (HMM_HORIZON, 1):
+            record("FALLO", "HMM open_stream", f"camino {i}: forma {values.shape}, esperada ({HMM_HORIZON}, 1)")
+            return
+        paths[i] = values
+    if not np.isfinite(paths).all() or not (paths > 0).all():
+        record("FALLO", "HMM caminos", "valores no finitos o no positivos en GBM_P")
+        return
+    again = np.asarray(
+        eng.open_stream(res, HMM_SEED, policy="from_calibration_end").advance_many(dts).values, dtype=np.float64
+    )
+    if not np.array_equal(again, paths[0]):
+        record("FALLO", "HMM determinismo", "misma semilla, distintos valores")
+        return
+    record("OK", "HMM calibrate + open_stream",
+           f"serie {HMM_DAYS} dias; {HMM_PATHS} caminos x {HMM_HORIZON} dias; forma {paths.shape}; finitos; determinista")
+
+
 def check_engine(require_engine: bool) -> None:
     if importlib.util.find_spec("quantdesk") is None:
         if require_engine:
@@ -82,7 +160,19 @@ def check_engine(require_engine: bool) -> None:
         else:
             record("SALTADO", "motor quantdesk", "rueda pendiente: comprobacion HMM de 2.1 NO ejecutada (fase 1)")
         return
-    record("FALLO", "motor quantdesk", "quantdesk presente, pero la comprobacion HMM aun no esta escrita (fase 2)")
+    try:
+        for m in ENGINE_MODULES:
+            importlib.import_module(m)
+        record("OK", "import motor", f"quantdesk {md.version('quantdesk')} (commit {WHEEL_SOURCE_COMMIT}); "
+               + ", ".join(ENGINE_MODULES))
+    except Exception as exc:  # noqa: BLE001 - se reporta tal cual
+        record("FALLO", "import motor", f"{type(exc).__name__}: {exc}")
+        return
+    check_wheel_pin()
+    try:
+        check_hmm()
+    except Exception as exc:  # noqa: BLE001 - se reporta tal cual
+        record("FALLO", "HMM calibrate + open_stream", f"{type(exc).__name__}: {exc}")
 
 
 def main(argv=None) -> int:

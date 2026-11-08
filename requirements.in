@@ -11,3 +11,7 @@ ml_dtypes
 arch
 MetaTrader5
 chronos-forecasting
+
+# Rueda propia de quantdesk (LAB-00-ENV-B), commit 69fdb39d0b67969dbdafa77f5da656511342f175,
+# sha256 28c1ed662a79a1075a11e544a0f4fe3f10be70d0a9917a4abbf6eccad4c3c3fd. Fuente de verdad: SHA256SUMS.
+quantdesk @ file:///E:/quantdesk-lab/wheels/quantdesk-0.0.0-cp312-cp312-win_amd64.whl
