@@ -41,7 +41,7 @@ Recuperación en frío (RECOVERY-20261108-133223): la raíz anterior murió haci
   `.git/sprint-runtime/s01/<ID>/ficha.md`:
   - TS-00-BENCH, intento BDD 123;
   - TI-12-MT5, fase A (sin terminal real), BDD 124;
-  - TI-02-DATA-DEUDA, BDD 125.
+  - TI-02-DATA-DEUDA, BDD 125: CERRADA (`0e67465`).
   Si esta sesión muere, relanzarlos desde su ficha y su último commit.
 - Respondidas el 2026-11-09 (EXECUTION, A15): la cabecera del banco es el FX diario del lago; la puerta 2 está abierta
   y las credenciales de MT5 están en `E:/quantdesk-lab/secrets/mt5.json`, fuera de Git.

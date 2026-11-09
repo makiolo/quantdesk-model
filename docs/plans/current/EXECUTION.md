@@ -392,3 +392,20 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
   - Se avisa al autor de TI-12-MT5: al terminar la fase A puede leer del terminal real (inventario y descarga cruda,
     nunca órdenes).
   - La exportación y el cuadre contra el diario esperan a la pregunta sobre el lago.
+
+### TI-02-DATA-DEUDA — CERRADA (2026-11-09)
+
+- Autor: Opus 5.5 high, intento BDD 125. Commit `0e67465`, con los tres arreglos de la revisión 2 de TI-02-DATA:
+  1. la guardia de `default_lag_ms` tiene prueba, y una mutación que la desactiva hace fallar el selftest;
+  2. los hashes del código normalizan CRLF a LF;
+  3. el «mayor cambio de close» del informe sólo compara versiones con la barra ya cerrada. En `lago_c20261107` 1 h baja
+     de 0,57 % a 0,11 %; en 1 d no hay cambios entre versiones cerradas y el informe lo dice.
+- Verificación de la raíz sobre `git archive 0e67465`:
+  - los dos `--selftest` dan ok y `run_selftests.py` da 8 OK;
+  - al reexportar `lago_cierre_c20261101` desde la copia con CRLF, `manifest.json` **y** `procedencia.json` salen
+    idénticos: el arreglo 2 queda probado;
+  - el choque de nombres da salida 2 y `--validar` da 0 en los cuatro datasets;
+  - el fichero commiteado no tiene ningún CR.
+- Los cuatro `dataset_hash` no cambian. Sólo se reescribe `procedencia.json`, porque cambia el hash del código.
+- Sin revisión: las dos «dudas» del autor son informativas (registros de `runs/` reescritos y un CR suelto ya corregido)
+  y la verificación de la raíz las resuelve (directiva A14, punto 4).
