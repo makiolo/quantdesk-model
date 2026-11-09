@@ -2,7 +2,7 @@
 <!--
   Tarea programada del publicador MT5 -> qn (TI-12-MT5, fase B). La registra el USUARIO, no un agente:
 
-    Register-ScheduledTask -TaskName "quantdesk\publicador_mt5" -Xml (Get-Content -Raw S:\Projects\quantdesk-model\scripts\publicador_mt5_tarea.xml)
+    run_scheduler.cmd        (raiz del repo; idempotente, convierte este XML a UTF-16, que es lo que exige schtasks)
 
   Que hace, en claro:
   - Disparadores: cada 15 minutos sin fin (desde la fecha de StartBoundary) y al iniciar sesion el usuario.
