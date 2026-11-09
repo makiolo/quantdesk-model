@@ -454,6 +454,30 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
   `--simular`, tarea XML del Programador de tareas para que la registre el usuario, y un qn falso en el selftest. Queda
   desactivado contra qn real hasta que exista el esquema con el tag `source`.
 
+### TI-12-MT5 fase B — entrega 1 (2026-11-09 02:48)
+
+- Commit `a495e5f`: `scripts/publicador_mt5.py`, `publicador_mt5_lib/`, `publicador_mt5_tarea.xml` y `fase-b.md`.
+  - Cada ejecución retoma desde lo que qn confirma y vuelve a comprobar las 65 últimas barras. No usa registro local.
+  - Publica en ventanas de 64 barras con 8 hilos y `batch_id` estable. Las barras revisadas por el bróker se cuentan,
+    pero no se republican.
+  - Tiene candado y `--simular`.
+  - Con el esquema actual, sin `source` como tag, queda BLOQUEADO y envía 0 POST.
+  - Profundidad inicial: 1d y 1h desde 2000; 5m y 1m, sólo los últimos 30 días.
+  - Velocidad en el qn falso: unos 1.060–1.200 POST/s. Si se quiere cargar 1m desde 2016, el autor propone WebSocket;
+    no está implementado.
+  - Tarea programada:
+    - cada 15 min y al iniciar sesión;
+    - `StartWhenAvailable` e `IgnoreNew`, para recuperar inicios perdidos sin solaparse;
+    - sólo con red, sin elevación, con `pythonw`.
+- Verificación de la raíz sobre `git archive a495e5f`, a las 02:55, antes de la franja:
+  - los dos selftests dan ok y la suite 10 OK (el banco aún no está en Git);
+  - no aparece ninguna función de órdenes fuera de la lista negra.
+- Respuestas de la raíz a las dudas, que el autor implementa después de las 05:30:
+  1. En 1d, `ts` es el inicio real en UTC y `date` la fecha de la sesión (el cierre de Nueva York).
+  2. El formato de `/objects` y el `env` de `latest` quedan «a confirmar por network».
+  3. La comprobación de la cola se acota por la fecha inicial configurada, con una prueba nueva.
+- El intento BDD 126 sigue abierto.
+
 ### Franja exclusiva de máquina (2026-11-09, 03:15–05:30 CET)
 
 - Petición de la raíz de quantdesk (`quantdesk-ab`, relevo 38), por decisión del usuario («franja nocturna»): medir el
