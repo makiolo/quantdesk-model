@@ -13,12 +13,14 @@ Dos formas de engancharse (`enganchar`):
   `server` (por defecto E:/quantdesk-lab/secrets/mt5.json, o la ruta de QDL_MT5_SECRETS). `initialize(path=...)` y
   `login(...)`. Los valores no se imprimen, no se registran y no se guardan: `Credenciales` no los muestra en su repr, los
   mensajes de error pasan por `censurar` y toda salida JSON pasa por `comprobar_sin_secretos` antes de escribirse.
+  La procedencia lleva solo el tipo de cuenta, el broker y el terminal: ni el numero de cuenta ni el servidor, tampoco en
+  hash (decision de la raiz, fase B). El publicador MT5 -> qn reutiliza todo esto.
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import os
+import re
 import subprocess
 from types import MappingProxyType
 
@@ -37,7 +39,6 @@ CONSTANTES_PERMITIDAS = frozenset({
 })
 RUTA_SECRETOS = "E:/quantdesk-lab/secrets/mt5.json"
 VAR_SECRETOS = "QDL_MT5_SECRETS"
-SAL_CUENTA = "quantdesk-lab/TI-12-MT5/cuenta/v1"
 
 
 class FuncionNoPermitida(PermissionError):
@@ -144,14 +145,42 @@ def comprobar_sin_secretos(texto: str, cred: Credenciales | None) -> str:
     return texto
 
 
-def hash_cuenta(numero) -> str:
-    """Hash con sal fija del laboratorio del numero de cuenta (nunca se guarda en claro)."""
-    return "sha256:" + hashlib.sha256(f"{SAL_CUENTA}:{int(numero)}".encode()).hexdigest()[:16]
+class Secretos:
+    """Varios secretos juntos (credenciales del terminal, token de qn) para `censurar` y `comprobar_sin_secretos`."""
+
+    __slots__ = ("_valores",)
+
+    def __init__(self, *fuentes) -> None:
+        vals: list[str] = []
+        for f in fuentes:
+            if f is None:
+                continue
+            vals.extend(f.valores() if hasattr(f, "valores") else [str(f)])
+        self._valores = [v for v in vals if v]
+
+    def valores(self) -> list[str]:
+        return list(self._valores)
+
+    def __repr__(self) -> str:
+        return "Secretos(<ocultos>)"
+
+    __str__ = __repr__
 
 
-def hash_cuenta_texto(texto: str) -> str:
-    """Igual para el nombre del servidor, que tampoco se guarda en claro."""
-    return "sha256:" + hashlib.sha256(f"{SAL_CUENTA}:servidor:{texto}".encode("utf-8")).hexdigest()[:16]
+def procedencia(term, ti, ai) -> dict:
+    """Procedencia sin datos de la cuenta (decision de la raiz, fase B): tipo de cuenta, broker y terminal. Ni el numero
+    de cuenta ni el servidor, tampoco como hash."""
+    modos = {term.ACCOUNT_TRADE_MODE_DEMO: "demo", term.ACCOUNT_TRADE_MODE_CONTEST: "concurso",
+             term.ACCOUNT_TRADE_MODE_REAL: "real"}
+    v = term.version()
+    return {"broker": ai.company, "cuenta_tipo": modos.get(ai.trade_mode, "desconocido"),
+            "terminal": {"version": list(v) if v else None, "build": int(ti.build), "nombre": ti.name,
+                         "empresa": ti.company, "maxbars": int(ti.maxbars)},
+            "paquete_python": f"MetaTrader5 {term.version_paquete}"}
+
+
+def slug(texto: str) -> str:
+    return re.sub(r"[^A-Za-z0-9._-]+", "_", texto or "desconocido").strip("._") or "desconocido"
 
 
 def terminal_en_ejecucion() -> bool:

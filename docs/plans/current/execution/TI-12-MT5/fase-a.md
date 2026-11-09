@@ -63,9 +63,10 @@ envoltura de sólo lectura.
     cuenta, la contraseña, el servidor o la ruta.
 - La procedencia lleva:
   - el tipo de cuenta (demo, concurso o real);
-  - un hash con sal fija del número de cuenta y otro del servidor;
   - el bróker (`company`);
   - la versión y el build del terminal, el nombre, `maxbars` y la versión del paquete.
+- En la fase A llevaba además un hash con sal del número de cuenta y otro del servidor. La raíz decidió en la fase B que
+  no se guarde ningún hash, y se quitaron.
 - El selftest busca los cuatro valores falsos en la consola y en los bytes de los 387 ficheros que escribe, incluidos
   los parquet.
 
@@ -105,7 +106,7 @@ envoltura de sólo lectura.
   - ninguna queda partida entre trozos;
   - la vela diaria del día D del servidor, que abre el D-1 a las 21:00 o 22:00 UTC, no se pierde en los bordes.
 - Trozos: un mes para 1 m y 5 m, un año para 1 h y 1 d, y un día para los ticks.
-- Cada trozo va ya convertido a la caché `data/mt5/_trozos/<hash del servidor>/<regla>/…`, con un `.json` de filas y
+- Cada trozo va ya convertido a la caché `data/mt5/_trozos/<bróker>/<regla>/…`, con un `.json` de filas y
   SHA-256. Los dos se escriben de forma atómica.
 - **Reanudar** es relanzar la misma orden: no se vuelven a pedir los trozos que ya tienen `.json`.
 - **Incremental**: con un `hasta` posterior se reutilizan los trozos cerrados de la caché.

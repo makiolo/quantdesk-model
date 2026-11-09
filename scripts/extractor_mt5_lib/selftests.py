@@ -61,6 +61,8 @@ def envoltura(**kw) -> tuple[LT.TerminalSoloLectura, FA.MT5Falso]:
 
 def _fuentes() -> list[str]:
     rutas = [os.path.join(SCRIPTS, "extractor_mt5.py")] + sorted(glob.glob(os.path.join(LIB, "*.py")))
+    rutas += sorted(glob.glob(os.path.join(SCRIPTS, "publicador_mt5*.*")))  # publicador de la fase B y su tarea
+    rutas += sorted(glob.glob(os.path.join(SCRIPTS, "publicador_mt5_lib", "*.py")))
     return rutas + sorted(glob.glob(os.path.join(DOCS, "*.md")))
 
 
@@ -366,7 +368,8 @@ def prueba_extremo_a_extremo(ejecutar, raiz: str) -> dict:
     assert sims["USDJPY"]["profundidad"]["d1"]["primera_utc"] == "2015-01-01T22:00:00.000Z"  # 2 ene del servidor
     viva = inv["deteccion_desfase_en_vivo"]
     assert viva["concluyente"] and viva["coincide"] and viva["desfase_regla_h"] == 2.0, viva
-    assert inv["procedencia"]["cuenta_tipo"] == "demo" and inv["procedencia"]["cuenta_hash"] == LT.hash_cuenta(CRED["login"])
+    assert inv["procedencia"]["cuenta_tipo"] == "demo" and inv["procedencia"]["broker"] == "Broker Falso Ltd."
+    assert not {k for k in inv["procedencia"] if "hash" in k}, inv["procedencia"]  # decision de la raiz: sin hashes
 
     args = ["--descargar", "--simbolos", "EURUSD.a,GBPUSD,BTCUSD.x,AAPL.US", "--periodos", "d1,h1,m5,m1,ticks",
             "--desde", "2026-10-26", "--hasta", "2026-11-05"]

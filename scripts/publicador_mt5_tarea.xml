@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Tarea programada del publicador MT5 -> qn (TI-12-MT5, fase B). La registra el USUARIO, no un agente:
+
+    Register-ScheduledTask -TaskName "quantdesk\publicador_mt5" -Xml (Get-Content -Raw S:\Projects\quantdesk-model\scripts\publicador_mt5_tarea.xml)
+
+  Que hace, en claro:
+  - Disparadores: cada 15 minutos sin fin (desde la fecha de StartBoundary) y al iniciar sesion el usuario.
+  - StartWhenAvailable: si la maquina estaba apagada en una hora programada, se lanza en cuanto se puede.
+  - MultipleInstancesPolicy IgnoreNew: si la anterior sigue corriendo, no arranca otra (el publicador ademas tiene
+    su propio candado).
+  - RunOnlyIfNetworkAvailable: solo con red.
+  - Principal: el usuario que registra la tarea, con su sesion iniciada (InteractiveToken, necesario para hablar con
+    el terminal de MT5) y SIN privilegios elevados (LeastPrivilege). No guarda ninguna contrasena de Windows.
+  - Accion: pythonw.exe del .venv del repo (sin ventana) con scripts\publicador_mt5.py \-\-ejecutar. El propio script
+    escribe su registro en E:\quantdesk-lab\runs\TI-12-MT5\publicador\ (ultimo.json y publicador_<fecha>.jsonl).
+  - Tiempo maximo de una ejecucion: 6 h (la carga inicial de 1 h desde 2000 puede tardar); despues Windows la para y la
+    siguiente retoma desde lo que qn confirma.
+  - No se reintenta por su cuenta ni se despierta el equipo.
+  Requisitos previos: QN_URLS en las variables de entorno del usuario, el token en E:\quantdesk-lab\secrets\qn-mt5.token
+  y las credenciales de MT5 en E:\quantdesk-lab\secrets\mt5.json (ver docs/plans/current/execution/TI-12-MT5/fase-b.md).
+-->
+<Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>quantdesk: publica en qn (market.ohlcv, source=mt5) las velas cerradas de MetaTrader 5 y rellena huecos. Solo lectura en MT5.</Description>
+    <URI>\quantdesk\publicador_mt5</URI>
+  </RegistrationInfo>
+  <Triggers>
+    <TimeTrigger>
+      <StartBoundary>2026-11-10T00:00:00</StartBoundary>
+      <Enabled>true</Enabled>
+      <Repetition>
+        <Interval>PT15M</Interval>
+        <StopAtDurationEnd>false</StopAtDurationEnd>
+      </Repetition>
+    </TimeTrigger>
+    <LogonTrigger>
+      <Enabled>true</Enabled>
+      <Delay>PT2M</Delay>
+    </LogonTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Usuario">
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>LeastPrivilege</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>true</RunOnlyIfNetworkAvailable>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <WakeToRun>false</WakeToRun>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <AllowHardTerminate>true</AllowHardTerminate>
+    <ExecutionTimeLimit>PT6H</ExecutionTimeLimit>
+    <Enabled>true</Enabled>
+    <Hidden>false</Hidden>
+    <IdleSettings>
+      <StopOnIdleEnd>false</StopOnIdleEnd>
+      <RestartOnIdle>false</RestartOnIdle>
+    </IdleSettings>
+  </Settings>
+  <Actions Context="Usuario">
+    <Exec>
+      <Command>S:\Projects\quantdesk-model\.venv\Scripts\pythonw.exe</Command>
+      <Arguments>-X utf8 scripts\publicador_mt5.py --ejecutar</Arguments>
+      <WorkingDirectory>S:\Projects\quantdesk-model</WorkingDirectory>
+    </Exec>
+  </Actions>
+</Task>

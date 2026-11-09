@@ -4,7 +4,7 @@ Unidad de trabajo: el TROZO, un intervalo UTC de un simbolo y periodo (mes para 
 ticks; el ultimo se corta en `hasta`). Un tick entra si su marca UTC esta en [inicio, fin); una vela, si su CIERRE UTC
 (apertura + periodo) esta en (inicio, fin]: asi solo entran velas cerradas en `hasta` y ninguna queda partida entre dos
 trozos (la vela diaria del dia D del servidor abre el D-1 a las 21:00/22:00 UTC). Cada trozo se guarda, ya convertido a UTC, en la cache
-`<data>/_trozos/<servidor_hash>/<regla>/<simbolo>/<periodo>/<inicio>_<fin>.parquet` con un `.json` al lado (filas y SHA-256),
+`<data>/_trozos/<broker>/<regla>/<simbolo>/<periodo>/<inicio>_<fin>.parquet` con un `.json` al lado (filas y SHA-256),
 escritos de forma atomica. Reanudar = volver a lanzar la misma orden: los trozos con `.json` valido no se piden otra vez.
 Incremental = una descarga posterior con otro `hasta` reutiliza los trozos cerrados que ya estan en la cache. `--refrescar`
 los vuelve a pedir todos (para comprobar que dos descargas del mismo rango dan los mismos bytes).

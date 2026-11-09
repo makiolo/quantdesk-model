@@ -62,15 +62,7 @@ def guarda_disco() -> None:
                 raise ParadaDisco(f"{unidad} tiene {libre / 1024 ** 3:.1f} GiB libres (< {suelo / 1024 ** 3:.0f} GiB)")
 
 
-def procedencia(term, ti, ai) -> dict:
-    modos = {term.ACCOUNT_TRADE_MODE_DEMO: "demo", term.ACCOUNT_TRADE_MODE_CONTEST: "concurso",
-             term.ACCOUNT_TRADE_MODE_REAL: "real"}
-    v = term.version()
-    return {"broker": ai.company, "cuenta_tipo": modos.get(ai.trade_mode, "desconocido"),
-            "cuenta_hash": LT.hash_cuenta(ai.login), "servidor_hash": LT.hash_cuenta_texto(ai.server),
-            "terminal": {"version": list(v) if v else None, "build": int(ti.build), "nombre": ti.name,
-                         "empresa": ti.company, "maxbars": int(ti.maxbars)},
-            "paquete_python": f"MetaTrader5 {term.version_paquete}"}
+procedencia = LT.procedencia
 
 
 def _fecha(txt: str) -> dt.date:
@@ -192,7 +184,7 @@ def ejecutar(argv, fabrica=LT.importar_paquete, cargar_cred=cargar_credenciales_
             salida = os.path.abspath(a.salida or f"{data}/{a.hasta.isoformat()}")
             if os.path.commonpath([salida, os.path.abspath(data)]) != os.path.abspath(data):
                 raise ValueError(f"--salida tiene que estar bajo {data}")
-            cache = os.path.join(data, "_trozos", proc["servidor_hash"].split(":")[1], regla.nombre.replace(":", "_"))
+            cache = os.path.join(data, "_trozos", LT.slug(proc["broker"]), regla.nombre.replace(":", "_"))
             man, est = D.descargar(term, simbolos, periodos, a.desde, a.hasta, regla, salida, cache, proc, a.refrescar,
                                    guarda, decir, lambda t: LT.comprobar_sin_secretos(t, cred))
             filas = sum(e["filas"] for e in man["ficheros"])

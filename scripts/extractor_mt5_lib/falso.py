@@ -226,7 +226,8 @@ class MT5Falso:
         paso = PASOS[tf]
         s0 = -(-int(s_ini) // paso) * paso
         s = np.arange(s0, int(s_fin) + 1, paso, dtype=np.int64)
-        s = s[(s >= self.regla.utc_a_servidor(HISTORIA[tf])) & (s + paso <= self.regla.utc_a_servidor(self.ahora_utc_s))]
+        # Como el terminal real, incluye la vela en curso (abierta antes de "ahora" y aun sin cerrar).
+        s = s[(s >= self.regla.utc_a_servidor(HISTORIA[tf])) & (s <= self.regla.utc_a_servidor(self.ahora_utc_s))]
         s, u = self._reales(s)
         s = s[self._abierto(nombre, u, paso)]
         u = self.regla.servidor_a_utc(s)[0]
