@@ -417,6 +417,43 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
   - Los corpus genéricos de preentrenamiento (Chronos, LOTSA) no son datos de mercado en vivo y siguen siendo una
     ingesta del laboratorio.
 
+### Investigación de publicación y respuestas del usuario (2026-11-09, A17)
+
+- La raíz investigó en sólo lectura, con un agente Explore de Opus, cómo se publica en qn. El resultado completo está en
+  `E:/quantdesk-lab/tmp/raiz/investigacion-publicacion-qn.md`:
+  - se publica por REST, un objeto por POST, con un `batch_id` uuid5 que sólo se deduplica durante 7 días;
+  - en `market.ohlcv` la fuente (`source`) va dentro del objeto y no es tag. Si MT5 publicara allí, sus barras y las de
+    yfinance compartirían clave y se pisarían en el Bento, ClickHouse y `/api/fxspot`;
+  - la skill `qn-token` no contempla un token de larga vida fuera de la flota.
+- El usuario responde (AskUserQuestion):
+  - **«Fuente como tag en market.ohlcv»**. Hay que cambiar el esquema en quantdesk-network y adaptar los consumidores
+    del backend (Bento, ClickHouse y Grafana). Es una dependencia externa: el laboratorio no escribe allí.
+  - **«Sí, larga vida acotada»**: un token `pub:` + `sub:` sobre `market.ohlcv` en `main`, emitido en mini con
+    `--out` y copiado a `E:/quantdesk-lab/secrets/qn-mt5.token`, fuera de Git y legible sólo por el usuario.
+  - La raíz lo emite cuando exista el esquema con el tag y el publicador esté verificado. El nombre, la fecha y quién
+    lo rota o revoca se anotan aquí al emitirlo.
+
+### TI-12-MT5 — fase A aceptada; fase B = publicador (2026-11-09)
+
+- Fase A: autor Opus, intento BDD 124, commit `7d38136`.
+  - Extractor de sólo lectura con lista blanca.
+  - Hora del servidor a UTC con la regla `ny+7`, comprobada contra `zoneinfo` de 1987 a 2035.
+  - Descarga reanudable con hash estable.
+  - Guarda de secretos.
+- Verificación de la raíz sobre `git archive 7d38136`:
+  - `--selftest` da ok y la suite da 9 OK y 0 FALLO;
+  - las funciones de órdenes sólo aparecen en la lista negra del selftest.
+- El autor no inició sesión con la contraseña, y la raíz tampoco lo hace. Las lecturas reales manuales usan
+  `--sin-credenciales` sobre un terminal que el usuario abre y autentica. El publicador programado hace login con
+  `secrets/mt5.json` como tarea del usuario, que la registra él.
+- Respuestas de la raíz a las dudas del autor:
+  - no se guarda ningún hash de la cuenta: sólo el tipo, el bróker y la versión del terminal;
+  - el suelo de E: queda en 150 GiB libres.
+- Incidente: otra vez un heredoc de Python en el autor; no afectó al resultado.
+- Fase B (BDD 126, mismo autor, anexo `ficha-fase-b.md`): publicador MT5 → qn con relleno de huecos, candado,
+  `--simular`, tarea XML del Programador de tareas para que la registre el usuario, y un qn falso en el selftest. Queda
+  desactivado contra qn real hasta que exista el esquema con el tag `source`.
+
 ### TI-02-DATA-DEUDA — CERRADA (2026-11-09)
 
 - Autor: Opus 5.5 high, intento BDD 125. Commit `0e67465`, con los tres arreglos de la revisión 2 de TI-02-DATA:

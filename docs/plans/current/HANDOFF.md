@@ -40,7 +40,8 @@ Recuperación en frío (RECOVERY-20261108-133223): la raíz anterior murió haci
   Opus 5.5 high, agentes en segundo plano de la sesión dd43fa94, base `82d7f4f`, fichas en
   `.git/sprint-runtime/s01/<ID>/ficha.md`:
   - TS-00-BENCH, intento BDD 123;
-  - TI-12-MT5, fase A (sin terminal real), BDD 124;
+  - TI-12-MT5: fase A aceptada (`7d38136`); fase B = publicador MT5 → qn, BDD 126, anexo `ficha-fase-b.md`
+    (EXECUTION, A17). Token `pub+sub` de larga vida autorizado; se emite cuando network tenga `source` como tag;
   - TI-02-DATA-DEUDA, BDD 125: CERRADA (`0e67465`).
   Si esta sesión muere, relanzarlos desde su ficha y su último commit.
 - Respondidas el 2026-11-09 (EXECUTION, A15): la cabecera del banco es el FX diario del lago; la puerta 2 está abierta
