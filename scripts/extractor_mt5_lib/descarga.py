@@ -66,7 +66,11 @@ ESQUEMA_TICKS = pa.schema([
 
 
 class ErrorTerminal(RuntimeError):
-    """El terminal devolvio un error en una consulta."""
+    """El terminal devolvio un error en una consulta. `codigo`: el de `last_error()` (None si no se conoce)."""
+
+    def __init__(self, mensaje: str, codigo: int | None = None) -> None:
+        super().__init__(mensaje)
+        self.codigo = codigo
 
 
 class ErrorFormato(RuntimeError):
@@ -115,7 +119,7 @@ def consultar(term, funcion: str, *args, **kwargs):
             return None
         if not LT.es_transitorio(err, LT.TRANSITORIOS_DATOS) or k == len(esperas):
             primero = repr(args[0]) if args else ""
-            raise ErrorTerminal(f"{funcion}({primero}, ...) fallo: {err}")
+            raise ErrorTerminal(f"{funcion}({primero}, ...) fallo: {err}", err[0] if err else None)
         LT.REINTENTO["contador"][funcion] += 1
         LT.REINTENTO["dormir"](esperas[k])
     raise AssertionError("inalcanzable")

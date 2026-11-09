@@ -19,7 +19,7 @@ VERSION = "5.0.6231"
 TIMEFRAME_M1, TIMEFRAME_M5, TIMEFRAME_H1, TIMEFRAME_D1 = 1, 5, 16385, 16408
 PASOS = {TIMEFRAME_M1: 60, TIMEFRAME_M5: 300, TIMEFRAME_H1: 3600, TIMEFRAME_D1: 86400}
 COPY_TICKS_ALL = -1
-RES_S_OK, RES_E_FAIL, RES_E_AUTH_FAILED = 1, -1, -6
+RES_S_OK, RES_E_FAIL, RES_E_INVALID_PARAMS, RES_E_AUTH_FAILED = 1, -1, -2, -6
 ACCOUNT_TRADE_MODE_DEMO, ACCOUNT_TRADE_MODE_CONTEST, ACCOUNT_TRADE_MODE_REAL = 0, 1, 2
 SYMBOL_CHART_MODE_BID, SYMBOL_CHART_MODE_LAST = 0, 1
 
@@ -310,14 +310,22 @@ class MT5Falso:
             return None
         if self._sincronizando("copy_rates_from_pos", symbol, timeframe):
             return None
+        # Medido en el terminal real (build 6230, maxbars 100000; entrega 6b):
+        # - count >= maxbars: None con (-2, 'Terminal: Invalid params'), en todos los periodos;
+        # - start_pos fuera de la historia: None con (-1, 'Terminal: Call failed'), el mismo codigo que la sincronizacion;
+        # - si no, min(count, disponibles desde start_pos).
+        if count >= self.maxbars:
+            self._error = (RES_E_INVALID_PARAMS, "Terminal: Invalid params")
+            return None
         clave = (symbol, timeframe)
         if clave not in self._cache_pos:
             self._cache_pos[clave] = self._velas(symbol, timeframe, self.regla.utc_a_servidor(HISTORIA[timeframe]),
                                                  self.regla.utc_a_servidor(self.ahora_utc_s))
         todas = self._cache_pos[clave][::-1][: self.maxbars]
+        if start_pos >= len(todas):
+            self._error = (RES_E_FAIL, "Terminal: Call failed")
+            return None
         self._error = (RES_S_OK, "Success")
-        if start_pos >= len(todas):  # fuera de la historia: vacio (a confirmar con el terminal real, ver fase-b.md)
-            return np.zeros(0, dtype=DTYPE_VELAS)
         return todas[start_pos:start_pos + count][::-1].copy()
 
     def copy_ticks_range(self, symbol, date_from, date_to, flags):

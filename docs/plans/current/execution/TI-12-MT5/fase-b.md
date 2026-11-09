@@ -284,11 +284,34 @@ publicador):
   - El `dormir` es inyectable: los selftests no duermen y apuntan las esperas pedidas.
 - Agotados los intentos, sale el mismo `ErrorTerminal` de siempre: la serie se para y la siguiente ejecución retoma.
 - Un `None` sólo cuenta como «sin datos» si `last_error()` es `RES_S_OK`.
-- La bisección de profundidad del inventario (`_una`) pasa por el mismo reintento: un -1 transitorio nunca se toma por
-  el final de la historia.
-- Riesgo a confirmar en la prueba real: el falso responde fuera de la historia con un array vacío y `RES_S_OK`. Si el
-  terminal real respondiera ahí con -1, la bisección acabaría en `ErrorTerminal` tras los reintentos en lugar de dar una
-  profundidad mal calculada. Falla de forma visible, no silenciosa.
+
+**Profundidad del inventario sin bisección (entrega 6b).** Medido por la raíz con sondas de sólo lectura (build 6230,
+`maxbars` 100000, EURUSD y NZDCHF):
+
+| Consulta | Resultado en el terminal real |
+|---|---|
+| `copy_rates_from_pos(sim, tf, pos, 1)`, pos fuera de la historia | `None` con (-1, 'Terminal: Call failed'). En d1 (14.398 velas) con pos 50.000, 99.999, 100.010 y 10 M; en h1 con 100.010 y 10 M |
+| `copy_rates_from_pos(sim, tf, 0, count)`, count <= maxbars - 1 | min(count, disponibles). d1 con 20.000 o 99.999 da 14.398; h1 y m1 con 99.999 dan 99.999 |
+| `copy_rates_from_pos(sim, tf, 0, maxbars)` | (-2, 'Terminal: Invalid params') en todos los periodos |
+| `copy_rates_range` de 1971 a hoy | d1: 14.398 velas, la primera del 1971-01-04; h1 y m1: -2 Invalid params |
+| `copy_rates_range` anterior a la historia | las velas que haya, con éxito |
+
+Fuera de la historia da el mismo -1 que la sincronización pendiente, así que una bisección con consultas de una vela no
+distingue «no hay» de «aún no». Por eso:
+- `inventario.profundidad` hace UNA consulta `copy_rates_from_pos(sim, tf, 0, maxbars - 1)` con el reintento de -1 y
+  -10005. Nunca pide count = maxbars.
+- La profundidad es la longitud del array; la primera y la última vela salen de sus extremos. El array se libera en
+  cuanto se leen (en m1 son unas 100.000 filas).
+- `limitada_por_maxbars` se marca cuando la longitud llega a `maxbars` - 1.
+- Si un periodo sigue en -1 tras los reintentos (símbolo sin historia en ese periodo, o sin sincronizar), se apunta
+  `velas` 0 con `error` y el inventario sigue. Cualquier otro código (-2, -10005 persistente) para el inventario como
+  antes.
+
+**Publicador y descarga.** Revisados: ninguno consulta por posición. Los dos piden `copy_rates_range` por trozos (año en
+d1 y h1, mes en m5 y m1; como mucho unas 6.300 velas de h1 o 44.700 de m1 por trozo, por debajo de `maxbars`). Un trozo
+anterior a la historia vuelve vacío con éxito, según la medida de arriba. Queda por confirmar en la prueba real un trozo de
+h1 que esté dentro de la historia del bróker pero más atrás de `maxbars` (h1 con 100.000 velas llega a unos 16 años). Si
+diera -1, el publicador pararía esa serie tras los reintentos y lo diría en el registro, sin publicar nada mal.
 
 **Arranque robusto** (`lectura.enganchar`):
 1. Si el terminal ya está en marcha, primero se prueba `initialize()` sin ruta.
@@ -310,13 +333,23 @@ publicador):
 - `fallos_arranque=(-6, -10005, ...)`: códigos que devuelven, por orden, `initialize(path)` y `login`.
 - `retraso_conexion=N`: tras el login, o al engancharse a un terminal ya abierto, `connected` es falso durante N
   sondeos.
-
-El selftest del extractor prueba el arranque (misma cuenta conectada y recién abierta, otra cuenta, -6/-10005 en
-`initialize(path)` y en `login`, -6 persistente, sin conexión nunca, ruta mala sin reintento), el reintento de datos
-(esperas pedidas, agotamiento, código no transitorio, `None` con `RES_S_OK`, bisección igual con y sin fallos) y, de punta
-a punta, una descarga con fallos de arranque y «Call failed» con el mismo hash que sin fallos, un inventario igual al
-limpio y el enganche sin login.
 - `cuenta_abierta`: la cuenta con la que está abierto un terminal que ya estaba en marcha.
+- `copy_rates_from_pos` imita las tres medidas de la entrega 6b: -1 fuera de la historia, -2 con count >= `maxbars` y
+  min(count, disponibles) con count < `maxbars`.
+
+**Selftest del extractor.**
+- Arranque: misma cuenta conectada y recién abierta, otra cuenta, -6/-10005 en `initialize(path)` y en `login`, -6
+  persistente, sin conexión nunca y ruta mala sin reintento.
+- Reintento de datos: esperas pedidas, agotamiento, código no transitorio, `None` con `RES_S_OK` y profundidad igual con y
+  sin fallos.
+- `copy_rates_from_pos` como el real: -1 en las posiciones medidas, -2 con count = `maxbars` sin reintento, d1 completo
+  y m1 con 99.999. La profundidad hace una consulta por periodo, marca m1 como limitada y apunta el periodo sin historia
+  con `error` sin parar.
+- De punta a punta:
+  - una descarga con fallos de arranque y «Call failed» da el mismo hash que sin fallos;
+  - un inventario con fallos es igual al limpio;
+  - un inventario con `maxbars` 100000 hace 4 consultas por símbolo;
+  - el enganche se hace sin login.
 
 ## Puesta en marcha (usuario y raíz)
 

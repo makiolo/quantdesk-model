@@ -414,7 +414,7 @@ def prueba_reintentos_de_datos(esperas: list) -> None:
         raise AssertionError("no transitorio")
     s = Stub((1, "Success"))
     assert D.consultar(s, "copy_rates_range", "X") is None and s.n == 1
-    # Biseccion de la profundidad con el terminal sincronizando: el mismo resultado que sin fallos.
+    # Profundidad con el terminal sincronizando: el mismo resultado que sin fallos, con una sola consulta por periodo.
     limpio, _ = envoltura(ahora_utc_s=utc(2026, 11, 6, 15))
     limpio.initialize()
     sucio, falso = envoltura(ahora_utc_s=utc(2026, 11, 6, 15), fallos_call_failed=3)
@@ -423,9 +423,58 @@ def prueba_reintentos_de_datos(esperas: list) -> None:
     for per in ("m1", "d1"):
         a = INV.profundidad(limpio, "USDJPY", per, 5_000_000, regla)
         b = INV.profundidad(sucio, "USDJPY", per, 5_000_000, regla)
-        assert a == b and a["velas"] > 1, (per, a, b)
-    assert falso.llamadas["call failed"] == 6  # 3 por periodo
-    assert INV._una(limpio, "USDJPY", limpio.TIMEFRAME_D1, 10 ** 6) is None  # fuera de la historia: vacio = no hay
+        assert a == b and a["velas"] > 1 and not a["limitada_por_maxbars"], (per, a, b)
+    assert falso.llamadas["call failed"] == 6 and falso.llamadas["copy_rates_from_pos"] == 8  # (3 + 1) por periodo
+
+
+def prueba_copy_rates_from_pos_como_el_real(esperas: list) -> None:
+    """Entrega 6b, medido en el terminal real (build 6230, maxbars 100000): fuera de la historia con count 1 da -1 'Call
+    failed' (no se distingue de la sincronizacion); count >= maxbars da -2 'Invalid params'; count < maxbars da
+    min(count, disponibles). La profundidad usa una sola consulta con count = maxbars - 1."""
+    regla = HR.regla_desde_texto("ny+7")
+    env, falso = envoltura(ahora_utc_s=utc(2026, 11, 6, 15), maxbars=100_000)
+    env.initialize()
+    d1 = env.copy_rates_from_pos("USDJPY", env.TIMEFRAME_D1, 0, 99_999)
+    n_d1 = len(d1)
+    assert 1000 < n_d1 < 99_999 and env.last_error()[0] == env.RES_S_OK  # d1: todas las disponibles
+    assert len(env.copy_rates_from_pos("USDJPY", env.TIMEFRAME_M1, 0, 99_999)) == 99_999  # m1: tope del count
+    for tf in (env.TIMEFRAME_D1, env.TIMEFRAME_H1, env.TIMEFRAME_M1):
+        assert env.copy_rates_from_pos("USDJPY", tf, 0, 100_000) is None and env.last_error()[0] == -2
+    for pos in (n_d1, 50_000, 99_999, 100_010, 10_000_000):
+        assert env.copy_rates_from_pos("USDJPY", env.TIMEFRAME_D1, pos, 1) is None
+        assert env.last_error() == (-1, "Terminal: Call failed")
+    # Por consultar: -1 fuera de la historia se reintenta (es el mismo codigo) y acaba en ErrorTerminal con codigo -1;
+    # -2 no se reintenta.
+    del esperas[:]
+    try:
+        D.consultar(env, "copy_rates_from_pos", "USDJPY", env.TIMEFRAME_D1, 10_000_000, 1)
+    except D.ErrorTerminal as e:
+        assert e.codigo == -1 and esperas == [1.0, 2.0, 4.0, 8.0]
+    else:
+        raise AssertionError("fuera de la historia")
+    del esperas[:]
+    try:
+        D.consultar(env, "copy_rates_from_pos", "USDJPY", env.TIMEFRAME_D1, 0, 100_000)
+    except D.ErrorTerminal as e:
+        assert e.codigo == -2 and esperas == []
+    else:
+        raise AssertionError("count = maxbars")
+    # Profundidad: una consulta con count = maxbars - 1, nunca maxbars; sin reintentos si no hay fallos.
+    antes = falso.llamadas["copy_rates_from_pos"]
+    del esperas[:]
+    p = INV.profundidad(env, "USDJPY", "d1", 100_000, regla)
+    assert p["velas"] == n_d1 and not p["limitada_por_maxbars"] and esperas == [], p
+    assert p["primera_utc"] == "2015-01-01T22:00:00.000Z" and p["ultima_servidor_s"] == int(d1["time"][-1]), p
+    p = INV.profundidad(env, "USDJPY", "m1", 100_000, regla)
+    assert p["velas"] == 99_999 and p["limitada_por_maxbars"], p
+    assert falso.llamadas["copy_rates_from_pos"] - antes == 2
+    # Simbolo sin historia en un periodo (m1 antes del 1-ene-2026 en el falso): -1 tras los reintentos; se apunta y sigue.
+    env, falso = envoltura(ahora_utc_s=utc(2025, 12, 10, 15), maxbars=100_000)
+    env.initialize()
+    del esperas[:]
+    p = INV.profundidad(env, "USDJPY", "m1", 100_000, regla)
+    assert p["velas"] == 0 and "Call failed" in p["error"] and len(esperas) == 4, p
+    assert INV.profundidad(env, "USDJPY", "d1", 100_000, regla)["velas"] > 1
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -578,6 +627,14 @@ def prueba_extremo_a_extremo(ejecutar, raiz: str) -> dict:
     assert c == 0 and b.falsos[-1].llamadas["call failed"] > 0, out
     with open(glob.glob(os.path.join(raiz, "data4", "inventario", "inventario_*.json"))[0], encoding="utf-8") as fi:
         assert json.load(fi)["simbolos"] == inv["simbolos"]
+    # maxbars real (100000): profundidad con count 99999 en una consulta por periodo; m1 queda limitada por maxbars.
+    c, out = b(["--inventario", "--simbolos", "USDJPY"], datos="data6", maxbars=100_000)
+    f = b.falsos[-1]
+    assert c == 0 and f.llamadas["copy_rates_from_pos"] == 4, (out, dict(f.llamadas))
+    with open(glob.glob(os.path.join(raiz, "data6", "inventario", "inventario_*.json"))[0], encoding="utf-8") as fi:
+        pr = json.load(fi)["simbolos"][0]["profundidad"]
+    assert pr["m1"]["velas"] == 99_999 and pr["m1"]["limitada_por_maxbars"] and not pr["d1"]["limitada_por_maxbars"], pr
+    assert pr["d1"] == sims["USDJPY"]["profundidad"]["d1"]
     # Terminal ya abierto y conectado con la cuenta del fichero: se engancha sin login.
     c, out = b(["--inventario"], datos="data5", abierto=True)
     f = b.falsos[-1]
@@ -612,8 +669,9 @@ def correr(ejecutar) -> int:
     pruebas = [prueba_lista_negra_estatica, prueba_lista_blanca_dinamica, prueba_api_falso_igual_al_real,
                prueba_hora_cambios_de_marzo_y_noviembre, prueba_hora_contra_zoneinfo, prueba_deteccion_del_desfase,
                prueba_sufijos_y_nombres, prueba_enganche, lambda: prueba_arranque_robusto(esperas),
-               lambda: prueba_reintentos_de_datos(esperas)]
-    nombres = [getattr(p, "__name__", "") for p in pruebas[:-2]] + ["prueba_arranque_robusto", "prueba_reintentos_de_datos"]
+               lambda: prueba_reintentos_de_datos(esperas), lambda: prueba_copy_rates_from_pos_como_el_real(esperas)]
+    nombres = [getattr(p, "__name__", "") for p in pruebas[:-3]] + [
+        "prueba_arranque_robusto", "prueba_reintentos_de_datos", "prueba_copy_rates_from_pos_como_el_real"]
     raiz = os.path.join(TMP, f"selftest_{os.getpid()}")
     os.makedirs(raiz, exist_ok=True)
     try:

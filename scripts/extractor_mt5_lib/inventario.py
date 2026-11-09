@@ -1,11 +1,15 @@
 """Inventario de simbolos del terminal: sufijo y base normalizada, digitos, punto, precio de las velas, profundidad por
 periodo (1 m, 5 m, 1 h, 1 d) y si hay ticks. Solo consultas de la lista blanca.
 
-Profundidad: biseccion sobre `copy_rates_from_pos(simbolo, periodo, pos, 1)` (la posicion 0 es la vela actual) hasta la
-ultima posicion con datos; ~log2(maxbars) consultas de una vela. El terminal solo sirve las velas que caben en "Max. bars
-in chart" (`terminal_info().maxbars`): si la profundidad toca ese tope se marca `limitada_por_maxbars` y la historia real
-del broker puede ser mayor. Todas las consultas pasan por `descarga.consultar` (reintentos ante -1 'Call failed' y
--10005 'IPC timeout'); fuera de la historia solo cuenta como "no hay" un resultado vacio o un None con RES_S_OK. Ticks: se cuentan los de una ventana de `dias_ticks` dias que acaba en la ultima vela de 1 m.
+Profundidad: UNA consulta `copy_rates_from_pos(simbolo, periodo, 0, maxbars - 1)` (la posicion 0 es la vela actual): el
+terminal devuelve min(count, disponibles). La profundidad es su longitud y la primera y la ultima vela salen del array, que
+se libera enseguida (en m1 son ~100k filas). Medido en el terminal real (build 6230): una posicion fuera de la historia da
+-1 'Call failed', el mismo codigo que la sincronizacion pendiente, asi que no se puede biseccionar con consultas de una
+vela; y count = maxbars da -2 'Invalid params', asi que nunca se pide. El terminal solo sirve las velas que caben en "Max.
+bars in chart" (`terminal_info().maxbars`): si la profundidad llega a maxbars - 1 se marca `limitada_por_maxbars` y la
+historia real del broker puede ser mayor. Todas las consultas pasan por `descarga.consultar` (reintentos ante -1 y
+-10005). Si un periodo sigue con -1 tras los reintentos (simbolo sin historia en ese periodo), se apunta con `velas` 0 y
+`error`, y el inventario sigue. Ticks: se cuentan los de una ventana de `dias_ticks` dias que acaba en la ultima vela de 1 m.
 """
 from __future__ import annotations
 
@@ -22,31 +26,28 @@ FX28 = ("EURGBP", "EURAUD", "EURNZD", "EURUSD", "EURCAD", "EURCHF", "EURJPY", "G
 LIQUIDOS = ("EURUSD", "USDJPY", "GBPUSD")
 
 
-def _una(term, sim, tf, pos):
-    """Una vela en la posicion `pos`, o None si no hay. Solo cuentan como "no hay" un resultado vacio o un None con
-    RES_S_OK; un None con error transitorio (-1 mientras el terminal sincroniza) se reintenta con `D.consultar` y, si
-    persiste, es ErrorTerminal: nunca se toma por el final de la historia (la biseccion acabaria mal)."""
-    r = D.consultar(term, "copy_rates_from_pos", sim, tf, pos, 1)
-    return None if r is None or len(r) == 0 else r
+def cuenta_maxima(maxbars: int) -> int:
+    """El count mas grande que acepta `copy_rates_from_pos`: maxbars - 1 (con maxbars da -2 'Invalid params')."""
+    return max(1, min(int(maxbars), 2 ** 31 - 1) - 1)
 
 
 def profundidad(term, sim: str, periodo: str, maxbars: int, regla: HR.Regla) -> dict:
     tf = getattr(term, D.PERIODOS[periodo]["tf"])
-    ultima = D.consultar(term, "copy_rates_from_pos", sim, tf, 0, 1)
-    if ultima is None or len(ultima) == 0:
+    pedir = cuenta_maxima(maxbars)
+    try:
+        arr = D.consultar(term, "copy_rates_from_pos", sim, tf, 0, pedir)
+    except D.ErrorTerminal as e:
+        if e.codigo != -1:  # -2, -10005 persistente u otro: no es "sin historia", se para como siempre
+            raise
+        return {"velas": 0, "error": "Call failed tras los reintentos (sin historia en este periodo o sin sincronizar)"}
+    if arr is None or len(arr) == 0:
         return {"velas": 0}
-    lo, hi = 0, max(1, min(int(maxbars), 2 ** 31 - 1))
-    while hi - lo > 1:
-        mid = (lo + hi) // 2
-        if _una(term, sim, tf, mid) is not None:
-            lo = mid
-        else:
-            hi = mid
-    primera = _una(term, sim, tf, lo)
-    s = np.array([int(primera["time"][0]), int(ultima["time"][0])], dtype=np.int64)
+    n = len(arr)
+    s = np.array([int(arr["time"][0]), int(arr["time"][-1])], dtype=np.int64)
+    del arr  # en m1 son ~100k filas: fuera cuanto antes
     u = regla.servidor_a_utc(s)[0]
-    return {"velas": lo + 1, "primera_utc": HR.iso(int(u[0]) * 1000), "ultima_utc": HR.iso(int(u[1]) * 1000),
-            "ultima_servidor_s": int(s[1]), "limitada_por_maxbars": lo + 1 >= int(maxbars)}
+    return {"velas": n, "primera_utc": HR.iso(int(u[0]) * 1000), "ultima_utc": HR.iso(int(u[1]) * 1000),
+            "ultima_servidor_s": int(s[1]), "limitada_por_maxbars": n >= pedir}
 
 
 def info_simbolo(term, s) -> dict:

@@ -192,8 +192,9 @@ df -h /c /e
 ```
 
 - El primer inventario es el catálogo completo, sin profundidad: unos segundos.
-- El segundo mide la profundidad de los 28 cruces en m1, m5, h1 y d1 y los ticks de 3 días: unas 3.600 consultas de una
-  vela, y de 1 a 10 min si el terminal tiene que bajarse la historia.
+- El segundo mide la profundidad de los 28 cruces en m1, m5, h1 y d1 y los ticks de 3 días: una consulta de hasta
+  `maxbars` - 1 velas por símbolo y periodo (entrega 6b, ver fase-b.md), y de 1 a 10 min si el terminal tiene que bajarse
+  la historia.
 - Mirar en la salida:
   - el desfase en vivo: tiene que ser «concluyente=True coincide=True» con el FX abierto. Si no, `--regla`;
   - `limitadas por maxbars`;
@@ -237,6 +238,8 @@ Descarga completa, después de `df -h` (E: muy por debajo de 50 GB de uso, C: > 
 
 Riesgos que mirar con el terminal real:
 - Si `copy_rates_from_pos` devuelve None fuera de la historia con otro código, la bisección lo trata como «no hay».
+  Medido después (entrega 6b): da -1 «Call failed», como la sincronización. La bisección se ha sustituido por una sola
+  consulta; ver fase-b.md.
 - La primera petición de historia larga puede volver incompleta mientras el terminal sincroniza. Relanzar con
   `--refrescar` y comparar.
 - Un símbolo 24x7 con dos velas en la hora repetida pararía la consolidación por marcas UTC repetidas. Se ve y se decide
