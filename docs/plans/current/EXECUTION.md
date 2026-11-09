@@ -454,6 +454,14 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
   `--simular`, tarea XML del Programador de tareas para que la registre el usuario, y un qn falso en el selftest. Queda
   desactivado contra qn real hasta que exista el esquema con el tag `source`.
 
+### Franja exclusiva de máquina (2026-11-09, 03:15–05:30 CET)
+
+- Petición de la raíz de quantdesk (`quantdesk-ab`, relevo 38), por decisión del usuario («franja nocturna»): medir el
+  rendimiento de E-C15-S4. En esa franja no se lanzan compilaciones, tests ni benchmarks.
+- La raíz avisó a las 02:48 a los dos autores (TS-00-BENCH y TI-12-MT5 fase B): en la franja se escribe código,
+  documentación y análisis, pero no se ejecuta nada pesado.
+- La corrida de FX del banco que ya estaba en marcha puede terminar; la de Binance pasa a después de las 05:30.
+
 ### TI-02-DATA-DEUDA — CERRADA (2026-11-09)
 
 - Autor: Opus 5.5 high, intento BDD 125. Commit `0e67465`, con los tres arreglos de la revisión 2 de TI-02-DATA:
