@@ -1,7 +1,8 @@
 @echo off
-rem Recupera la raiz del LAUNCH de quantdesk-model tras un apagado o una raiz muerta sin relevo: reconstruye el
-rem estado desde el transcript (informe en .git\sprint-runtime\handoff\RECOVERY-<fecha>.md) y abre la sucesora.
-rem Procedimiento: skill global sprint, references\handoff.md, «Recuperacion en frio». Generado por sprint install.
+rem Recupera la raiz del LAUNCH de este repo tras un apagado o una raiz muerta sin relevo (skill global sprint,
+rem references\handoff.md, «Recuperacion en frio»): reconstruye el estado desde el transcript (informe en
+rem .git\sprint-runtime\handoff\RECOVERY-<fecha>.md) y abre la sucesora. --dry-run escribe el informe pero no abre la pestana.
+rem No necesita venv: el interprete lo elige tools\claude-or.cmd de la skill. Generado por sprint install.
 cd /d "%~dp0"
-"D:\miniconda312\python.exe" -X utf8 "%USERPROFILE%\.claude\skills\sprint\tools\claude_or.py" handoff recover %*
+call "%USERPROFILE%\.claude\skills\sprint\tools\claude-or.cmd" handoff recover %*
 exit /b %ERRORLEVEL%

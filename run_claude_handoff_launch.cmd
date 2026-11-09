@@ -1,7 +1,9 @@
 @echo off
-rem Relevo de la raiz del LAUNCH de quantdesk-model: abre la sucesora con el HANDOFF listo y sin aceptar
-rem (docs\plans\current\HANDOFF.md) en una pestana nueva de Windows Terminal que entra por «Arranque».
-rem Procedimiento: skill global sprint, references\handoff.md, «Sale la raiz». Generado por sprint install.
+rem Inicia o releva la raiz del LAUNCH de este repo en una pestana nueva de Windows Terminal (skill global sprint,
+rem references\handoff.md). Con docs\plans\current\HANDOFF.md listo y sin aceptar, abre la sucesora, que entra por
+rem su «Arranque». Sin HANDOFF (o con --first [--launch RUTA]), abre la raiz inicial, que ejecuta el bloque del
+rem coordinador del LAUNCH. --dry-run solo muestra el comando. No necesita venv: el interprete lo elige
+rem tools\claude-or.cmd de la skill. Generado por sprint install, igual en todos los repos.
 cd /d "%~dp0"
-"D:\miniconda312\python.exe" -X utf8 "%USERPROFILE%\.claude\skills\sprint\tools\claude_or.py" handoff launch %*
+call "%USERPROFILE%\.claude\skills\sprint\tools\claude-or.cmd" handoff launch %*
 exit /b %ERRORLEVEL%
