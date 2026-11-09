@@ -6,10 +6,13 @@ Contrato (investigacion de la raiz, quantdesk-backend/market_scrapper/qn_sink.py
   durable}`.
 - `batch_id` = uuid5(espacio fijo de qn_sink.py, JSON canonico de {topic, tags, obj, ts}): el mismo contenido da el mismo
   id en cualquier ejecucion, y qn lo trata como duplicado (7 dias de memoria); el mismo id con otro contenido es 409.
-- `GET {base}/api/v1/topics/{topic}/latest?env&<tag>=<valor>...` -> `{"items":[{"tags","ts","recv_ts","batch_id","obj"}]}`.
-- `GET {base}/api/v1/objects/{topic}?env&<tags>&from=<ns>&to=<ns>&limit` -> `{"columns":[...],"rows":[{...}]}`
-  (`from` incluido, `to` excluido).
-- `GET {base}/api/v1/topics/{topic}/schema?env` -> `{"tags":[...], "schema":{...}}`.
+- `GET {base}/api/v1/topics/{topic}/latest?env&<tag>=<valor>...` (permiso `sub:`) -> `{tags, ts, recv_ts, batch_id,
+  schema_version, obj}`, suelto o dentro de `{"items":[...]}` (network no lo sabe: se aceptan los dos). Gana el mayor
+  `(ts, recv_ts, batch_id)`.
+- `GET {base}/api/v1/objects/{topic}?env&<tags>&from=<ns>&to=<ns>&limit` -> `{"head_cycle","lake_cycle","columns":
+  [{"name","type"}],"rows":[{...}]}` (confirmado por network): filas por nombre de columna con `_ts`, `_recv_ts`,
+  `_batch_id`, `_schema_version`, tags y campos; marcas en RFC 3339 con us; `from` incluido, `to` excluido; no deduplica.
+- `GET {base}/api/v1/topics/{topic}/schema?env` (permiso `sub:`) -> `{"tags":[...], "schema":{JSON Schema}}`.
 
 Reintentos: solo en 5xx y errores de red, rotando entre replicas (turno rotatorio por peticion) y esperando lo que diga
 `Retry-After` (con un tope). Una replica que falla en la red pasa 60 s en cuarentena (al final del turno). 401/403 paran la ejecucion; cualquier otro 4xx para la serie. Conexiones persistentes por hilo
@@ -158,14 +161,46 @@ class ClienteQn:
         return self.peticion("POST", f"/api/v1/topics/{topic}/publish?{self._q({'wait': 'accepted'})}", cuerpo)
 
     def latest(self, topic: str, tags: dict) -> list[dict]:
-        return self.peticion("GET", f"/api/v1/topics/{topic}/latest?{self._q(tags)}").get("items", [])
+        """Ultimos objetos por conjunto de tags. Network no sabe si `latest` responde con un objeto suelto
+        `{tags, ts, recv_ts, batch_id, schema_version, obj}` o con `{"items":[...]}`: se aceptan los dos (y una lista).
+        Un 404 aqui es "sin datos": el topic ya se comprobo con `esquema` antes."""
+        try:
+            doc = self.peticion("GET", f"/api/v1/topics/{topic}/latest?{self._q(tags)}")
+        except ErrorQnPermanente as e:
+            if e.estado == 404 and not isinstance(e, ErrorQnAutorizacion):
+                return []
+            raise
+        return items_latest(doc)
 
     def objetos(self, topic: str, tags: dict, desde_ns: int, hasta_ns: int, limite: int = 100_000) -> list[dict]:
+        """Filas crudas de `/objects` (JSON confirmado por network): `{"head_cycle","lake_cycle","columns":[{"name",
+        "type"}],"rows":[{...}]}`, cada fila un objeto por nombre de columna (`_ts`, `_recv_ts`, `_batch_id`,
+        `_schema_version`, los tags y los campos), marcas en RFC 3339 con us. No deduplica."""
         q = self._q({**tags, "from": int(desde_ns), "to": int(hasta_ns), "limit": int(limite)})
-        return self.peticion("GET", f"/api/v1/objects/{topic}?{q}").get("rows", [])
+        doc = self.peticion("GET", f"/api/v1/objects/{topic}?{q}")
+        filas = doc.get("rows", [])
+        if filas and isinstance(filas[0], list):  # por si llegaran como listas: se nombran con `columns`
+            nombres = [c["name"] for c in doc.get("columns", [])]
+            filas = [dict(zip(nombres, f)) for f in filas]
+        return filas
 
     def esquema(self, topic: str) -> dict:
         return self.peticion("GET", f"/api/v1/topics/{topic}/schema?{self._q({})}")
+
+
+def items_latest(doc) -> list[dict]:
+    if isinstance(doc, list):
+        return doc
+    if isinstance(doc, dict) and isinstance(doc.get("items"), list):
+        return doc["items"]
+    if isinstance(doc, dict) and "tags" in doc and "ts" in doc:
+        return [doc]
+    return []
+
+
+def ts_fila_ns(fila: dict) -> int:
+    """Marca de evento de una fila de `/objects` (`_ts`; `ts` por compatibilidad)."""
+    return ts_ns_de(fila["_ts"] if "_ts" in fila else fila["ts"])
 
 
 def ts_ns_de(valor) -> int:

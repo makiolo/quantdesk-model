@@ -12,8 +12,11 @@
   - RunOnlyIfNetworkAvailable: solo con red.
   - Principal: el usuario que registra la tarea, con su sesion iniciada (InteractiveToken, necesario para hablar con
     el terminal de MT5) y SIN privilegios elevados (LeastPrivilege). No guarda ninguna contrasena de Windows.
-  - Accion: pythonw.exe del .venv del repo (sin ventana) con scripts\publicador_mt5.py \-\-ejecutar. El propio script
-    escribe su registro en E:\quantdesk-lab\runs\TI-12-MT5\publicador\ (ultimo.json y publicador_<fecha>.jsonl).
+  - Accion: pythonw.exe del .venv del repo (sin ventana) con scripts\publicador_mt5.py \-\-ejecutar \-\-topic <nombre>.
+    El propio script escribe su registro en E:\quantdesk-lab\runs\TI-12-MT5\publicador\ (ultimo.json y
+    publicador_<fecha>.jsonl).
+  - ANTES DE REGISTRARLA: sustituir TOPIC_POR_DECIDIR (en Arguments) por el nombre del topic nuevo que decida el
+    usuario (tags symbol, interval y source). Con el marcador, el publicador no publica nada (sale BLOQUEADO).
   - Tiempo maximo de una ejecucion: 6 h (la carga inicial de 1 h desde 2000 puede tardar); despues Windows la para y la
     siguiente retoma desde lo que qn confirma.
   - No se reintenta por su cuenta ni se despierta el equipo.
@@ -22,7 +25,7 @@
 -->
 <Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
-    <Description>quantdesk: publica en qn (market.ohlcv, source=mt5) las velas cerradas de MetaTrader 5 y rellena huecos. Solo lectura en MT5.</Description>
+    <Description>quantdesk: publica en qn (topic nuevo con source=mt5 como tag) las velas cerradas de MetaTrader 5 y rellena huecos. Solo lectura en MT5.</Description>
     <URI>\quantdesk\publicador_mt5</URI>
   </RegistrationInfo>
   <Triggers>
@@ -65,7 +68,7 @@
   <Actions Context="Usuario">
     <Exec>
       <Command>S:\Projects\quantdesk-model\.venv\Scripts\pythonw.exe</Command>
-      <Arguments>-X utf8 scripts\publicador_mt5.py --ejecutar</Arguments>
+      <Arguments>-X utf8 scripts\publicador_mt5.py --ejecutar --topic TOPIC_POR_DECIDIR</Arguments>
       <WorkingDirectory>S:\Projects\quantdesk-model</WorkingDirectory>
     </Exec>
   </Actions>

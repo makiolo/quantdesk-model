@@ -1,9 +1,10 @@
 # TI-12-MT5 · Fase B: publicador MT5 → qn
 
-Fecha: 2026-11-09 · Base: 7d38136 · Autor: Claude Opus 5.5 (intento BDD 126)
+Fecha: 2026-11-09 · Base: 7d38136 · Autor: Claude Opus 5.5 (intentos BDD 126 y 128)
 
-El publicador lleva a qn (`market.ohlcv`) las velas cerradas del terminal MetaTrader 5 de este Windows, con la fuente
-como tag. El Programador de tareas lo lanza cada 15 min y al iniciar sesión. Cada ejecución rellena lo que falte desde la
+El publicador lleva a qn las velas cerradas del terminal MetaTrader 5 de este Windows, con la fuente como tag. Van a un
+**topic nuevo** cuyo nombre decidirá el usuario (`--topic`): network confirmó que a `market.ohlcv` no se le puede añadir
+un tag. El Programador de tareas lo lanza cada 15 min y al iniciar sesión. Cada ejecución rellena lo que falte desde la
 última vela que qn confirma, de modo que un apagado de días no deja huecos.
 
 Todo está probado con un qn falso en 127.0.0.1 y el módulo MT5 falso de la fase A. No me he conectado ni a qn ni al
@@ -29,15 +30,20 @@ Cambios de esta fase en el extractor:
 - El MT5 falso devuelve la vela en curso, como el terminal real.
 - La lista negra estática también revisa los ficheros del publicador.
 
-## Contrato supuesto con qn
+## Contrato con qn (confirmado por network leyendo su código)
 
-**Contrato futuro de `market.ohlcv`.**
-- Tags `{symbol, interval, source}`. Los nombres de los tres tags y el valor de `source` son configurables; por defecto
-  `source=mt5`, y `--fuente mt5:<bróker>` si hay que distinguir brókers.
-- Objeto: `open`, `high`, `low`, `close`, `volume`, `date` y, mientras el esquema lo exija, también `source` dentro.
+**Topic nuevo.**
+- `source` no puede ser tag de `market.ohlcv`: añadir un tag a un topic existente da conflicto y no hay DELETE.
+- Hace falta un topic NUEVO con tags `{symbol, interval, source}`. Su nombre lo decide el usuario y aún no está.
+- En el publicador, `--topic` es obligatorio para publicar y no tiene valor por defecto. El XML de la tarea lleva el
+  marcador `TOPIC_POR_DECIDIR`; con él, o sin `--topic`, el publicador sale BLOQUEADO sin preguntar a qn.
+- Los nombres de los tres tags y el valor de `source` son configurables. Por defecto `source=mt5`, y
+  `--fuente mt5:<bróker>` si hay que distinguir brókers.
+- Objeto: `open`, `high`, `low`, `close`, `volume` y `date`, **sin `source`**: un tag no puede llamarse como un campo
+  del objeto (`fuente_en_objeto=False`).
 
 **Publicar.**
-- `POST {base}/api/v1/topics/market.ohlcv/publish?env=main&wait=accepted`, un objeto por POST, con
+- `POST {base}/api/v1/topics/<topic>/publish?env=main&wait=accepted`, un objeto por POST, con
   `Authorization: Bearer`.
 - `batch_id` = uuid5 del JSON canónico `{topic, tags, obj, ts}`, con el mismo espacio de nombres que `qn_sink.py`.
 - Reintentos sólo en 5xx y errores de red: se rota entre las réplicas de `QN_URLS` y se espera lo que diga
@@ -46,12 +52,20 @@ Cambios de esta fase en el extractor:
 - Un 401 o un 403 paran la ejecución. Cualquier otro 4xx, incluido el 409, para la serie.
 
 **Leer.**
-- Última vela de la serie: `GET {base}/api/v1/topics/market.ohlcv/latest?env=main&symbol=…&interval=…&source=mt5`.
-- Cola: `GET {base}/api/v1/objects/market.ohlcv?env=main&<tags>&from=<ns>&to=<ns>&limit=…`. Respuesta JSON
-  `{columns, rows}`, con `ts` en ns o en RFC 3339; se aceptan los dos.
-- **A confirmar por network** (lo traslada la raíz): el formato de la respuesta de `/objects` (`ts` y las columnas del
-  objeto dentro de `rows`) y que `latest` y `schema` acepten `env` como parámetro. Están tomados del README de
-  qn-server, no de un servidor real.
+- Última vela de la serie: `GET {base}/api/v1/topics/<topic>/latest?env=main&symbol=…&interval=…&source=mt5`.
+  - Exige `sub:` y acepta `env` y el filtro por tags.
+  - Devuelve `{tags, ts, recv_ts, batch_id, schema_version, obj}`. Network no sabe si como objeto suelto o en
+    `{"items":[...]}`, así que el lector acepta las dos formas (y una lista).
+  - `ts` puede venir en ns o en RFC 3339. Gana el mayor `(ts, recv_ts, batch_id)`.
+  - Un 404 en `latest` se toma como «sin datos», porque el topic ya se comprobó con `schema`.
+- Cola: `GET {base}/api/v1/objects/<topic>?env=main&<tags>&from=<ns>&to=<ns>&limit=…`. Formato JSON confirmado:
+  - `{"head_cycle","lake_cycle","columns":[{"name","type"}],"rows":[{...}]}`, cada fila un objeto por nombre de columna;
+  - columnas fijas `_ts`, `_recv_ts`, `_batch_id` y `_schema_version`, y después los tags y los campos;
+  - marcas en RFC 3339 con µs (`YYYY-MM-DDTHH:MM:SS.ffffffZ`);
+  - no deduplica.
+  El lector toma `_ts` y, si las filas llegaran como listas, las nombra con `columns`.
+- Esquema: `GET {base}/api/v1/topics/<topic>/schema?env=main` (exige `sub:`), con `tags` y el JSON Schema del objeto.
+- El qn falso del selftest responde con este formato: `/objects` confirmado y `latest` en sus dos formas.
 
 **Marcas de tiempo.**
 - `ts` en ns es la apertura real de la vela en UTC, ya convertida desde la hora del servidor.
@@ -63,15 +77,47 @@ Cambios de esta fase en el extractor:
   - `date` es la fecha en Nueva York de ese cierre. Por ejemplo, la sesión que abre el domingo a las 21:00 UTC lleva la
     fecha del lunes.
   - Así coincide con cómo se nombra la sesión diaria de FX y con la etiqueta de yfinance.
-  - `ts` sigue siendo la apertura real y la disponibilidad (`ts` + 1 d) es el cierre real: no hay look-ahead.
-  - Que los cubos `@1d` de qn agrupen por el día UTC de `ts` lo lleva la raíz a network junto con el cambio de esquema.
+  - El `ts` de 1d está pendiente de decisión: ver «Convención de `ts` en 1d».
 - `volume` es el `tick_volume` de MT5, porque el FX no tiene volumen real.
 
-**Seguro mientras no cambie el esquema.**
-- Antes de publicar, el publicador lee `GET …/topics/market.ohlcv/schema`. Si el topic no declara los tres tags, sale
-  BLOQUEADO (código 2) y no publica nada.
-- Hoy el topic sólo tiene `symbol` e `interval`, así que el publicador queda **desactivado contra qn real** sin tocar
-  nada más. Si se publicara antes de tiempo, las velas de MT5 pisarían a las de yfinance en Bento, ClickHouse y Grafana.
+**Seguro mientras no exista el topic.**
+- Sin `--topic`, o con el marcador, sale BLOQUEADO (código 2) sin preguntar a qn.
+- Con un topic, antes de publicar lee `GET …/topics/<topic>/schema`. Sale BLOQUEADO y no publica nada si:
+  - el topic no existe (404);
+  - no declara los tres tags (es el caso de `market.ohlcv` hoy);
+  - `source` es a la vez tag y campo del objeto.
+- Así el publicador queda **desactivado contra qn real** hasta que exista el topic nuevo.
+
+## Convención de `ts` en 1d (para decidir)
+
+**Lo que publica hoy yfinance.** Lo leí en quantdesk-backend, sólo lectura.
+- `market_scrapper/engine/fx_spot_scraper.py:run_daily` descarga `yf.download(…, interval="1d")`. El índice diario de
+  yfinance son fechas sin hora.
+- `market_scrapper/market_sink.py:publish_ohlcv` hace `ts = pd.Timestamp(date)`. Como la hora es 00:00, `date` =
+  `YYYY-MM-DD` y `ts_ms` = 00:00 UTC del día D.
+- Lo confirma el lago: `lago_cierre_c20261101/lago_ohlcv_1d.parquet` tiene `ts_ms` = 1730419200000 =
+  2024-11-01T00:00:00Z para la vela del 2024-11-01.
+- Así que yfinance publica 1d con `ts` = 00:00 UTC de D y `date` = D.
+
+**Hechos de network.**
+- `market.ohlcv` no declara `timeframes`: no hay cubos `@1d`.
+- El lago particiona por el día UTC de `ts`.
+
+| | (a) `ts` = apertura real (D-1 a las 21:00/22:00 UTC), lo de hoy | (b) `ts` = 00:00 UTC de D (fecha de la sesión) |
+|---|---|---|
+| Look-ahead | Ninguno: `ts` + 1 d es el cierre exacto (D a las 21:00/22:00 UTC). | Ninguno: `ts` + 1 d = D+1 a las 00:00 UTC, de 2 a 3 h **después** del cierre real. La disponibilidad es conservadora: no adelanta nada, sólo retrasa un poco. Si `ts` se leyera como «disponible desde ts», sí habría look-ahead (la vela no existe a las 00:00 de D); la convención del lago y del exportador es `ts` + intervalo. |
+| Partición del lago | La sesión D cae en la partición D-1. | La sesión D cae en la partición D. |
+| Consultas `from`/`to` | Pedir el día D (00:00-24:00 UTC) devuelve la sesión D+1, que abre esa tarde, y no la D. Hay que desplazar la ventana a mano. | Pedir el día D devuelve la sesión D, como con yfinance. |
+| Choque con yfinance en el topic nuevo | No pisan nada, porque `source` es tag. Pero la misma sesión tiene `ts` distintos según la fuente (D-1 a las 21:00/22:00 frente a D a las 00:00): un cruce por `(symbol, interval, ts)` no las empareja y el cuadre necesita una regla aparte. | Mismo `ts` y misma `date` que yfinance para la misma sesión: un cruce por `(symbol, interval, ts)` empareja directamente. El contenido sigue siendo de ventanas distintas (sesión de NY frente al día de yfinance), y eso es lo que el cuadre debe medir. |
+| Información perdida | Ninguna. | La hora real de apertura deja de estar en `ts`. Se reconstruye con la regla de sesión (cierre a las 17:00 NY) o se añade un campo al esquema del topic nuevo si se quiere explícita. |
+| Cambio de código | Ninguno. | Pequeño y local en `nucleo.objeto` para 1d: `ts` = 00:00 UTC de la fecha de la sesión, que ya se calcula. Más una prueba: la sesión que abre el domingo a las 21:00 UTC lleva `ts` = lunes 00:00 UTC. Comprobación de cola y `latest` no cambian, porque comparan `ts` con lo que el propio publicador genera. |
+
+**Recomendación: (b).**
+- Alinea la partición del lago, las consultas por día UTC y el cruce con yfinance, sin look-ahead.
+- El coste son 2-3 h de disponibilidad conservadora en 1d y perder la hora de apertura en `ts`, que es derivable.
+- (a) es más «verdad» en el instante, pero obliga a cada consumidor del lago a recordar que la sesión D vive en la
+  partición D-1.
+- El código de 1d no cambia hasta que decida la raíz.
 
 ## Una ejecución
 
@@ -161,8 +207,10 @@ Salida: 0 ok, 1 alguna serie con error (la siguiente ejecución retoma), 2 BLOQU
 - Corre con el usuario que la registra (`InteractiveToken`, sin `UserId`) y sin privilegios elevados (`LeastPrivilege`).
   No guarda ninguna contraseña de Windows.
 - No despierta el equipo y tiene un límite de 6 h por ejecución.
-- La acción es `pythonw.exe` del `.venv` (sin ventana) con `scripts\publicador_mt5.py --ejecutar` y el repo como
-  directorio de trabajo.
+- La acción es `pythonw.exe` del `.venv` (sin ventana) con
+  `scripts\publicador_mt5.py --ejecutar --topic TOPIC_POR_DECIDIR` y el repo como directorio de trabajo.
+- **Marcador `TOPIC_POR_DECIDIR`:** antes de registrar la tarea hay que sustituirlo en `<Arguments>` por el nombre del
+  topic nuevo. Mientras siga el marcador, el publicador sale BLOQUEADO sin publicar.
 
 **Cómo se registra.** Lo hace el usuario:
 
@@ -188,22 +236,23 @@ Register-ScheduledTask -TaskName "quantdesk\publicador_mt5" -Xml (Get-Content -R
    ```
    .venv/Scripts/python -X utf8 scripts/publicador_mt5.py --simular --sin-credenciales --intervalos 1d,1h,5m,1m
    ```
-4. **La raíz** emite el token (`pub:` + `sub:` sobre `market.ohlcv` en `main`) cuando quantdesk-network tenga el esquema
-   con el tag `source` y el backend haya adaptado sus consumidores. Lo deja en `secrets/qn-mt5.token`.
-5. **Primera ejecución real**, con el terminal abierto por el usuario y con `QN_URLS` puesto. Empieza con un símbolo y
-   1d, y luego todo:
+4. **El usuario** decide el nombre del topic nuevo y la convención de `ts` en 1d. **Network** crea el topic con tags
+   `symbol`, `interval` y `source` y sin `source` en el objeto. **La raíz** emite el token (`pub:` + `sub:` sobre ese
+   topic en `main`) y lo deja en `secrets/qn-mt5.token`.
+5. **Primera ejecución real**, con el terminal abierto por el usuario y con `QN_URLS` puesto. `<topic>` es el nombre
+   decidido. Empieza con un símbolo y 1d, y luego todo:
    ```
-   .venv/Scripts/python -X utf8 scripts/publicador_mt5.py --ejecutar --sin-credenciales --simbolos EURUSD --intervalos 1d
-   .venv/Scripts/python -X utf8 scripts/publicador_mt5.py --ejecutar --sin-credenciales
+   .venv/Scripts/python -X utf8 scripts/publicador_mt5.py --ejecutar --topic <topic> --sin-credenciales --simbolos EURUSD --intervalos 1d
+   .venv/Scripts/python -X utf8 scripts/publicador_mt5.py --ejecutar --topic <topic> --sin-credenciales
    ```
-6. **El usuario** registra la tarea con la orden de arriba. Desde ese momento, el publicador hace `initialize(path)` y
-   `login` con `secrets/mt5.json` en su propia sesión.
+6. **El usuario** sustituye `TOPIC_POR_DECIDIR` en el XML y registra la tarea con la orden de arriba. Desde ese momento,
+   el publicador hace `initialize(path)` y `login` con `secrets/mt5.json` en su propia sesión.
 
 **Cómo comprobar la continuidad en qn después.**
 - `ultimo.json` y el `jsonl` del día: `sin_publicar` = 0, `error` nulo y `huecos_cola_rellenados` tras un corte.
-- En qn, por serie: `GET /api/v1/objects/market.ohlcv?env=main&symbol=EURUSD&interval=1h&source=mt5&from=…&to=…`.
-  - Los `ts` tienen que ir de hora en hora sin más saltos que los fines de semana, que se ven en `huecos_mercado`.
-  - Ningún `ts` puede repetirse con distinto `batch_id`.
+- En qn, por serie: `GET /api/v1/objects/<topic>?env=main&symbol=EURUSD&interval=1h&source=mt5&from=…&to=…`.
+  - Los `_ts` tienen que ir de hora en hora sin más saltos que los fines de semana, que se ven en `huecos_mercado`.
+  - Ningún `_ts` puede repetirse con distinto `_batch_id`. `/objects` no deduplica, así que una repetición se vería.
 - Tras apagar la máquina unos días, la primera ejecución al encender tiene que dar `nuevas` > 0 y, en la siguiente,
   `nuevas` = 0.
 
@@ -211,7 +260,16 @@ Register-ScheduledTask -TaskName "quantdesk\publicador_mt5" -Xml (Get-Content -R
 
 `.venv/Scripts/python -X utf8 scripts/publicador_mt5.py --selftest` termina en `selftest ok` en unos 85 s, sin red real
 ni terminal. Comprueba:
-- Con el esquema de hoy (sin `source`), sale BLOQUEADO y hace 0 POST.
+- Sale BLOQUEADO y hace 0 POST:
+  - sin `--topic` o con el marcador, sin preguntar a qn;
+  - con un topic que no existe (404);
+  - con `market.ohlcv` tal como está hoy (sin el tag `source`);
+  - con `source` a la vez como tag y como campo.
+- Lectores con el formato de network:
+  - `/objects` con `_ts` en RFC 3339 con µs y filas por nombre de columna;
+  - `latest` como `{"items":[...]}` con `ts` en ns, y como objeto suelto con `ts` en RFC 3339 y 404 sin datos. Con
+    este último, dos ejecuciones completas dan igualdad exacta con MT5 y ningún duplicado.
+- El objeto publicado no lleva `source`.
 - Primera ejecución un miércoles a las 12:30: en qn quedan exactamente las velas cerradas de MT5 (1d, 1h, 5m de 2
   símbolos) y ninguna abierta. La réplica caída y tres 503 con Retry-After se superan rotando.
 - Una ejecución repetida en el mismo instante no hace ningún POST.

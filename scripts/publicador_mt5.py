@@ -1,7 +1,7 @@
-"""Publicador MT5 -> qn (TI-12-MT5, fase B): rellena y publica en `market.ohlcv` las velas cerradas de MetaTrader 5, con la
+"""Publicador MT5 -> qn (TI-12-MT5, fase B): rellena y publica en un topic de qn las velas cerradas de MetaTrader 5, con la
 fuente como tag. Pensado para el Programador de tareas (cada 15 min y al iniciar sesion; ver publicador_mt5_tarea.xml).
 
-    .venv/Scripts/python -X utf8 scripts/publicador_mt5.py --ejecutar [--simbolos @fx28] [--intervalos 1d,1h,5m,1m]
+    .venv/Scripts/python -X utf8 scripts/publicador_mt5.py --ejecutar --topic NOMBRE [--simbolos @fx28] [--intervalos 1d,1h,5m,1m]
     .venv/Scripts/python -X utf8 scripts/publicador_mt5.py --simular --sin-credenciales [--desde AAAA-MM-DD]
     .venv/Scripts/python -X utf8 scripts/publicador_mt5.py --selftest
 
@@ -10,9 +10,11 @@ fuente como tag. Pensado para el Programador de tareas (cada 15 min y al iniciar
   `--sin-credenciales`, se engancha a un terminal que el usuario ya abrio y autentico.
 - qn: replicas en QN_URLS (separadas por comas), entorno QN_ENV (main), token en E:/quantdesk-lab/secrets/qn-mt5.token (o
   la ruta de QDL_QN_TOKEN_FILE). El token y las credenciales no salen en ninguna salida (guarda de secretos).
-- Seguro de esquema: antes de publicar se lee el esquema del topic; si todavia no declara el tag de la fuente, no se
-  publica nada (BLOQUEADO). Asi el publicador queda desactivado contra qn real hasta que quantdesk-network cambie el
-  esquema.
+- Topic: `--topic`, obligatorio para publicar y sin valor por defecto. Tiene que ser un topic NUEVO con tags symbol,
+  interval y source (network: market.ohlcv no admite un tag mas); el nombre lo decide el usuario.
+- Seguro de esquema: antes de publicar se lee el esquema del topic; si no declara los tres tags, o si `source` es a la
+  vez tag y campo del objeto, no se publica nada (BLOQUEADO). Asi el publicador queda desactivado contra qn real hasta
+  que exista el topic.
 - `--simular`: hace todo menos publicar y no toca qn (ni token): dice cuantas velas publicaria desde la fecha inicial.
 - Ejecucion unica con candado (E:/quantdesk-lab/runs/TI-12-MT5/publicador/publicador.lock); si hay otra, sale con 0.
 - Registro: E:/quantdesk-lab/runs/TI-12-MT5/publicador/ (ultimo.json y publicador_<fecha>.jsonl, una linea por ejecucion).
@@ -47,6 +49,7 @@ from publicador_mt5_lib import qn as Q  # noqa: E402
 RUNS = LAB + "/runs/TI-12-MT5/publicador"
 RUTA_TOKEN = "E:/quantdesk-lab/secrets/qn-mt5.token"
 VAR_TOKEN = "QDL_QN_TOKEN_FILE"
+MARCADOR_TOPIC = "TOPIC_POR_DECIDIR"  # el del XML de la tarea: hasta que el usuario lo cambie, no se publica
 
 
 def argumentos(argv) -> argparse.Namespace:
@@ -55,6 +58,7 @@ def argumentos(argv) -> argparse.Namespace:
     g.add_argument("--ejecutar", action="store_true")
     g.add_argument("--simular", action="store_true")
     g.add_argument("--selftest", action="store_true")
+    p.add_argument("--topic", help="topic de qn (nuevo, con tags symbol, interval y source); sin valor por defecto")
     p.add_argument("--simbolos", default="@fx28")
     p.add_argument("--intervalos", default="1d,1h,5m,1m")
     p.add_argument("--desde", type=dt.date.fromisoformat, help="fecha inicial para todas las series vacias en qn")
@@ -64,6 +68,20 @@ def argumentos(argv) -> argparse.Namespace:
     p.add_argument("--hilos", type=int, default=8)
     p.add_argument("--ventana", type=int, default=64)
     return p.parse_args(argv)
+
+
+def problema_de_esquema(cfg: N.Config, doc: dict) -> str | None:
+    """None si el topic sirve: declara los tres tags y `source` no es ademas un campo del objeto."""
+    tags = list(doc.get("tags") or [])
+    esperados = {cfg.tag_simbolo, cfg.tag_intervalo, cfg.tag_fuente}
+    if not esperados <= set(tags):
+        return f"el topic {cfg.topic} declara los tags {tags}, le faltan {sorted(esperados - set(tags))}"
+    props = set(((doc.get("schema") or {}).get("properties") or {}))
+    if cfg.tag_fuente in props:
+        return f"en el topic {cfg.topic}, {cfg.tag_fuente!r} es a la vez tag y campo del objeto"
+    if cfg.fuente_en_objeto:
+        return "fuente_en_objeto no es compatible con la fuente como tag"
+    return None
 
 
 def leer_token(ruta: str | None = None) -> str:
@@ -121,6 +139,8 @@ def ejecutar(argv, fabrica=LT.importar_paquete, cargar_cred=X.cargar_credenciale
     try:
         try:
             regla = HR.regla_desde_texto(a.regla)
+            if not a.simular and (not a.topic or MARCADOR_TOPIC in a.topic):
+                raise ValueError("falta --topic: el topic nuevo (tags symbol, interval y source) lo decide el usuario")
             cred = cargar_cred(a)
             token = None if a.simular else cargar_token()
         except (ValueError, LT.TerminalNoDisponible) as e:
@@ -129,20 +149,21 @@ def ejecutar(argv, fabrica=LT.importar_paquete, cargar_cred=X.cargar_credenciale
             return guardar(2)
         secretos = LT.Secretos(cred, token)
         cfg = N.Config(urls=list(urls if urls is not None else urls_de_entorno()), env=os.environ.get("QN_ENV") or "main",
-                       fuente=a.fuente, hilos=a.hilos, ventana=a.ventana, espera_max_s=espera_max_s)
+                       topic=a.topic, fuente=a.fuente, hilos=a.hilos, ventana=a.ventana, espera_max_s=espera_max_s)
+        registro["topic"] = cfg.topic
         cliente = None
         if not a.simular:
             try:
                 cliente = Q.ClienteQn(cfg.urls, token, env=cfg.env, espera_max_s=cfg.espera_max_s)
-                tags = cliente.esquema(cfg.topic).get("tags", [])
+                doc = cliente.esquema(cfg.topic)
             except (ValueError, Q.ErrorQn) as e:
                 registro["resultado"] = f"bloqueado: {LT.censurar(str(e), secretos)}"
-                decir(f"BLOQUEADO: qn: {LT.censurar(str(e), secretos)}")
+                decir(f"BLOQUEADO: qn ({cfg.topic}): {LT.censurar(str(e), secretos)}")
                 return guardar(2)
-            esperados = {cfg.tag_simbolo, cfg.tag_intervalo, cfg.tag_fuente}
-            if not esperados <= set(tags):
-                registro["resultado"] = f"bloqueado: el esquema de {cfg.topic} declara {tags}, sin {sorted(esperados - set(tags))}"
-                decir(f"BLOQUEADO: el topic {cfg.topic} aun no tiene los tags {sorted(esperados - set(tags))}: no se publica")
+            problema = problema_de_esquema(cfg, doc)
+            if problema:
+                registro["resultado"] = f"bloqueado: {problema}"
+                decir(f"BLOQUEADO: {problema}: no se publica")
                 return guardar(2)
         try:
             term = fabrica()

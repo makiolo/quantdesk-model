@@ -41,7 +41,8 @@ class Banco:
     def __init__(self, ejecutar, raiz: str) -> None:
         self.ejecutar, self.raiz, self.salidas, self.falsos = ejecutar, raiz, [], []
 
-    def __call__(self, flota: QF.Flota | None, ahora: int, extra=(), token=TOKEN, modo="--ejecutar", **kw) -> tuple[int, str]:
+    def __call__(self, flota: QF.Flota | None, ahora: int, extra=(), token=TOKEN, modo="--ejecutar", topic=QF.TOPIC,
+                 **kw) -> tuple[int, str]:
         def fabrica():
             f = FA.MT5Falso(ahora_utc_s=ahora, trampas=PROHIBIDAS, cuenta=dict(CRED), abierto=False)
             self.falsos.append(f)
@@ -53,7 +54,7 @@ class Banco:
             return token
 
         argv = [modo, "--simbolos", ",".join(SIMS), "--intervalos", ",".join(INTERVALOS), "--desde", DESDE,
-                "--hilos", "4", "--ventana", "16", *extra]
+                "--hilos", "4", "--ventana", "16", *(["--topic", topic] if topic else []), *extra]
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             c = self.ejecutar(argv, fabrica=fabrica, cargar_cred=lambda a: LT.Credenciales(**CRED),
@@ -122,6 +123,7 @@ def prueba_codificacion() -> None:
     assert N.objeto(cfg, "EURUSD", "1d", b, 0)[2] == utc(2026, 10, 25, 21) * 10 ** 9  # ts: apertura real en UTC
     assert N.objeto(cfg, "EURUSD", "1h", b, 2)[1]["date"] == "2026-11-03T22:00:00Z"
     assert N.objeto(cfg, "EURUSD", "1h", b, 0)[0] == {"symbol": "EURUSD", "interval": "1h", "source": "mt5"}
+    assert "source" not in N.objeto(cfg, "EURUSD", "1h", b, 0)[1] and cfg.topic is None  # sin topic por defecto
 
 
 def prueba_cliente_reintentos_y_errores() -> None:
@@ -131,25 +133,42 @@ def prueba_cliente_reintentos_y_errores() -> None:
     try:
         cli = Q.ClienteQn(flota.urls, TOKEN, espera_max_s=0.5, dormir=esperas.append)
         alm.fallos_503["r0"] = 2
+        T = QF.TOPIC
         tags = {"symbol": "EURUSD", "interval": "1h", "source": "mt5"}
-        obj = {"open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0, "volume": 1.0, "date": "x", "source": "mt5"}
+        obj = {"open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0, "volume": 1.0, "date": "x"}
+        S = 10 ** 9  # marcas en segundos enteros: /objects las da en RFC 3339 con us
         for k in range(12):
-            assert cli.publicar("market.ohlcv", tags, obj, k)["duplicate"] is False
-        assert cli.publicar("market.ohlcv", tags, obj, 3)["duplicate"] is True
+            assert cli.publicar(T, tags, obj, k * S)["duplicate"] is False
+        assert cli.publicar(T, tags, obj, 3 * S)["duplicate"] is True
         assert alm.peticiones[("r0", "POST")] > 0 and alm.peticiones[("r1", "POST")] > 0  # rotacion
         assert cli.estadisticas["fallos_red"] > 0 and cli.estadisticas["http_503"] == 2 and esperas.count(0.5) == 2
+        # Lectores con el formato confirmado: /objects con `_ts` en RFC 3339 us y filas por nombre de columna.
+        filas = cli.objetos(T, tags, 0, 12 * S)
+        assert [Q.ts_fila_ns(f) for f in filas] == [k * S for k in range(12)]
+        assert filas[1]["_ts"] == "1970-01-01T00:00:01.000000Z"
+        assert set(filas[0]) == {"_ts", "_recv_ts", "_batch_id", "_schema_version", "symbol", "interval", "source",
+                                 "open", "high", "low", "close", "volume", "date"}
+        assert [Q.ts_ns_de(x["ts"]) for x in cli.latest(T, tags)] == [11 * S]  # latest como {"items":[...]}
+        assert cli.latest(T, {**tags, "symbol": "USDJPY"}) == []
         # 409: el mismo batch_id con otro contenido.
-        cuerpo, bid = Q.codificar("market.ohlcv", tags, obj, 99)
+        cuerpo, bid = Q.codificar(T, tags, obj, 99)
         alm.por_id[bid] = "otro contenido"
         try:
-            cli.publicar("market.ohlcv", tags, obj, 99)
+            cli.publicar(T, tags, obj, 99)
         except Q.ErrorQnPermanente as e:
             assert e.estado == 409 and not isinstance(e, Q.ErrorQnAutorizacion)
         else:
             raise AssertionError("409")
+        # Topic que no existe: 404 en publish (permanente).
+        try:
+            cli.publicar("market.ohlcv", tags, obj, 1)
+        except Q.ErrorQnPermanente as e:
+            assert e.estado == 404
+        else:
+            raise AssertionError("404")
         # 401: token malo; el mensaje no lleva el token.
         try:
-            Q.ClienteQn(flota.urls, "token-malo-77", dormir=esperas.append).latest("market.ohlcv", tags)
+            Q.ClienteQn(flota.urls, "token-malo-77", dormir=esperas.append).latest(T, tags)
         except Q.ErrorQnAutorizacion as e:
             assert e.estado == 401 and "token-malo-77" not in str(e)
         else:
@@ -157,7 +176,7 @@ def prueba_cliente_reintentos_y_errores() -> None:
         # Todas las replicas en 503: se agota.
         alm.fallar_ts.add(5_000)
         try:
-            cli.publicar("market.ohlcv", tags, obj, 5_000)
+            cli.publicar(T, tags, obj, 5_000)
         except Q.ErrorQnAgotado:
             pass
         else:
@@ -165,6 +184,20 @@ def prueba_cliente_reintentos_y_errores() -> None:
         assert not any(TOKEN in r for r in alm.rutas)  # el token nunca va en la URL
     finally:
         flota.parar()
+    # latest como objeto suelto (ts en RFC 3339) y 404 cuando no hay nada: las dos formas que network no descarta.
+    alm = QF.Almacen(TOKEN, latest="suelto")
+    flota = QF.Flota(alm, vivas=1, caida=False)
+    try:
+        cli = Q.ClienteQn(flota.urls, TOKEN)
+        assert cli.latest(QF.TOPIC, tags) == []
+        for k in (5_000_000_000, 7_000_123_000):
+            cli.publicar(QF.TOPIC, tags, obj, k)
+        assert [Q.ts_ns_de(x["ts"]) for x in cli.latest(QF.TOPIC, tags)] == [7_000_123_000]
+    finally:
+        flota.parar()
+    assert Q.items_latest({"items": [1]}) == [1] and Q.items_latest([2]) == [2] and Q.items_latest({}) == []
+    # Filas que llegaran como listas se nombran con `columns`.
+    assert Q.ts_fila_ns(dict(zip(["_ts", "open"], ["2026-11-04T10:00:00.000001Z", 1.0]))) == utc(2026, 11, 4, 10) * 10 ** 9 + 1000
 
 
 def prueba_candado(raiz: str) -> None:
@@ -185,14 +218,24 @@ def prueba_extremo_a_extremo(ejecutar, raiz: str) -> dict:
     alm = QF.Almacen(TOKEN)
     flota = QF.Flota(alm, vivas=2, caida=True)
     try:
-        # 0. Esquema de hoy (sin el tag source): no se publica nada.
-        alm_viejo = QF.Almacen(TOKEN, tags=("symbol", "interval"))
-        flota_vieja = QF.Flota(alm_viejo, vivas=1, caida=False)
-        try:
-            c, out = b(flota_vieja, utc(2026, 11, 4, 12, 30))
-            assert c == 2 and "source" in out and alm_viejo.peticiones[("r0", "POST")] == 0, out
-        finally:
-            flota_vieja.parar()
+        # 0. Topics que no sirven: no se publica nada (BLOQUEADO, 0 POST).
+        #    a) sin --topic o con el marcador del XML: ni se pregunta a qn;
+        for topic in (None, "TOPIC_POR_DECIDIR"):
+            n = sum(alm.peticiones.values())
+            c, out = b(flota, utc(2026, 11, 4, 12, 30), topic=topic)
+            assert c == 2 and "--topic" in out and sum(alm.peticiones.values()) == n, out
+        #    b) un topic que no existe (404); c) market.ohlcv de hoy, sin el tag source; d) source como tag y como campo.
+        casos = [(QF.Almacen(TOKEN), "market.ohlcv", "unknown_topic"),
+                 (QF.Almacen(TOKEN, tags=("symbol", "interval"), propiedades=QF.PROPIEDADES + ("source",),
+                             topic="market.ohlcv"), "market.ohlcv", "le faltan ['source']"),
+                 (QF.Almacen(TOKEN, propiedades=QF.PROPIEDADES + ("source",)), QF.TOPIC, "a la vez tag y campo")]
+        for alm_x, topic, texto in casos:
+            flota_x = QF.Flota(alm_x, vivas=1, caida=False)
+            try:
+                c, out = b(flota_x, utc(2026, 11, 4, 12, 30), topic=topic)
+                assert c == 2 and texto in out and alm_x.peticiones[("r0", "POST")] == 0, (texto, out)
+            finally:
+                flota_x.parar()
         # 1. Primera ejecucion (miercoles 12:30): todas las velas cerradas desde DESDE; ninguna abierta.
         ahora1 = utc(2026, 11, 4, 12, 30)
         alm.fallos_503["r1"] = 3
@@ -238,15 +281,19 @@ def prueba_extremo_a_extremo(ejecutar, raiz: str) -> dict:
         assert s["huecos_cola_rellenados"] == 1, s
         assert en_qn(alm) == esperado(ahora3)
         sin_duplicados(alm)
-        # 5. batch_id estable: un qn nuevo recibe los mismos ids para las mismas velas.
-        alm2 = QF.Almacen(TOKEN)
+        # 5. batch_id estable: un qn nuevo recibe los mismos ids para las mismas velas. Este qn responde `latest` como
+        #    objeto suelto con ts en RFC 3339 (404 sin datos): con dos ejecuciones se cubre tambien esa forma.
+        alm2 = QF.Almacen(TOKEN, latest="suelto")
         flota2 = QF.Flota(alm2, vivas=1, caida=False)
         try:
             assert b(flota2, ahora1)[0] == 0
+            ids2 = {(o["tags"]["symbol"], o["tags"]["interval"], o["ts"]): o["batch_id"] for o in alm2.objetos}
+            assert ids2 == ids1
+            c, out = b(flota2, ahora2)
+            assert c == 0 and en_qn(alm2) == esperado(ahora2), out
+            sin_duplicados(alm2)
         finally:
             flota2.parar()
-        ids2 = {(o["tags"]["symbol"], o["tags"]["interval"], o["ts"]): o["batch_id"] for o in alm2.objetos}
-        assert ids2 == ids1
         # 5b. Falla la primera ventana de una carga inicial por el principio: la siguiente ejecucion rellena esos huecos
         # (la cola se acota por la fecha inicial configurada, no por la primera vela publicada).
         alm3 = QF.Almacen(TOKEN)
@@ -325,8 +372,8 @@ def prueba_ritmo() -> dict:
             tags = {"symbol": "EURUSD", "interval": "1m", "source": "mt5"}
             t0 = time.perf_counter()
             with ThreadPoolExecutor(hilos) as pool:
-                list(pool.map(lambda k: cli.publicar("market.ohlcv", tags, {"open": 1.0, "high": 1.0, "low": 1.0,
-                     "close": 1.0, "volume": 1.0, "date": "x", "source": "mt5"}, k), range(n)))
+                list(pool.map(lambda k: cli.publicar(QF.TOPIC, tags, {"open": 1.0, "high": 1.0, "low": 1.0,
+                     "close": 1.0, "volume": 1.0, "date": "x"}, k), range(n)))
             out[hilos] = n / (time.perf_counter() - t0)
             assert len(alm.objetos) == n
         finally:
@@ -345,7 +392,8 @@ def prueba_tarea_xml() -> None:
     assert v("t:Principals/t:Principal/t:RunLevel") == "LeastPrivilege"
     assert v("t:Principals/t:Principal/t:LogonType") == "InteractiveToken"
     assert raiz.find("t:Principals/t:Principal/t:UserId", ns) is None  # el usuario que la registra
-    assert v("t:Actions/t:Exec/t:Arguments").endswith("scripts\\publicador_mt5.py --ejecutar")
+    # Marcador del topic: hasta que el usuario lo sustituya, el publicador sale BLOQUEADO sin publicar.
+    assert v("t:Actions/t:Exec/t:Arguments").endswith("scripts\\publicador_mt5.py --ejecutar --topic TOPIC_POR_DECIDIR")
     assert v("t:Actions/t:Exec/t:Command").endswith("\\.venv\\Scripts\\pythonw.exe")
 
 

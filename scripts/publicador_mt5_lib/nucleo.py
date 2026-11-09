@@ -1,6 +1,8 @@
 """Nucleo del publicador MT5 -> qn: configuracion, candado, barras cerradas de MT5, plan por serie y publicacion.
 
 Una serie es (simbolo, intervalo) con la fuente fija (`source=mt5` por defecto). En cada ejecucion:
+0. El topic es uno NUEVO con tags symbol, interval y source y sin `source` en el objeto (`--topic`, sin valor por
+   defecto: lo decide el usuario).
 1. `L` = `ts` de la ultima barra de la serie que qn confirma (`latest` filtrado por los tres tags). Sin nada en qn, se
    empieza en la fecha inicial del intervalo.
 2. Se leen de MT5 las velas CERRADAS (apertura + intervalo <= ahora) desde un poco antes de `L` hasta ahora; la hora del
@@ -37,12 +39,14 @@ MARGEN_COLA_S = 4 * 86400  # la cola de `ventana` velas puede cruzar un fin de s
 class Config:
     urls: list
     env: str = "main"
-    topic: str = "market.ohlcv"
+    # Topic NUEVO con tags symbol, interval y source (network: un tag no se puede anadir a market.ohlcv). El nombre lo
+    # decide el usuario: no hay valor por defecto y sin el no se publica.
+    topic: str | None = None
     tag_simbolo: str = "symbol"
     tag_intervalo: str = "interval"
     tag_fuente: str = "source"
     fuente: str = "mt5"
-    fuente_en_objeto: bool = True  # el esquema actual exige `source` dentro del objeto
+    fuente_en_objeto: bool = False  # un tag no puede llamarse como un campo: `source` solo va como tag
     # Profundidad inicial (solo cuando qn no tiene nada de la serie): fecha fija o ventana reciente en dias.
     inicio: dict = dataclasses.field(default_factory=lambda: {"1d": "2000-01-01", "1h": "2000-01-01", "5m": 30, "1m": 30})
     hilos: int = 8
@@ -180,7 +184,7 @@ def serie(cfg: Config, cliente: Q.ClienteQn | None, term, simbolo: str, simbolo_
             filas = cliente.objetos(cfg.topic, tags_serie, int(ts[cola[0]]) * 1_000_000, ultimo * 1_000_000 + 1)
             en_qn = {}
             for f in filas:
-                en_qn.setdefault(Q.ts_ns_de(f["ts"]) // 1_000_000, f)
+                en_qn.setdefault(Q.ts_fila_ns(f) // 1_000_000, f)
             # Hueco = vela de MT5 de la cola que falta en qn y no es anterior a la fecha inicial configurada (lo anterior
             # nunca se pidio). Cubre tambien una primera ventana de carga inicial que fallo por el principio.
             cota_ms = cota_inicial_s(cfg, intervalo, ahora_s, desde) * 1000

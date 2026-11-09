@@ -4,18 +4,29 @@ ts. Registra cada peticion (ruta y cabeceras) para comprobar que el token no via
 from __future__ import annotations
 
 import collections
+import datetime as dt
 import json
 import socket
 import threading
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-PROPIEDADES = {"open", "high", "low", "close", "volume", "date", "source"}
+PROPIEDADES = ("open", "high", "low", "close", "volume", "date")  # el topic nuevo: `source` solo como tag
+TOPIC = "prueba.ohlcv.fuentes"
+
+
+def rfc3339_us(ns: int) -> str:
+    s, resto = divmod(int(ns), 1_000_000_000)
+    return dt.datetime.fromtimestamp(s, tz=dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S") + f".{resto // 1000:06d}Z"
 
 
 class Almacen:
-    def __init__(self, token: str, tags: tuple = ("symbol", "interval", "source")) -> None:
-        self.token, self.tags = token, list(tags)
+    """`latest`: "items" responde `{"items":[...]}` con ts en ns; "suelto" responde el objeto suelto (un solo conjunto de
+    tags) con ts en RFC 3339 y 404 si no hay nada (las dos formas que network no ha podido descartar)."""
+
+    def __init__(self, token: str, tags: tuple = ("symbol", "interval", "source"), propiedades: tuple = PROPIEDADES,
+                 topic: str = TOPIC, latest: str = "items") -> None:
+        self.token, self.tags, self.propiedades, self.topic, self.modo_latest = token, list(tags), set(propiedades), topic, latest
         self.cerrojo = threading.Lock()
         self.objetos: list[dict] = []
         self.por_id: dict[str, str] = {}
@@ -71,11 +82,15 @@ def _handler(almacen: Almacen, nombre: str):
             if e is None:
                 return
             ruta, q = e
+            if not self._topic_ok(ruta):
+                return
             tags = self._tags(q)
             casa = lambda o: all(o["tags"].get(k) == v for k, v in tags.items())  # noqa: E731
             if ruta.endswith("/schema"):
-                self._json(200, {"env": q.get("env"), "topic": "market.ohlcv", "kind": "object", "version": 1,
-                                 "tags": almacen.tags, "schema": {"properties": {p: {} for p in PROPIEDADES}}})
+                self._json(200, {"env": q.get("env"), "topic": almacen.topic, "kind": "object", "version": 1,
+                                 "tags": almacen.tags,
+                                 "schema": {"type": "object", "properties": {p: {} for p in sorted(almacen.propiedades)},
+                                            "additionalProperties": False}})
             elif ruta.endswith("/latest"):
                 with almacen.cerrojo:
                     mejor: dict = {}
@@ -84,20 +99,39 @@ def _handler(almacen: Almacen, nombre: str):
                             k = tuple(sorted(o["tags"].items()))
                             if k not in mejor or (o["ts"], o["recv_ts"], o["batch_id"]) > (mejor[k]["ts"], mejor[k]["recv_ts"], mejor[k]["batch_id"]):
                                 mejor[k] = o
+                if almacen.modo_latest == "suelto":
+                    if not mejor:
+                        self._json(404, {"code": "not_found", "message": "sin datos"})
+                        return
+                    o = max(mejor.values(), key=lambda x: (x["ts"], x["recv_ts"], x["batch_id"]))
+                    self._json(200, {"tags": o["tags"], "ts": rfc3339_us(o["ts"]), "recv_ts": rfc3339_us(o["recv_ts"]),
+                                     "batch_id": o["batch_id"], "schema_version": 1, "obj": o["obj"]})
+                    return
                 items = [{"tags": o["tags"], "ts": o["ts"], "recv_ts": o["recv_ts"], "batch_id": o["batch_id"],
                           "schema_version": 1, "obj": o["obj"]} for _, o in sorted(mejor.items())]
-                self._json(200, {"env": q.get("env"), "topic": "market.ohlcv", "kind": "object", "items": items})
+                self._json(200, {"env": q.get("env"), "topic": almacen.topic, "kind": "object", "items": items})
             elif "/objects/" in ruta:
                 desde, hasta, limite = int(q["from"]), int(q["to"]), int(q.get("limit", 1_000_000))
-                with almacen.cerrojo:
-                    filas = [{"ts": o["ts"], "recv_ts": o["recv_ts"], **o["tags"], **o["obj"]} for o in almacen.objetos
-                             if casa(o) and desde <= o["ts"] < hasta]
+                with almacen.cerrojo:  # formato confirmado por network: filas por nombre de columna, marcas RFC 3339 us
+                    filas = [{"_ts": rfc3339_us(o["ts"]), "_recv_ts": rfc3339_us(o["recv_ts"]), "_batch_id": o["batch_id"],
+                              "_schema_version": 1, **o["tags"], **o["obj"]}
+                             for o in sorted(almacen.objetos, key=lambda x: x["ts"]) if casa(o) and desde <= o["ts"] < hasta]
                 if len(filas) > limite:
                     self._json(400, {"code": "invalid", "message": "limit"})
                     return
-                self._json(200, {"head_cycle": 1, "lake_cycle": 1, "columns": [], "rows": sorted(filas, key=lambda f: f["ts"])})
+                columnas = ([{"name": "_ts", "type": "timestamp_us"}, {"name": "_recv_ts", "type": "timestamp_us"},
+                             {"name": "_batch_id", "type": "string"}, {"name": "_schema_version", "type": "int64"}]
+                            + [{"name": t, "type": "string"} for t in almacen.tags]
+                            + [{"name": p, "type": "string" if p == "date" else "float64"} for p in sorted(almacen.propiedades)])
+                self._json(200, {"head_cycle": 1, "lake_cycle": 1, "columns": columnas, "rows": filas})
             else:
                 self._json(404, {"code": "not_found"})
+
+        def _topic_ok(self, ruta: str) -> bool:
+            if f"/topics/{almacen.topic}/" in ruta or ruta.endswith(f"/objects/{almacen.topic}"):
+                return True
+            self._json(404, {"code": "unknown_topic", "message": ruta.rsplit("/", 2)[-2]})
+            return False
 
         def do_POST(self):
             n = int(self.headers.get("Content-Length", "0"))
@@ -106,12 +140,14 @@ def _handler(almacen: Almacen, nombre: str):
             if e is None:
                 return
             ruta, q = e
+            if not self._topic_ok(ruta):
+                return
             if not ruta.endswith("/publish") or q.get("wait") != "accepted":
                 self._json(400, {"code": "bad_request"})
                 return
             doc = json.loads(datos)
             tags, obj, ts, bid = doc.get("tags", {}), doc.get("obj", {}), doc.get("ts"), doc.get("batch_id")
-            if set(tags) != set(almacen.tags) or not set(obj) <= PROPIEDADES or not isinstance(ts, int):
+            if set(tags) != set(almacen.tags) or not set(obj) <= almacen.propiedades or not isinstance(ts, int):
                 self._json(400, {"code": "invalid", "message": "tags u objeto"})
                 return
             if ts in almacen.fallar_ts:
