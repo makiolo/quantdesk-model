@@ -5,6 +5,11 @@ fuente como tag. Pensado para el Programador de tareas (cada 15 min y al iniciar
     .venv/Scripts/python -X utf8 scripts/publicador_mt5.py --simular --sin-credenciales [--desde AAAA-MM-DD]
     .venv/Scripts/python -X utf8 scripts/publicador_mt5.py --selftest
 
+- `--simbolos`: `@fx28` (por defecto), nombres, o un universo con nombre de la fase C (`@continuo`, `@us_grandes`...; ver
+  scripts/extractor_mt5_lib/universos.py). El tag `symbol` es la base normalizada (EURUSD), salvo las acciones de
+  `@us_grandes`, que llevan su ticker (BRK-B). La vela 1d de todas las clases: sesion = fecha del servidor, publicada al
+  pasar el servidor al dia siguiente (17:00 de Nueva York); los huecos de mercado de 1d se clasifican por clase.
+
 - Lectura de MT5 con la envoltura de solo lectura del extractor (scripts/extractor_mt5_lib/lectura.py): nunca envia
   ordenes. Por defecto `initialize(path)` + `login` con E:/quantdesk-lab/secrets/mt5.json (o QDL_MT5_SECRETS); con
   `--sin-credenciales`, se engancha a un terminal que el usuario ya abrio y autentico.
@@ -43,6 +48,7 @@ from extractor_mt5_lib import hora as HR  # noqa: E402
 from extractor_mt5_lib import inventario as INV  # noqa: E402
 from extractor_mt5_lib import lectura as LT  # noqa: E402
 from extractor_mt5_lib import simbolos as SB  # noqa: E402
+from extractor_mt5_lib import universos as UNI  # noqa: E402
 from publicador_mt5_lib import nucleo as N  # noqa: E402
 from publicador_mt5_lib import qn as Q  # noqa: E402
 
@@ -67,6 +73,10 @@ def argumentos(argv) -> argparse.Namespace:
     p.add_argument("--fuente", default="mt5", help="valor del tag de la fuente (mt5, o mt5:<broker>)")
     p.add_argument("--hilos", type=int, default=8)
     p.add_argument("--ventana", type=int, default=64)
+    p.add_argument("--max-objetos-por-5min", type=int, default=None,
+                   help="tope de objetos enviados en cualquier ventana de 5 min (carga historica); sin tope por defecto")
+    p.add_argument("--max-objetos", type=int, default=None,
+                   help="tope de objetos por ejecucion; el resto queda para la siguiente pasada; sin tope por defecto")
     return p.parse_args(argv)
 
 
@@ -102,7 +112,8 @@ def urls_de_entorno() -> list[str]:
 
 def ejecutar(argv, fabrica=LT.importar_paquete, cargar_cred=X.cargar_credenciales_defecto, cargar_token=leer_token,
              urls=None, reloj=time.time, en_ejecucion=LT.terminal_en_ejecucion, runs: str = RUNS,
-             guarda=X.guarda_disco, espera_max_s: float = 30.0) -> int:
+             guarda=X.guarda_disco, espera_max_s: float = 30.0, universos: dict | None = None,
+             monotono=time.monotonic, dormir=time.sleep) -> int:
     a = argumentos(argv)
     t0 = reloj()
     registro = {"tarea": "TI-12-MT5 publicador", "argv": list(argv), "inicio_utc": HR.iso(int(t0 * 1000)),
@@ -141,6 +152,7 @@ def ejecutar(argv, fabrica=LT.importar_paquete, cargar_cred=X.cargar_credenciale
             regla = HR.regla_desde_texto(a.regla)
             if not a.simular and (not a.topic or MARCADOR_TOPIC in a.topic):
                 raise ValueError("falta --topic: el topic nuevo (tags symbol, interval y source) lo decide el usuario")
+            ritmo = N.Ritmo(a.max_objetos_por_5min, a.max_objetos, reloj=monotono, dormir=dormir)
             cred = cargar_cred(a)
             token = None if a.simular else cargar_token()
         except (ValueError, LT.TerminalNoDisponible) as e:
@@ -180,8 +192,13 @@ def ejecutar(argv, fabrica=LT.importar_paquete, cargar_cred=X.cargar_credenciale
         guarda()
         registro["procedencia"] = LT.procedencia(term, ti, ai)
         todos = INV.simbolos_disponibles(term, None)
-        pedidos = X.lista_simbolos(a.simbolos)
+        if universos is None:  # etiquetas de las acciones (BRK-B) y grupos @...; sin fichero solo vale @fx28 o nombres
+            try:
+                universos = UNI.cargar()
+            except ValueError:
+                universos = None
         try:
+            pedidos = X.lista_simbolos(a.simbolos, universos)
             elegidos = SB.resolver(pedidos, todos)
         except ValueError as e:
             registro["resultado"] = f"bloqueado: {e}"
@@ -192,12 +209,17 @@ def ejecutar(argv, fabrica=LT.importar_paquete, cargar_cred=X.cargar_credenciale
         for sim in elegidos:
             info = {"punto": todos[sim]["punto"], "digitos": todos[sim]["digitos"], "precio_velas": todos[sim]["precio_velas"]}
             for iv in intervalos:
+                if ritmo.agotado and cliente is not None:  # tope por ejecucion: el resto, en la siguiente pasada
+                    registro["series"].append({"simbolo": UNI.etiqueta(sim, todos[sim]["base"], universos),
+                                               "simbolo_mt5": sim, "intervalo": iv, "parada_por_tope": True})
+                    continue
                 try:
-                    r = N.serie(cfg, cliente, term, sim, todos[sim]["base"], info, iv, regla, ahora, a.desde, candado)
+                    r = N.serie(cfg, cliente, term, sim, UNI.etiqueta(sim, todos[sim]["base"], universos), info, iv, regla,
+                                ahora, a.desde, candado, UNI.calendario(todos[sim]), ritmo)
                 except (D.ErrorTerminal, D.ErrorFormato, Q.ErrorQnAgotado, Q.ErrorQnPermanente) as e:
                     if isinstance(e, (Q.ErrorQnAutorizacion, Q.ErrorQnTopicDesconocido)):
                         raise  # fatales: paran toda la ejecucion
-                    r = {"simbolo": todos[sim]["base"], "simbolo_mt5": sim, "intervalo": iv,
+                    r = {"simbolo": UNI.etiqueta(sim, todos[sim]["base"], universos), "simbolo_mt5": sim, "intervalo": iv,
                          "error": LT.censurar(str(e), secretos)}
                 if r.get("error"):
                     codigo = 1
@@ -210,6 +232,10 @@ def ejecutar(argv, fabrica=LT.importar_paquete, cargar_cred=X.cargar_credenciale
                       + (f"; ERROR {r['error']}" if r.get("error") else ""))
         if cliente is not None:
             registro["qn"] = dict(cliente.estadisticas)
+        registro["ritmo"] = ritmo.resumen()
+        if ritmo.agotado:
+            decir(f"publicador: tope de {ritmo.por_ejecucion} objetos por ejecucion alcanzado; el resto sigue en la "
+                  "siguiente pasada")
         registro["resultado"] = "ok" if codigo == 0 else "series con error (se retoma en la siguiente ejecucion)"
         return guardar(codigo)
     except Q.ErrorQnAutorizacion as e:

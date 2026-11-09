@@ -36,6 +36,7 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from . import calendarios as CAL
 from . import hora as HR
 from . import lectura as LT
 
@@ -326,6 +327,8 @@ def descargar(term, simbolos: dict, periodos: list[str], desde: dt.date, hasta: 
             entrada = {"simbolo": sim, "base": info["base"], "sufijo": info["sufijo"], "periodo": per,
                        "precio_velas": info["precio_velas"], "trozos": len(rutas), "filas": filas,
                        "hora": {"ambiguas": amb, "inexistentes": inex}}
+            if info.get("clase"):
+                entrada.update(clase=info["clase"], bolsa=info.get("bolsa"))
             if filas == 0:
                 os.remove(destino)
                 entrada.update(fichero=None, nota="el terminal no da datos de este simbolo y periodo en el rango")
@@ -336,7 +339,12 @@ def descargar(term, simbolos: dict, periodos: list[str], desde: dt.date, hasta: 
                                primera_utc=HR.iso(int(ts[0])), ultima_utc=HR.iso(int(ts[-1])))
                 entrada["hora"]["desfases_h"] = sorted({int(x) / 3600 for x in np.unique(t.column("desfase_s").to_numpy())})
                 if per != "ticks":
-                    entrada["huecos"] = huecos(ts, p["paso"])
+                    clase = info.get("clase")
+                    if per == "d1" and clase not in (None, "forex"):  # fase C: dias sin mercado por clase, no huecos
+                        dias = np.unique(t.column("time_servidor").to_numpy() // 86400)
+                        entrada["huecos"] = CAL.huecos_sesiones(dias, clase, info.get("bolsa"))
+                    else:
+                        entrada["huecos"] = huecos(ts, p["paso"])
                     if per in ("m1", "m5", "h1") and info.get("es_fx"):  # el cierre de las 17:00 NY es del FX
                         entrada["cierre_semanal"] = HR.cierre_semanal(t.column("time_servidor").to_numpy(), p["paso"], regla.nombre)
                         if not entrada["cierre_semanal"]["coherente"]:

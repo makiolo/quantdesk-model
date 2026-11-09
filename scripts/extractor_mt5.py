@@ -4,6 +4,8 @@
     .venv/Scripts/python -X utf8 scripts/extractor_mt5.py --descargar --simbolos @fx28 --periodos d1,h1,m5,m1 \
         --desde AAAA-MM-DD --hasta AAAA-MM-DD [--salida DIR] [--refrescar]
     .venv/Scripts/python -X utf8 scripts/extractor_mt5.py --comparar DIR_A DIR_B
+    .venv/Scripts/python -X utf8 scripts/extractor_mt5.py --universos INVENTARIO.json   (sin terminal)
+    .venv/Scripts/python -X utf8 scripts/extractor_mt5.py --sp500 WIKITEXT.json          (sin terminal)
     .venv/Scripts/python -X utf8 scripts/extractor_mt5.py --selftest
 
 Garantias:
@@ -16,7 +18,8 @@ Garantias:
 - Hora: las marcas del servidor se convierten a UTC con `--regla` (por defecto `ny+7`); ver extractor_mt5_lib/hora.py.
 
 Simbolos: nombres exactos del terminal o bases normalizadas (`EURUSD` encuentra `EURUSD.a` si es el unico); `@fx28` son
-los 28 cruces FX del lago. Periodos: d1, h1, m5, m1, ticks. Rango: `--desde` incluido, `--hasta` excluido (UTC, <= hoy).
+los 28 cruces FX del lago; `@fx60`, `@metales_energia`, `@indices`, `@crypto`, `@crypto_alts`, `@continuo` y `@us_grandes`
+son los universos con nombre de extractor_mt5_lib/universos/universos.json (fase C). Periodos: d1, h1, m5, m1, ticks. Rango: `--desde` incluido, `--hasta` excluido (UTC, <= hoy).
 Almacen (fuera de Git): E:/quantdesk-lab/data/mt5/<hasta>/ (parquet + manifest.json), cache de trozos en
 E:/quantdesk-lab/data/mt5/_trozos/, inventarios en E:/quantdesk-lab/data/mt5/inventario/ y registro de cada ejecucion en
 E:/quantdesk-lab/runs/TI-12-MT5/. Salida 0 ok; 1 datos inconsistentes, descarga interrumpida (reanudable) o hashes
@@ -43,6 +46,7 @@ from extractor_mt5_lib import hora as HR  # noqa: E402
 from extractor_mt5_lib import inventario as INV  # noqa: E402
 from extractor_mt5_lib import lectura as LT  # noqa: E402
 from extractor_mt5_lib import simbolos as SB  # noqa: E402
+from extractor_mt5_lib import universos as UNI  # noqa: E402
 
 DATA = LAB + "/data/mt5"
 RUNS = LAB + "/runs/TI-12-MT5"
@@ -76,6 +80,10 @@ def argumentos(argv) -> argparse.Namespace:
     g.add_argument("--inventario", action="store_true")
     g.add_argument("--descargar", action="store_true")
     g.add_argument("--comparar", nargs=2, metavar="DIR")
+    g.add_argument("--universos", metavar="INVENTARIO_JSON",
+                   help="resuelve los universos con nombre contra un inventario y escribe el fichero de universos")
+    g.add_argument("--sp500", metavar="WIKITEXT_JSON",
+                   help="rehace universos/sp500.csv desde la respuesta JSON de la API de la Wikipedia (action=parse)")
     p.add_argument("--grupo")
     p.add_argument("--simbolos")
     p.add_argument("--sin-profundidad", action="store_true")
@@ -90,12 +98,19 @@ def argumentos(argv) -> argparse.Namespace:
     return p.parse_args(argv)
 
 
-def lista_simbolos(txt: str | None) -> list[str] | None:
+def lista_simbolos(txt: str | None, universos: dict | None = None) -> list[str] | None:
+    """Nombres pedidos. `@fx28`: los 28 cruces del lago (fijos). `@<universo>`: un grupo del fichero de universos
+    (scripts/extractor_mt5_lib/universos/universos.json, ver fase-c.md). Un universo desconocido es ValueError."""
     if not txt:
         return None
     out = []
     for x in (s.strip() for s in txt.split(",")):
-        out.extend(INV.FX28 if x == "@fx28" else ([x] if x else []))
+        if x == "@fx28":
+            out.extend(INV.FX28)
+        elif x.startswith("@"):
+            out.extend(UNI.grupo(x[1:], universos if universos is not None else UNI.cargar()))
+        elif x:
+            out.append(x)
     return out
 
 
@@ -106,9 +121,37 @@ def cargar_credenciales_defecto(a):
     return LT.leer_credenciales(ruta) if os.path.isfile(ruta) else None
 
 
+def generar_universos(a, sp500_csv: str = UNI.RUTA_SP500) -> int:
+    """`--universos INVENTARIO`: no toca el terminal; lee un inventario y la instantanea del S&P 500."""
+    with open(a.universos, encoding="utf-8") as f:
+        inv = json.load(f)
+    sp500, cabecera = UNI.leer_sp500(sp500_csv)
+    doc = UNI.resolver(inv, sp500, cabecera, os.path.basename(a.universos))
+    destino = a.salida or UNI.RUTA_UNIVERSOS
+    UNI.guardar(doc, destino)
+    print("universos: " + ", ".join(f"@{g} {n}" for g, n in doc["cuentas"].items()) + f" -> {destino}")
+    print(f"  S&P 500: {doc['sp500']['casados']} casados, {doc['sp500']['sin_casar']} sin casar: "
+          + ", ".join(f"{x['ticker']} ({x['motivo']})" for x in doc["us_grandes"]["sin_casar"]))
+    print(f"  fuera: {len(doc['excluidos']['vencimiento'])} con vencimiento, {doc['excluidos']['bonos']} bonos, "
+          f"{doc['excluidos']['stohastic']} Stohastic")
+    return 0
+
+
 def ejecutar(argv, fabrica=LT.importar_paquete, cargar_cred=cargar_credenciales_defecto, reloj=time.time,
-             en_ejecucion=LT.terminal_en_ejecucion, data: str = DATA, runs: str = RUNS, guarda=guarda_disco) -> int:
+             en_ejecucion=LT.terminal_en_ejecucion, data: str = DATA, runs: str = RUNS, guarda=guarda_disco,
+             universos: dict | None = None) -> int:
     a = argumentos(argv)
+    if a.universos:
+        return generar_universos(a)
+    if a.sp500:
+        with open(a.sp500, encoding="utf-8") as f:
+            w = json.load(f)["parse"]
+        filas = UNI.sp500_desde_wikitext(w["wikitext"])
+        fuente = f"https://en.wikipedia.org/wiki/List_of_S%26P_500_companies (revid {w.get('revid')})"
+        hoy = dt.datetime.fromtimestamp(reloj(), tz=dt.timezone.utc).date().isoformat()
+        UNI.escribir_sp500(filas, fuente, hoy, a.salida or UNI.RUTA_SP500)
+        print(f"sp500: {len(filas)} componentes -> {a.salida or UNI.RUTA_SP500}")
+        return 0
     if a.comparar:
         difs = D.comparar(*a.comparar)
         for d in difs:
@@ -158,7 +201,7 @@ def ejecutar(argv, fabrica=LT.importar_paquete, cargar_cred=cargar_credenciales_
         registro["procedencia"] = proc
         ahora = int(reloj())
         if a.inventario:
-            inv = INV.inventario(term, regla, ahora, proc, int(ti.maxbars), a.grupo, lista_simbolos(a.simbolos),
+            inv = INV.inventario(term, regla, ahora, proc, int(ti.maxbars), a.grupo, lista_simbolos(a.simbolos, universos),
                                  not a.sin_profundidad, a.dias_ticks,
                                  progreso=lambda k, n, s: decir(f"  {k}/{n} {s}") if k % 25 == 0 or k == n else None)
             ruta = f"{data}/inventario/inventario_{sello}.json"
@@ -168,12 +211,16 @@ def ejecutar(argv, fabrica=LT.importar_paquete, cargar_cred=cargar_credenciales_
             registro.update(resultado="ok", inventario=ruta, deteccion_desfase_en_vivo=inv["deteccion_desfase_en_vivo"])
         else:
             todos = INV.simbolos_disponibles(term, None)
-            elegidos = SB.resolver(lista_simbolos(a.simbolos), todos)
+            elegidos = SB.resolver(lista_simbolos(a.simbolos, universos), todos)
             fich = SB.nombres_fichero(elegidos)
             simbolos = {s: {"base": todos[s]["base"], "sufijo": todos[s]["sufijo"], "fichero": fich[s],
                             "punto": todos[s]["punto"], "digitos": todos[s]["digitos"],
                             "precio_velas": todos[s]["precio_velas"],
                             "es_fx": todos[s]["regla_sufijo"] == "par de divisas"} for s in elegidos}
+            for s in elegidos:  # clase de sesion y bolsa: huecos de 1d por clase (fase C); sin clase, como siempre
+                clase, bolsa = UNI.calendario(todos[s])
+                if clase is not None:
+                    simbolos[s].update(clase=clase, bolsa=bolsa)
             vivos = [s for s in sorted(todos) if todos[s]["base"].upper() in INV.LIQUIDOS and not todos[s]["base_compartida"]]
             viva = HR.detectar_en_vivo(term, vivos[:3], ahora, regla)
             registro["deteccion_desfase_en_vivo"] = viva

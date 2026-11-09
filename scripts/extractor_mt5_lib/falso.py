@@ -13,6 +13,7 @@ import fnmatch
 
 import numpy as np
 
+from . import calendarios as CAL
 from . import hora as HR
 
 VERSION = "5.0.6231"
@@ -65,7 +66,9 @@ def _d(y, m, d):
     return int(dt.datetime(y, m, d, tzinfo=dt.timezone.utc).timestamp())
 
 
-# nombre: (base, beneficio, digitos, horario, precio, chart_mode, ticks, historia UTC por periodo)
+# nombre: (base, beneficio, digitos, horario, precio, chart_mode, ticks[, ruta en el terminal])
+# horario: "fx" (domingo 17:00 a viernes 17:00 NY), "24x7", "bolsa" (9:30-16:00 NY sin los festivos de la NYSE) o
+# "fx:<BOLSA>" (horario de fx sin velas en los festivos de esa bolsa, por fecha del servidor; fase C).
 SIMBOLOS = {
     "EURUSD.a": ("EUR", "USD", 5, "fx", 1.08, SYMBOL_CHART_MODE_BID, True),
     "EURUSD.pro": ("EUR", "USD", 5, "fx", 1.0801, SYMBOL_CHART_MODE_BID, True),
@@ -87,7 +90,7 @@ class MT5Falso:
     def __init__(self, ahora_utc_s: int, regla: str = "ny+7", fallar_tras: int | None = None, abierto: bool = True,
                  cuenta: dict | None = None, trampas: tuple = (), maxbars: int = 5_000_000, simbolos=None,
                  fallos_call_failed: int = 0, fallos_arranque: tuple = (), retraso_conexion: int = 0,
-                 cuenta_abierta: dict | None = None) -> None:
+                 cuenta_abierta: dict | None = None, dias_sin_datos: dict | None = None) -> None:
         """Fallos del terminal real que reproduce (entrega 6):
         - `fallos_call_failed` = N: las N primeras consultas de datos de cada (funcion, simbolo, periodo) devuelven None con
           (-1, 'Terminal: Call failed'), como un terminal que aun sincroniza esa historia.
@@ -96,7 +99,9 @@ class MT5Falso:
         - `retraso_conexion` = N: tras el login (o al engancharse a un terminal ya abierto), las N primeras
           terminal_info() dicen connected=False.
         - `cuenta_abierta`: la cuenta con la que esta abierto un terminal que ya estaba en marcha (por defecto, la del
-          fichero de credenciales)."""
+          fichero de credenciales).
+        - `dias_sin_datos`: simbolo -> fechas (dt.date, del servidor) sin ninguna vela ni tick: un hueco de mercado que no
+          es fin de semana ni festivo (fase C)."""
         self.__version__ = VERSION
         for n, v in globals().items():
             if n.isupper() and isinstance(v, int):
@@ -111,6 +116,8 @@ class MT5Falso:
         self.fallos_arranque = list(fallos_arranque)
         self.retraso_conexion, self._pendiente_conexion = int(retraso_conexion), 0
         self.simbolos = dict(SIMBOLOS if simbolos is None else simbolos)
+        self.dias_sin_datos = {k: np.array(sorted((d - dt.date(1970, 1, 1)).days for d in v), dtype=np.int64)
+                               for k, v in (dias_sin_datos or {}).items()}
         self.iniciado = self.sesion = False
         self.consultas_datos = 0
         self.llamadas = collections.Counter()
@@ -200,10 +207,11 @@ class MT5Falso:
 
     # ---- simbolos ----
     def _info(self, nombre):
-        b, p, dig, _, precio, cm, _ = self.simbolos[nombre]
+        b, p, dig, _, precio, cm, *resto = self.simbolos[nombre]
+        ruta = resto[1] if len(resto) > 1 else "Falso\\" + nombre
         v = dict.fromkeys(CAMPOS["SymbolInfo"], 0)
         v.update(name=nombre, currency_base=b, currency_profit=p, currency_margin=b, digits=dig, point=10.0 ** -dig,
-                 chart_mode=cm, visible=True, select=True, description=f"{b}/{p} sintetico", path=f"Falso\\{nombre}",
+                 chart_mode=cm, visible=True, select=True, description=f"{b}/{p} sintetico", path=ruta,
                  bid=precio, ask=precio, spread_float=True, bank="", exchange="", formula="", isin="", page="", basis="",
                  category="")
         return SymbolInfo(**v)
@@ -251,21 +259,40 @@ class MT5Falso:
         return s[ok], u[ok]
 
     def _abierto(self, nombre, u, paso):
+        ok = self._abierto_horario(nombre, u, paso)
+        if nombre in self.dias_sin_datos:
+            ok &= ~np.isin((u + self.regla.desfase(u)) // 86400, self.dias_sin_datos[nombre])
+        return ok
+
+    def _abierto_horario(self, nombre, u, paso):
         horario = self.simbolos[nombre][3]
         if horario == "24x7":
             return np.ones(u.shape, dtype=bool)
         ny = u + HR.NUEVA_YORK.desfase(u)
         dia, minuto = (ny // 86400 + 3) % 7, (ny % 86400) // 60
-        if paso == 86400:  # vela diaria: dia de la semana del servidor
-            s = u + self.regla.desfase(u)
-            return ((s // 86400 + 3) % 7) < 5
+        bolsa = "NYSE" if horario == "bolsa" else horario[3:] if horario.startswith("fx:") else None
+        if paso == 86400:  # vela diaria: dia de la semana del servidor (y sin los festivos de su bolsa)
+            dia_s = (u + self.regla.desfase(u)) // 86400
+            return (((dia_s + 3) % 7) < 5) & ~self._festivo(bolsa, dia_s)
         if horario == "bolsa":
-            return (dia < 5) & (minuto >= 570) & (minuto < 960)
+            return (dia < 5) & (minuto >= 570) & (minuto < 960) & ~self._festivo(bolsa, ny // 86400)
+        if bolsa is not None:
+            cerrado_hoy = self._festivo(bolsa, (u + self.regla.desfase(u)) // 86400)
+            return ~((dia == 5) | ((dia == 4) & (minuto >= 1020)) | ((dia == 6) & (minuto < 1020)) | cerrado_hoy)
         cerrado = (dia == 5) | ((dia == 4) & (minuto >= 1020)) | ((dia == 6) & (minuto < 1020))
         return ~cerrado
 
+    @staticmethod
+    def _festivo(bolsa, dias):
+        dias = np.asarray(dias, dtype=np.int64)
+        if bolsa is None or dias.size == 0:
+            return np.zeros(dias.shape, dtype=bool)
+        anios = range(CAL.fecha(int(dias.min())).year, CAL.fecha(int(dias.max())).year + 1)
+        fest = sorted((d - CAL.EPOCA).days for a in anios for d in CAL.festivos(bolsa, a))
+        return np.isin(dias, np.array(fest, dtype=np.int64))
+
     def _precios(self, nombre, u):
-        b, p, dig, _, precio, _, _ = self.simbolos[nombre]
+        dig, precio = self.simbolos[nombre][2], self.simbolos[nombre][4]
         x = u.astype(np.float64)
         bid = np.round(precio * (1 + 0.01 * np.sin(x / 259200.0) + 0.002 * np.sin(x / 3700.0)), dig)
         sp = 8 + (u // 60) % 7

@@ -19,12 +19,14 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import pyarrow.parquet as pq
 
+from . import calendarios as CAL
 from . import descarga as D
 from . import falso as FA
 from . import hora as HR
 from . import inventario as INV
 from . import lectura as LT
 from . import simbolos as SB
+from . import universos as UNI
 
 LIB = os.path.dirname(os.path.abspath(__file__))
 SCRIPTS = os.path.dirname(LIB)
@@ -478,6 +480,166 @@ def prueba_copy_rates_from_pos_como_el_real(esperas: list) -> None:
 
 
 # ---------------------------------------------------------------------------------------------------------------------
+# Fase C: universos con nombre, calendarios por clase y huecos de 1d
+# ---------------------------------------------------------------------------------------------------------------------
+
+_BID = FA.SYMBOL_CHART_MODE_BID
+# Un broker falso con las carpetas del real (rutas del inventario de 2026-11-09) y una muestra de cada clase.
+SIMBOLOS_C = {
+    "EURUSD": ("EUR", "USD", 5, "fx", 1.08, _BID, True, "Forex\\Majors\\EURUSD"),
+    "USDJPY": ("USD", "JPY", 3, "fx", 150.0, _BID, True, "Forex\\Majors\\USDJPY"),
+    "XAUUSD": ("XAU", "USD", 2, "fx:CME", 2000.0, _BID, True, "Commodities\\Metals\\XAUUSD"),
+    "BRENT_F7": ("USD", "USD", 2, "fx", 80.0, _BID, True, "Commodities\\Energies\\Energies Futures\\BRENT_F7"),
+    "SIN26": ("USD", "USD", 3, "fx", 30.0, _BID, True, "Commodities\\Metal Futures\\SIN26"),
+    "DE40": ("USD", "EUR", 1, "fx:XETRA", 18000.0, _BID, True, "Indices\\Indices Spot\\Major Spot Indices\\DE40"),
+    "HK50": ("USD", "HKD", 1, "fx:HKEX", 17000.0, _BID, True, "Indices\\Indices Spot\\Minor Spot Indices\\HK50"),
+    "DXY_Z6": ("USD", "USD", 3, "fx", 100.0, _BID, True, "Indices\\Indices Futures\\DXY_Z6"),
+    "BTCUSD": ("USD", "USD", 2, "24x7", 65000.0, _BID, True, "Crypto\\BTCUSD"),
+    "ETCUSD": ("USD", "USD", 3, "24x7", 20.0, _BID, True, "Crypto\\Crypto Alts\\ETCUSD"),
+    "AAPL.NAS": ("USD", "USD", 2, "bolsa", 190.0, _BID, False, "Stock CFD's\\Nasdaq\\AAPL.NAS"),
+    "AAPL.NAS-24": ("USD", "USD", 2, "fx", 190.0, _BID, False, "Stock CFD's\\Nasdaq\\24HR NAS\\AAPL.NAS-24"),
+    "BRK-B.NYSE": ("USD", "USD", 2, "bolsa", 450.0, _BID, False, "Stock CFD's\\NYSE\\BRK-B.NYSE"),
+    "BF/B.NYSE": ("USD", "USD", 2, "bolsa", 40.0, _BID, False, "Stock CFD's\\NYSE\\BF/B.NYSE"),
+    "HON.NYSE": ("USD", "USD", 2, "bolsa", 200.0, _BID, False, "Stock CFD's\\NYSE\\HON.NYSE"),
+    "META.NAS-24": ("USD", "USD", 2, "fx", 500.0, _BID, False, "Stock CFD's\\Nasdaq\\24HR NAS\\META.NAS-24"),
+    "0001.HK": ("HKD", "HKD", 3, "fx", 40.0, _BID, False, "Stock CFD's\\HK\\0001.HK"),
+    "UST10Y_H7": ("USD", "USD", 3, "fx", 110.0, _BID, True, "Bonds CFDs\\UST10Y_H7"),
+    "Boom1000": ("USD", "USD", 3, "24x7", 9000.0, _BID, True, "Stohastic\\Boom1000"),
+}
+SP500_C = [{"ticker": "AAPL", "nombre": "Apple Inc.", "bolsa": "NASDAQ"},
+           {"ticker": "BRK.B", "nombre": "Berkshire Hathaway", "bolsa": "NYSE"},
+           {"ticker": "BF.B", "nombre": "Brown-Forman", "bolsa": "NYSE"},
+           {"ticker": "HON", "nombre": "Honeywell", "bolsa": "NASDAQ"},
+           {"ticker": "META", "nombre": "Meta Platforms", "bolsa": "NASDAQ"},
+           {"ticker": "GOOGL", "nombre": "Alphabet Inc. (Class A)", "bolsa": "NASDAQ"}]
+
+
+def universos_falsos(ahora=utc(2026, 11, 6, 15)) -> dict:
+    """Universos resueltos contra el inventario del broker falso de la fase C (como `--universos` sobre el real)."""
+    env, _ = envoltura(ahora_utc_s=ahora, simbolos=SIMBOLOS_C)
+    env.initialize()
+    filas = list(INV.simbolos_disponibles(env, None).values())
+    return UNI.resolver({"ahora_utc": HR.iso(ahora * 1000), "simbolos": filas}, SP500_C, "selftest", "falso.json")
+
+
+def prueba_calendarios() -> None:
+    d = dt.date
+    assert [CAL.pascua(a) for a in (2024, 2025, 2026, 2027)] == [d(2024, 3, 31), d(2025, 4, 20), d(2026, 4, 5), d(2027, 3, 28)]
+    assert sorted(CAL.festivos("NYSE", 2026)) == [d(2026, 1, 1), d(2026, 1, 19), d(2026, 2, 16), d(2026, 4, 3), d(2026, 5, 25),
+                                                 d(2026, 6, 19), d(2026, 7, 3), d(2026, 9, 7), d(2026, 11, 26), d(2026, 12, 25)]
+    assert d(2021, 12, 31) not in CAL.festivos("NYSE", 2021)  # 1-ene-2022 en sabado: la NYSE abrio el viernes
+    assert {d(2022, 6, 20), d(2022, 12, 26)} <= CAL.festivos("NYSE", 2022) and d(2025, 1, 9) in CAL.festivos("NYSE", 2025)
+    # Dias laborables sin vela 1d medidos en el terminal real (2023-2026): todos estan en el calendario de su bolsa.
+    medidos = {"ASX": ["2023-12-25", "2023-12-26", "2024-01-01", "2024-03-29", "2024-04-01", "2024-12-25", "2024-12-26",
+                       "2025-01-01", "2025-04-18", "2025-04-21", "2025-12-25", "2025-12-26", "2026-01-01", "2026-04-03",
+                       "2026-04-06", "2026-06-08"],
+               "TSX": ["2024-02-19", "2024-03-29", "2024-05-20", "2024-07-01", "2024-08-05", "2024-09-02", "2024-10-14",
+                       "2025-02-17", "2025-04-18", "2025-05-19", "2025-07-01", "2025-08-04", "2025-09-01", "2025-10-13",
+                       "2026-02-16", "2026-04-03", "2026-05-18", "2026-07-01", "2026-08-03", "2026-09-07", "2026-10-12"]}
+    for bolsa, dias in medidos.items():
+        assert all(CAL.es_festivo(bolsa, d.fromisoformat(x)) for x in dias), bolsa
+    assert all(CAL.festivos(b, 2026) for b in CAL.BOLSAS) and set(CAL.BOLSA_INDICE.values()) <= set(CAL.BOLSAS)
+    dia = lambda txt: (d.fromisoformat(txt) - CAL.EPOCA).days  # noqa: E731
+    laborables = lambda a, b, fuera=(): [x for x in range(dia(a), dia(b) + 1) if (x + 3) % 7 < 5 and x not in fuera]  # noqa: E731
+    # Indice europeo: Viernes Santo y Lunes de Pascua son festivos; un martes sin vela es otro hueco.
+    h = CAL.huecos_sesiones(laborables("2026-03-30", "2026-04-17", {dia("2026-04-03"), dia("2026-04-06"), dia("2026-04-14")}),
+                            "indices", "XETRA")
+    assert (h["festivos"], h["festivos_probables"], h["otros"], h["fin_de_semana"]) == (2, 1, 0, 4), h
+    h = CAL.huecos_sesiones(laborables("2026-03-30", "2026-04-30", set(range(dia("2026-04-13"), dia("2026-04-18")))),
+                            "indices", "XETRA")
+    assert h["otros"] == 1 and h["otros_mayores"][0]["pasos"] == 5, h  # una semana entera no es un festivo
+    # Cripto: sin vela un sabado es fin de semana (historia antigua del broker); un martes, otro hueco. Sin festivos probables.
+    todos = [x for x in range(dia("2026-10-01"), dia("2026-10-31")) if x not in (dia("2026-10-10"), dia("2026-10-13"))]
+    h = CAL.huecos_sesiones(todos, "crypto", None)
+    assert (h["fin_de_semana"], h["festivos"], h["festivos_probables"], h["otros"]) == (1, 0, 0, 1), h
+    # Acciones US: la semana de Accion de Gracias de 2026 (jueves 26 festivo de la NYSE).
+    h = CAL.huecos_sesiones(laborables("2026-11-23", "2026-11-30", {dia("2026-11-26")}), "acciones_us", "NYSE")
+    assert (h["festivos"], h["otros"], h["festivos_probables"]) == (1, 0, 0), h
+
+
+def prueba_universos() -> None:
+    """Reglas de seleccion sobre un broker con las carpetas del real, cruce del S&P 500 y el fichero del repo."""
+    u = universos_falsos()
+    g = u["grupos"]
+    assert g["fx60"] == ["EURUSD", "USDJPY"] and g["metales_energia"] == ["XAUUSD"] and g["indices"] == ["DE40", "HK50"]
+    assert g["crypto"] == ["BTCUSD"] and g["crypto_alts"] == ["ETCUSD"]
+    assert g["continuo"] == sorted(["EURUSD", "USDJPY", "XAUUSD", "DE40", "HK50", "BTCUSD", "ETCUSD"])
+    assert sorted(u["excluidos"]["vencimiento"]) == ["BRENT_F7", "DXY_Z6", "SIN26"]
+    assert (u["excluidos"]["bonos"], u["excluidos"]["stohastic"]) == (1, 1)
+    assert g["us_grandes"] == ["AAPL.NAS", "BF/B.NYSE", "BRK-B.NYSE", "HON.NYSE"]  # nunca la -24; HON cotiza como .NYSE
+    assert u["etiquetas"] == {"AAPL.NAS": "AAPL", "BF/B.NYSE": "BF-B", "BRK-B.NYSE": "BRK-B", "HON.NYSE": "HON"}
+    sin = {x["ticker"]: x for x in u["us_grandes"]["sin_casar"]}
+    assert sin["META"]["motivo"] == "solo existe la version -24" and sin["META"]["version_24"] == "META.NAS-24"
+    assert sin["GOOGL"]["motivo"] == "el broker no lo tiene" and len(sin) == 2
+    assert UNI.con_vencimiento("WheatZ6_CFD") and UNI.con_vencimiento("GCG27_CFD") and not UNI.con_vencimiento("NETH25")
+    assert not UNI.con_vencimiento("STOXX50") and not UNI.con_vencimiento("US2000")
+    # --simbolos: @fx28 sigue igual; un universo se expande; uno desconocido es uso incorrecto.
+    import extractor_mt5 as X  # el CLI (scripts/ esta en sys.path)
+    assert X.lista_simbolos("@fx28,@crypto", u) == list(INV.FX28) + ["BTCUSD"]
+    try:
+        X.lista_simbolos("@nada", u)
+    except ValueError as e:
+        assert "@nada" in str(e)
+    else:
+        raise AssertionError("universo desconocido")
+    # Wikitext de la Wikipedia: los tres formatos de la primera celda que trae la tabla.
+    wiki = ('x {| class="wikitable" id="constituents"\n|-\n! Symbol\n|-\n|| {{NyseSymbol|BRK.B}} <!-- nota -->\n|| '
+            '[[Berkshire Hathaway]]\n|| Financials\n|| Multi\n|| [[Omaha]]\n|| 2010-02-16\n|-\n| {{NyseSymbol|RDDT}}\n|| '
+            '[[Reddit]]\n|| Communication Services\n|| I\n|| SF\n|| 2026-08-18\n|-\n|| {{BZX link|CBOE}}\n|| [[Cboe Global '
+            'Markets]]\n|| Financials\n|| F\n|| C\n|| 2017-03-01\n|}\n')
+    assert [(f["ticker"], f["bolsa"], f["nombre"]) for f in UNI.sp500_desde_wikitext(wiki)] == [
+        ("BRK.B", "NYSE", "Berkshire Hathaway"), ("RDDT", "NYSE", "Reddit"), ("CBOE", "CBOE", "Cboe Global Markets")]
+    # El fichero versionado del repo: resuelto contra el inventario real del 2026-11-09.
+    real = UNI.cargar()
+    assert real["fecha"] == "2026-11-09" and real["inventario"]["simbolos_en_terminal"] == 9421
+    assert {k: real["cuentas"][k] for k in ("fx60", "metales_energia", "indices", "crypto", "crypto_alts", "continuo")} == {
+        "fx60": 60, "metales_energia": 16, "indices": 23, "crypto": 17, "crypto_alts": 77, "continuo": 193}
+    assert set(INV.FX28) <= set(real["grupos"]["fx60"]) and not any(s.endswith("-24") for s in real["grupos"]["us_grandes"])
+    assert real["cuentas"]["us_grandes"] + real["sp500"]["sin_casar"] == real["sp500"]["componentes"] == 503
+    filas, cabecera = UNI.leer_sp500()
+    assert len(filas) == 503 and "wikipedia.org" in cabecera and "2026-11-09" in cabecera
+
+
+def prueba_clases_extremo_a_extremo(ejecutar, raiz: str) -> None:
+    """`--descargar --simbolos @us_grandes,@continuo --periodos d1`: huecos de 1d por clase, sin tocar fx."""
+    u = universos_falsos()
+    ahora = utc(2026, 11, 6, 15)
+    hueco = {"BTCUSD": {dt.date(2026, 10, 13)}}  # un martes sin cripto: hueco de verdad (y no para nada)
+    falsos = []
+
+    def fabrica():
+        falsos.append(FA.MT5Falso(ahora_utc_s=ahora, trampas=PROHIBIDAS, cuenta=dict(CRED), abierto=False,
+                                  simbolos=SIMBOLOS_C, dias_sin_datos=hueco))
+        return LT.TerminalSoloLectura(falsos[-1])
+    salida = os.path.join(raiz, "dataC", "U")
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        c = ejecutar(["--descargar", "--simbolos", "@us_grandes,@continuo", "--periodos", "d1", "--desde", "2024-01-01",
+                      "--hasta", "2026-11-06", "--salida", salida], fabrica=fabrica,
+                     cargar_cred=lambda a: LT.Credenciales(**CRED), reloj=lambda: float(ahora),
+                     data=os.path.join(raiz, "dataC"), runs=os.path.join(raiz, "runs"), guarda=lambda: None,
+                     en_ejecucion=lambda: False, universos=u)
+    assert c == 0, buf.getvalue()
+    man = _manifest(salida)
+    ent = {e["simbolo"]: e for e in man["ficheros"]}
+    assert sorted(ent) == sorted(u["grupos"]["us_grandes"] + u["grupos"]["continuo"])
+    for s in ("AAPL.NAS", "BRK-B.NYSE", "BF/B.NYSE"):
+        h = ent[s]["huecos"]
+        assert ent[s]["clase"] == "acciones_us" and h["festivos"] > 20 and h["otros"] == 0, (s, h)
+    assert ent["DE40"]["huecos"]["festivos"] > 10 and ent["DE40"]["huecos"]["otros"] == 0 and ent["DE40"]["bolsa"] == "XETRA"
+    assert ent["XAUUSD"]["huecos"]["festivos"] > 0 and ent["XAUUSD"]["huecos"]["otros"] == 0
+    hb = ent["BTCUSD"]["huecos"]
+    assert (hb["fin_de_semana"], hb["otros"], hb["otros_mayores"][0]["desde"]) == (0, 1, "2026-10-13"), hb
+    assert ent["ETCUSD"]["huecos"]["otros"] == 0 and ent["ETCUSD"]["clase"] == "crypto"
+    assert "metodo" not in ent["EURUSD"]["huecos"] and ent["EURUSD"]["clase"] == "forex"  # fx: el metodo de siempre
+    # Nombres de fichero: la '/' de BF/B no llega al disco.
+    assert ent["BF/B.NYSE"]["fichero"].startswith("BF_B.NYSE~") and os.path.isfile(os.path.join(salida, ent["BF/B.NYSE"]["fichero"]))
+    btc = pq.read_table(os.path.join(salida, ent["BTCUSD"]["fichero"])).to_pandas()
+    assert ((btc.time_servidor // 86400 + 3) % 7 >= 5).sum() > 100  # cripto con velas de fin de semana
+    assert all(f.llamadas_prohibidas == [] for f in falsos)
+
+
+# ---------------------------------------------------------------------------------------------------------------------
 # Extremo a extremo con el CLI
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -669,15 +831,19 @@ def correr(ejecutar) -> int:
     pruebas = [prueba_lista_negra_estatica, prueba_lista_blanca_dinamica, prueba_api_falso_igual_al_real,
                prueba_hora_cambios_de_marzo_y_noviembre, prueba_hora_contra_zoneinfo, prueba_deteccion_del_desfase,
                prueba_sufijos_y_nombres, prueba_enganche, lambda: prueba_arranque_robusto(esperas),
-               lambda: prueba_reintentos_de_datos(esperas), lambda: prueba_copy_rates_from_pos_como_el_real(esperas)]
-    nombres = [getattr(p, "__name__", "") for p in pruebas[:-3]] + [
-        "prueba_arranque_robusto", "prueba_reintentos_de_datos", "prueba_copy_rates_from_pos_como_el_real"]
+               lambda: prueba_reintentos_de_datos(esperas), lambda: prueba_copy_rates_from_pos_como_el_real(esperas),
+               prueba_calendarios, prueba_universos]
+    nombres = [getattr(p, "__name__", "") for p in pruebas[:-5]] + [
+        "prueba_arranque_robusto", "prueba_reintentos_de_datos", "prueba_copy_rates_from_pos_como_el_real",
+        "prueba_calendarios", "prueba_universos"]
     raiz = os.path.join(TMP, f"selftest_{os.getpid()}")
     os.makedirs(raiz, exist_ok=True)
     try:
         for p, nombre in zip(pruebas, nombres):
             r = p()
             print(f"ok  {nombre}" + (f" ({r} nombres rechazados)" if isinstance(r, int) else ""))
+        prueba_clases_extremo_a_extremo(ejecutar, raiz)
+        print("ok  prueba_clases_extremo_a_extremo")
         r = prueba_extremo_a_extremo(ejecutar, raiz)
         print(f"ok  prueba_extremo_a_extremo ({r['trozos']} trozos; {r['ficheros_revisados']} ficheros sin secretos; "
               f"hash {r['hash'][:23]}...)")

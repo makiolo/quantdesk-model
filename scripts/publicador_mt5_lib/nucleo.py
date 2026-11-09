@@ -16,6 +16,7 @@ Una serie es (simbolo, intervalo) con la fuente fija (`source=mt5` por defecto).
 """
 from __future__ import annotations
 
+import collections
 import dataclasses
 import datetime as dt
 import json
@@ -25,6 +26,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 
+from extractor_mt5_lib import calendarios as CAL
 from extractor_mt5_lib import descarga as D
 from extractor_mt5_lib import hora as HR
 
@@ -118,19 +120,23 @@ def cota_inicial_s(cfg: Config, intervalo: str, ahora_s: int, desde: dt.date | N
 
 
 def barras_cerradas(term, simbolo: str, info: dict, intervalo: str, regla: HR.Regla, desde_s: int, ahora_s: int) -> dict:
-    """Velas cerradas de MT5 con apertura UTC en [desde_s, ...) y cierre <= ahora_s, en orden. Arrays numpy."""
+    """Velas cerradas de MT5 con `ts` publicado en [desde_s, ...) y cierre <= ahora_s, en orden. Arrays numpy."""
     periodo, paso = INTERVALOS[intervalo], PASO_S[intervalo]
     ini = dt.datetime.fromtimestamp(desde_s, tz=dt.timezone.utc).date()
     fin = dt.datetime.fromtimestamp(ahora_s, tz=dt.timezone.utc).date() + dt.timedelta(days=1)
     partes = [D.bajar_trozo(term, simbolo, periodo, a, b, regla, info)[0]
               for a, b in D.trozos(ini, fin, D.PERIODOS[periodo]["trozo"])]
-    cols = ("ts_utc_ms", "open", "high", "low", "close", "tick_volume")
+    cols = ("ts_utc_ms", "time_servidor", "open", "high", "low", "close", "tick_volume")
     out = {c: np.concatenate([p.column(c).to_numpy() for p in partes]) if partes else np.zeros(0) for c in cols}
     apertura = out.pop("ts_utc_ms").astype(np.int64)
-    ts = ts_publicado(intervalo, apertura)
-    # Se publica solo la vela CERRADA de verdad: apertura real + intervalo <= ahora (en 1d, el cierre real de Nueva York,
+    servidor = out.pop("time_servidor").astype(np.int64)
+    if intervalo == "1d":
+        ts, cierre = sesion_1d(servidor, regla)
+    else:
+        ts, cierre = apertura, apertura + paso * 1000
+    # Se publica solo la vela CERRADA de verdad (en 1d, cuando el servidor pasa al dia siguiente: 17:00 de Nueva York,
     # no `ts` + 1 d). El rango inicial se aplica sobre el `ts` publicado (en 1d, la fecha de la sesion).
-    ok = (ts >= desde_s * 1000) & (apertura + paso * 1000 <= ahora_s * 1000)
+    ok = (ts >= desde_s * 1000) & (cierre <= ahora_s * 1000)
     out = {c: v[ok] for c, v in out.items()}
     out["ts_utc_ms"], out["apertura_utc_ms"] = ts[ok], apertura[ok]
     if out["ts_utc_ms"].size > 1 and not np.all(np.diff(out["ts_utc_ms"]) > 0):
@@ -138,20 +144,20 @@ def barras_cerradas(term, simbolo: str, info: dict, intervalo: str, regla: HR.Re
     return out
 
 
-def ts_publicado(intervalo: str, apertura_ms) -> np.ndarray:
-    """`ts` que se publica (ms). Intradia: la apertura real en UTC. 1d (decision de la raiz, opcion b): las 00:00 UTC del
-    dia de la SESION D, la fecha en Nueva York del cierre real (17:00 NY). La sesion que abre el domingo a las 21:00 o
-    22:00 UTC cierra el lunes y lleva `ts` = lunes 00:00 UTC, como yfinance y como la particion por dia UTC del lago."""
-    apertura_ms = np.asarray(apertura_ms, dtype=np.int64)
-    if intervalo != "1d":
-        return apertura_ms
-    cierre = apertura_ms // 1000 + PASO_S["1d"]
-    ny = cierre + HR.NUEVA_YORK.desfase(cierre)
-    return (ny // 86400) * 86400 * 1000
+def sesion_1d(time_servidor_s, regla: HR.Regla) -> tuple[np.ndarray, np.ndarray]:
+    """1d, todas las clases (fase C): (`ts` publicado, cierre real), en ms UTC.
+    - Sesion D = fecha del SERVIDOR de la apertura de la vela (este broker abre la 1d a las 00:00 del servidor, que va a
+      Nueva York + 7 h); `ts` = 00:00 UTC de D (opcion b de la raiz; `date` = D).
+    - Cierre = cuando el servidor pasa al dia siguiente (00:00 del servidor = 17:00 de Nueva York), en UTC con la regla.
+    En FX es la regla publicada hasta ahora: D era la fecha de Nueva York del cierre de las 17:00, que es la del servidor
+    (servidor = Nueva York + 7 h todo el ano), y el cierre era apertura + 1 d, que es el mismo instante salvo en una vela
+    que contiene un cambio de hora (solo hay velas de domingo en la historia antigua de algunos cruces). Ver fase-c.md."""
+    dia = np.asarray(time_servidor_s, dtype=np.int64) // 86400
+    return dia * 86400 * 1000, regla.servidor_a_utc((dia + 1) * 86400)[0] * 1000
 
 
 def objeto(cfg: Config, simbolo_tag: str, intervalo: str, b: dict, i: int) -> tuple[dict, dict, int]:
-    ts_ms = int(b["ts_utc_ms"][i])  # ya es el `ts` publicado (ver ts_publicado)
+    ts_ms = int(b["ts_utc_ms"][i])  # ya es el `ts` publicado (ver sesion_1d)
     if intervalo == "1d":
         fecha = dt.datetime.fromtimestamp(ts_ms / 1000, tz=dt.timezone.utc).strftime("%Y-%m-%d")  # la sesion D
     else:
@@ -169,8 +175,11 @@ def _igual(obj_qn: dict, obj: dict) -> bool:
 
 
 def serie(cfg: Config, cliente: Q.ClienteQn | None, term, simbolo: str, simbolo_tag: str, info: dict, intervalo: str,
-          regla: HR.Regla, ahora_s: int, desde: dt.date | None, candado: Candado | None) -> dict:
-    """Publica una serie. Con `cliente` None (simulacion) no toca qn: calcula lo que publicaria desde la fecha inicial."""
+          regla: HR.Regla, ahora_s: int, desde: dt.date | None, candado: Candado | None,
+          calendario: tuple = (None, None), ritmo: "Ritmo | None" = None) -> dict:
+    """Publica una serie. Con `cliente` None (simulacion) no toca qn: calcula lo que publicaria desde la fecha inicial.
+    `calendario` = (clase, bolsa) de la fase C: solo cambia como se clasifican los huecos de mercado de 1d. `ritmo`: topes
+    de objetos por 5 min y por ejecucion (ver Ritmo); sin el, sin topes."""
     paso = PASO_S[intervalo]
     tags_serie = {cfg.tag_simbolo: simbolo_tag, cfg.tag_intervalo: intervalo, cfg.tag_fuente: cfg.fuente}
     r = {"simbolo": simbolo_tag, "simbolo_mt5": simbolo, "intervalo": intervalo, "ultimo_qn_antes": None,
@@ -208,7 +217,11 @@ def serie(cfg: Config, cliente: Q.ClienteQn | None, term, simbolo: str, simbolo_
     r["nuevas"] = len(pendientes) - r["huecos_cola_rellenados"]
     # Huecos de mercado del tramo de esta ejecucion (desde la ultima vela que qn tenia): se informan, no se rellenan.
     tramo = b["ts_utc_ms"] if ultimo is None else b["ts_utc_ms"][b["ts_utc_ms"] >= ultimo]
-    r["huecos_mercado"] = D.huecos(tramo, paso)
+    clase, bolsa = calendario
+    if intervalo == "1d" and clase not in (None, "forex"):  # dias sin mercado por clase: no son huecos
+        r["huecos_mercado"] = CAL.huecos_sesiones(tramo // 86_400_000, clase, bolsa)
+    else:
+        r["huecos_mercado"] = D.huecos(tramo, paso)
     if b["ts_utc_ms"].size:
         r["mt5_desde_utc"], r["mt5_hasta_utc"] = HR.iso(int(b["ts_utc_ms"][0])), HR.iso(int(b["ts_utc_ms"][-1]))
     if cliente is None:
@@ -225,10 +238,21 @@ def serie(cfg: Config, cliente: Q.ClienteQn | None, term, simbolo: str, simbolo_
         except (Q.ErrorQn, ValueError) as e:
             return f"error en {HR.iso(int(b['ts_utc_ms'][i]))}: {e}"
 
+    ritmo = ritmo or Ritmo()
     with ThreadPoolExecutor(max_workers=max(1, cfg.hilos)) as pool:
-        for k in range(0, len(pendientes), cfg.ventana):
-            lote = pendientes[k:k + cfg.ventana]
+        k = 0
+        while k < len(pendientes):
+            # Tope por ejecucion: se publica un prefijo en orden de `ts` y el resto queda para la siguiente pasada, que lo
+            # retoma desde lo que qn confirma (no deja huecos por detras de L).
+            n = ritmo.cupo(min(cfg.ventana, len(pendientes) - k))
+            if n == 0:
+                r["sin_publicar"] = len(pendientes) - k
+                r["parada_por_tope"] = True
+                break
+            lote = pendientes[k:k + n]
+            ritmo.esperar(len(lote))
             res = list(pool.map(uno, lote))
+            ritmo.apuntar(len(lote))
             r["publicadas"] += res.count("publicada")
             r["duplicadas"] += res.count("duplicada")
             errores = [x for x in res if x not in ("publicada", "duplicada")]
@@ -238,4 +262,58 @@ def serie(cfg: Config, cliente: Q.ClienteQn | None, term, simbolo: str, simbolo_
                 r["error"] = errores[0] + (f" (y {len(errores) - 1} mas en la ventana)" if len(errores) > 1 else "")
                 r["sin_publicar"] = len(errores) + len(pendientes) - k - len(lote)
                 break
+            k += len(lote)
     return r
+
+
+class Ritmo:
+    """Ritmo de publicacion, compartido por todas las series de una ejecucion (fase C; el Bento del backend aguanta unos
+    180.000 objetos por sondeo de 5 min):
+    - `por_5min`: como mucho N objetos enviados en cualquier ventana deslizante de 300 s; si no caben, se espera a que
+      caduquen los mas antiguos (con `dormir`, inyectable).
+    - `por_ejecucion`: como mucho N objetos en la ejecucion; las series siguen en la proxima pasada.
+    Sin topes (por defecto) no cambia nada: la tarea diaria publica igual que antes. Cuenta todo lo que se envia, tambien
+    lo que qn da por duplicado."""
+
+    VENTANA_S = 300.0
+
+    def __init__(self, por_5min: int | None = None, por_ejecucion: int | None = None, reloj=time.monotonic,
+                 dormir=time.sleep) -> None:
+        if (por_5min is not None and por_5min < 1) or (por_ejecucion is not None and por_ejecucion < 0):
+            raise ValueError("los topes de ritmo tienen que ser enteros positivos")
+        self.por_5min, self.por_ejecucion, self.reloj, self.dormir = por_5min, por_ejecucion, reloj, dormir
+        self.enviados, self.esperado_s = 0, 0.0
+        self._marcas: collections.deque = collections.deque()  # (instante, n)
+
+    @property
+    def agotado(self) -> bool:
+        return self.por_ejecucion is not None and self.enviados >= self.por_ejecucion
+
+    def cupo(self, n: int) -> int:
+        if self.por_5min is not None:
+            n = min(n, self.por_5min)
+        if self.por_ejecucion is not None:
+            n = min(n, self.por_ejecucion - self.enviados)
+        return max(0, n)
+
+    def esperar(self, n: int) -> None:
+        if self.por_5min is None:
+            return
+        while True:
+            ahora = self.reloj()
+            while self._marcas and self._marcas[0][0] <= ahora - self.VENTANA_S:
+                self._marcas.popleft()
+            if sum(m for _, m in self._marcas) + n <= self.por_5min:
+                return
+            pausa = max(0.01, self._marcas[0][0] + self.VENTANA_S - ahora)
+            self.esperado_s += pausa
+            self.dormir(pausa)
+
+    def apuntar(self, n: int) -> None:
+        self.enviados += n
+        if self.por_5min is not None:
+            self._marcas.append((self.reloj(), n))
+
+    def resumen(self) -> dict:
+        return {"max_objetos_por_5min": self.por_5min, "max_objetos_por_ejecucion": self.por_ejecucion,
+                "enviados": self.enviados, "esperado_s": round(self.esperado_s, 1), "tope_alcanzado": self.agotado}

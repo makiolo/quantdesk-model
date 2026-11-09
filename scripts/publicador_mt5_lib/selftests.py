@@ -17,10 +17,11 @@ from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 
+from extractor_mt5_lib import descarga as D
 from extractor_mt5_lib import falso as FA
 from extractor_mt5_lib import hora as HR
 from extractor_mt5_lib import lectura as LT
-from extractor_mt5_lib.selftests import CRED, PROHIBIDAS, utc
+from extractor_mt5_lib.selftests import CRED, PROHIBIDAS, SIMBOLOS_C, universos_falsos, utc
 
 from . import nucleo as N
 from . import qn as Q
@@ -93,6 +94,13 @@ def en_qn(almacen: QF.Almacen) -> dict:
     return {k: sorted(v) for k, v in out.items()}
 
 
+def ts_v2(apertura_utc_ms) -> np.ndarray:
+    """Regla 1d de market.ohlcv.v2 tal como se publico (entregas 4 a 6b), congelada aqui como referencia: `ts` = 00:00
+    UTC de la fecha de Nueva York del cierre (apertura UTC + 1 d); cerrada si apertura UTC + 1 d <= ahora."""
+    cierre = np.asarray(apertura_utc_ms, dtype=np.int64) // 1000 + 86400
+    return ((cierre + HR.NUEVA_YORK.desfase(cierre)) // 86400) * 86400 * 1000
+
+
 def sin_duplicados(almacen: QF.Almacen) -> None:
     rep = [k for k, n in almacen.publicados().items() if n > 1]
     assert not rep, f"objetos repetidos en qn: {rep[:3]}"
@@ -123,12 +131,14 @@ def prueba_codificacion() -> None:
     # miercoles 4; cambio de marzo: la sesion del viernes 6 abre el jueves a las 22:00 UTC (aun invierno) y la del lunes 9
     # el domingo 8 a las 21:00 UTC (ya verano).
     fechas = ["2026-10-26", "2026-11-02", "2026-11-04", "2026-03-06", "2026-03-09"]
-    b = {"ts_utc_ms": N.ts_publicado("1d", abre), "open": np.ones(5), "high": np.ones(5), "low": np.ones(5),
+    servidor = np.array([REGLA.utc_a_servidor(x // 1000) for x in abre])  # 00:00 del servidor
+    ts, cierre = N.sesion_1d(servidor, REGLA)
+    assert np.array_equal(ts, ts_v2(abre)) and np.array_equal(cierre, abre + 86_400_000)  # fase C = regla v2 en FX
+    b = {"ts_utc_ms": ts, "open": np.ones(5), "high": np.ones(5), "low": np.ones(5),
          "close": np.ones(5), "tick_volume": np.full(5, 7)}
     for i, f in enumerate(fechas):
         tags, obj, ts_ns = N.objeto(cfg, "EURUSD", "1d", b, i)
         assert obj["date"] == f and ts_ns == int(dt.datetime.fromisoformat(f + "T00:00:00+00:00").timestamp()) * 10 ** 9, (i, obj)
-    assert np.array_equal(N.ts_publicado("1h", abre), abre)
     bh = {**b, "ts_utc_ms": abre}
     assert N.objeto(cfg, "EURUSD", "1h", bh, 2)[1]["date"] == "2026-11-03T22:00:00Z"
     assert N.objeto(cfg, "EURUSD", "1h", bh, 2)[2] == utc(2026, 11, 3, 22) * 10 ** 9
@@ -455,6 +465,207 @@ def prueba_extremo_a_extremo(ejecutar, raiz: str) -> dict:
         flota.parar()
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+# Fase C: la 1d por clase sin cambiar fx28, universos, huecos por clase y ritmo
+# ---------------------------------------------------------------------------------------------------------------------
+
+def barras_v2(env, sim: str, info: dict, desde_s: int, ahora_s: int) -> dict:
+    """`barras_cerradas` de 1d tal como se publico en market.ohlcv.v2 (congelada): ts_v2 y apertura UTC + 1 d <= ahora."""
+    ini = dt.datetime.fromtimestamp(desde_s, tz=dt.timezone.utc).date()
+    fin = dt.datetime.fromtimestamp(ahora_s, tz=dt.timezone.utc).date() + dt.timedelta(days=1)
+    partes = [D.bajar_trozo(env, sim, "d1", a, b, REGLA, info)[0] for a, b in D.trozos(ini, fin, "anio")]
+    cols = ("ts_utc_ms", "open", "high", "low", "close", "tick_volume")
+    out = {c: np.concatenate([x.column(c).to_numpy() for x in partes]) for c in cols}
+    ap = out.pop("ts_utc_ms").astype(np.int64)
+    ts = ts_v2(ap)
+    ok = (ts >= desde_s * 1000) & (ap + 86_400_000 <= ahora_s * 1000)
+    out = {c: v[ok] for c, v in out.items()}
+    out["ts_utc_ms"] = ts[ok]
+    return out
+
+
+def objetos_v2(b: dict, base: str) -> list[tuple[dict, dict, int]]:
+    """Objetos 1d de market.ohlcv.v2 tal como se publicaron (congelado)."""
+    out = []
+    for i in range(b["ts_utc_ms"].size):
+        ts = int(b["ts_utc_ms"][i])
+        obj = {"open": float(b["open"][i]), "high": float(b["high"][i]), "low": float(b["low"][i]),
+               "close": float(b["close"][i]), "volume": float(b["tick_volume"][i]),
+               "date": dt.datetime.fromtimestamp(ts / 1000, tz=dt.timezone.utc).strftime("%Y-%m-%d")}
+        out.append(({"symbol": base, "interval": "1d", "source": "mt5"}, obj, ts * 1_000_000))
+    return out
+
+
+def _info(sim: str, simbolos=FA.SIMBOLOS) -> dict:
+    return {"punto": 10.0 ** -simbolos[sim][2], "digitos": simbolos[sim][2], "precio_velas": "bid"}
+
+
+def prueba_regla_1d_igual_que_v2() -> None:
+    """Requisito duro: en fx la 1d de la fase C es la publicada (mismas velas, mismo `ts`, mismo instante de cierre), en
+    cada media hora alrededor del cierre de las 17:00 NY durante tres semanas en cada cambio de hora de EE. UU."""
+    env = LT.TerminalSoloLectura(FA.MT5Falso(ahora_utc_s=utc(2026, 11, 20), cuenta=dict(CRED)))
+    env.initialize(path=CRED["path"])
+    env.login(CRED["login"], password=CRED["password"], server=CRED["server"])
+    vistos = 0
+    for dia0 in (utc(2026, 3, 1), utc(2026, 10, 25)):
+        for k in range(21):
+            for media in range(19 * 2, 24 * 2):  # de 19:00 a 23:30 UTC
+                ahora = dia0 + k * 86400 + media * 1800
+                for sim in SIMS:
+                    nuevo = N.barras_cerradas(env, sim, _info(sim), "1d", REGLA, dia0 - 20 * 86400, ahora)
+                    viejo = barras_v2(env, sim, _info(sim), dia0 - 20 * 86400, ahora)
+                    for c in ("ts_utc_ms", "open", "high", "low", "close", "tick_volume"):
+                        assert np.array_equal(nuevo[c], viejo[c]), (sim, HR.iso(ahora * 1000), c)
+                    vistos += 1
+    assert vistos == 2 * 21 * 10 * len(SIMS)
+
+
+def prueba_ritmo_unitario() -> None:
+    t = [0.0]
+    pausas = []
+
+    def dormir(x):
+        pausas.append(x)
+        t[0] += x
+    r = N.Ritmo(por_5min=100, reloj=lambda: t[0], dormir=dormir)
+    enviados = []  # (instante, n): en ninguna ventana de 300 s hay mas de 100
+    for _ in range(20):
+        n = r.cupo(30)
+        r.esperar(n)
+        enviados.append((t[0], n))
+        r.apuntar(n)
+        t[0] += 7.0
+    for a, _ in enviados:
+        assert sum(m for b, m in enviados if a <= b < a + 300) <= 100
+    assert r.enviados == 600 and pausas and r.resumen()["esperado_s"] > 0
+    r = N.Ritmo(por_ejecucion=70)
+    assert [r.cupo(64), r.apuntar(64), r.cupo(64), r.apuntar(6), r.cupo(64)] == [64, None, 6, None, 0] and r.agotado
+    assert N.Ritmo().cupo(64) == 64 and not N.Ritmo().agotado
+    for malo in ({"por_5min": 0}, {"por_ejecucion": -1}):
+        try:
+            N.Ritmo(**malo)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(malo)
+
+
+def prueba_fase_c_extremo_a_extremo(ejecutar, raiz: str) -> None:
+    b = Banco(ejecutar, os.path.join(raiz, "faseC"))
+    ahora1, ahora2 = utc(2026, 11, 4, 12, 30), utc(2026, 11, 9, 9, 10)
+    # 1. Re-run sobre lo publicado en v2: qn con las 1d de fx28 tal como las publico la regla congelada. La fase C no
+    #    publica nada, no ve revisiones ni huecos de cola; despues sigue igual que v2.
+    alm = QF.Almacen(TOKEN)
+    flota = QF.Flota(alm, vivas=1, caida=False)
+    try:
+        env = LT.TerminalSoloLectura(FA.MT5Falso(ahora_utc_s=ahora1, cuenta=dict(CRED)))
+        env.initialize(path=CRED["path"])
+        env.login(CRED["login"], password=CRED["password"], server=CRED["server"])
+        cli = Q.ClienteQn(flota.urls, TOKEN)
+        for sim, base in SIMS.items():
+            for tags, obj, ts_ns in objetos_v2(barras_v2(env, sim, _info(sim), utc(2026, 10, 26), ahora1), base):
+                cli.publicar(QF.TOPIC, tags, obj, ts_ns)
+        antes = len(alm.objetos)
+        c, out = b(flota, ahora1, extra=["--intervalos", "1d"])
+        assert c == 0 and len(alm.objetos) == antes, out
+        for x in b.ultimo()["series"]:
+            assert (x["nuevas"], x["publicadas"], x["revisiones_detectadas"], x["huecos_cola_rellenados"]) == (0, 0, 0, 0), x
+        c, out = b(flota, ahora2, extra=["--intervalos", "1d"])
+        env2 = LT.TerminalSoloLectura(FA.MT5Falso(ahora_utc_s=ahora2, cuenta=dict(CRED)))
+        env2.initialize(path=CRED["path"])
+        env2.login(CRED["login"], password=CRED["password"], server=CRED["server"])
+        v2 = {(base, "1d"): [ts for _, _, ts in objetos_v2(barras_v2(env2, sim, _info(sim), utc(2026, 10, 26), ahora2), base)]
+              for sim, base in SIMS.items()}
+        assert c == 0 and en_qn(alm) == v2, out
+        assert all(x["revisiones_detectadas"] == 0 for x in b.ultimo()["series"])
+        sin_duplicados(alm)
+    finally:
+        flota.parar()
+    # 2. Tope por ejecucion: cada pasada publica como mucho 100 objetos, en orden, y la siguiente sigue sin huecos ni
+    #    duplicados hasta dejar qn igual que MT5.
+    alm = QF.Almacen(TOKEN)
+    flota = QF.Flota(alm, vivas=1, caida=False)
+    try:
+        total = sum(len(v) for k, v in esperado(ahora1).items() if k[1] == "1h")
+        pasadas = 0
+        while True:
+            antes = len(alm.objetos)
+            c, out = b(flota, ahora1, extra=["--intervalos", "1h", "--max-objetos", "100"])
+            pasadas += 1
+            assert c == 0 and len(alm.objetos) - antes <= 100, out
+            if len(alm.objetos) == antes:
+                break
+            assert pasadas < 10
+        assert pasadas == -(-total // 100) + 1 and b.ultimo()["ritmo"]["enviados"] == 0
+        assert en_qn(alm) == {k: v for k, v in esperado(ahora1).items() if k[1] == "1h"}
+        sin_duplicados(alm)
+    finally:
+        flota.parar()
+    # 3. Tope por 5 minutos (reloj monotono y dormir falsos): nunca mas de 100 objetos en 300 s.
+    alm = QF.Almacen(TOKEN)
+    flota = QF.Flota(alm, vivas=1, caida=False)
+    t = [0.0]
+    try:
+        c, out = b(flota, ahora1, extra=["--intervalos", "1h", "--max-objetos-por-5min", "100"], monotono=lambda: t[0],
+                   dormir=lambda x: t.__setitem__(0, t[0] + x))
+        rit = b.ultimo()["ritmo"]
+        assert c == 0 and rit["enviados"] == total and rit["esperado_s"] >= 300 * (-(-total // 100) - 1) - 1, (out, rit)
+        assert en_qn(alm) == {k: v for k, v in esperado(ahora1).items() if k[1] == "1h"}
+    finally:
+        flota.parar()
+    # 4. Universo ampliado (broker falso con las carpetas del real): tags, cierre por clase, cripto en fin de semana y
+    #    huecos por clase; un hueco de verdad en una serie no para las demas.
+    u = universos_falsos(utc(2026, 11, 4, 21, 30))
+    alm = QF.Almacen(TOKEN)
+    flota = QF.Flota(alm, vivas=1, caida=False)
+    falso = {"simbolos": SIMBOLOS_C, "dias_sin_datos": {"BTCUSD": {dt.date(2026, 10, 28)}}}
+    try:
+        # Miercoles 4 de noviembre a las 16:30 de NY (21:30 UTC): la bolsa ya cerro pero el dia del servidor no; la vela
+        # del miercoles no sale todavia. A las 17:30 de NY (22:30 UTC) si.
+        ultima = {}
+        for ahora in (utc(2026, 11, 4, 21, 30), utc(2026, 11, 4, 22, 30)):
+            c, out = b(flota, ahora, extra=["--intervalos", "1d", "--simbolos", "@continuo,@us_grandes"], universos=u,
+                       falso=falso)
+            assert c == 0, out
+            ultima[ahora] = {k[0]: max(v) for k, v in en_qn(alm).items()}
+        assert ultima[utc(2026, 11, 4, 21, 30)]["BRK-B"] == utc(2026, 11, 3) * 10 ** 9
+        assert ultima[utc(2026, 11, 4, 22, 30)]["BRK-B"] == utc(2026, 11, 4) * 10 ** 9
+        assert ultima[utc(2026, 11, 4, 22, 30)]["EURUSD"] == utc(2026, 11, 4) * 10 ** 9
+        tags = {k[0] for k in en_qn(alm)}
+        assert tags == {"EURUSD", "USDJPY", "XAUUSD", "DE40", "HK50", "BTCUSD", "ETCUSD", "AAPL", "BRK-B", "BF-B", "HON"}
+        finde = [o for o in alm.objetos if o["tags"]["symbol"] == "BTCUSD"
+                 and dt.date.fromisoformat(o["obj"]["date"]).weekday() >= 5]
+        assert len(finde) == 2 and all(o["ts"] == utc(*dt.date.fromisoformat(o["obj"]["date"]).timetuple()[:3]) * 10 ** 9
+                                       for o in finde)  # sabado 31 y domingo 1, cada uno en su fecha
+        assert not any(o["obj"]["date"] == "2026-10-28" for o in alm.objetos if o["tags"]["symbol"] == "BTCUSD")
+        for o in alm.objetos:
+            cumple_contrato_v2(o["tags"], o["obj"])
+        hb =next(x for x in b.ultimo()["series"] if x["simbolo"] == "BTCUSD")["huecos_mercado"]
+        assert hb["metodo"] == "sesiones 1d por clase" and hb["fin_de_semana"] == 0, hb
+        sin_duplicados(alm)
+    finally:
+        flota.parar()
+    # La primera pasada del universo (21:30 UTC) vio el hueco de cripto del 28 y siguio con el resto.
+    reg = []
+    for ruta in sorted(glob.glob(os.path.join(raiz, "faseC", "runs", "publicador_*.jsonl"))):
+        with open(ruta, encoding="utf-8") as fh:
+            reg += [json.loads(x) for x in fh]
+    pasada = next(r for r in reg if "@continuo,@us_grandes" in r["argv"])
+    hm = {x["simbolo"]: x.get("huecos_mercado", {}) for x in pasada["series"]}
+    assert hm["BTCUSD"]["otros"] == 1 and hm["BTCUSD"]["otros_mayores"][0]["desde"] == "2026-10-28", hm["BTCUSD"]
+    assert pasada["codigo"] == 0 and all(x.get("publicadas", 0) > 0 for x in pasada["series"]), pasada["series"]
+    assert hm["DE40"]["clase"] == "indices" and hm["AAPL"]["clase"] == "acciones_us" and "metodo" not in hm["EURUSD"]
+    # Ni funciones prohibidas ni secretos en nada de la fase C.
+    assert all(f.llamadas_prohibidas == [] for f in b.falsos)
+    secretos = [TOKEN, str(CRED["login"]), CRED["password"], CRED["server"], CRED["path"]]
+    assert not any(v in txt for txt in b.salidas for v in secretos)
+    for ruta in glob.glob(os.path.join(raiz, "faseC", "**", "*"), recursive=True):
+        if os.path.isfile(ruta):
+            with open(ruta, "rb") as fh:
+                contenido = fh.read()
+            assert not any(v.encode() in contenido for v in secretos), ruta
+
+
 def prueba_ritmo() -> dict:
     """POST por segundo contra el qn falso local (cota superior: sin red ni WAL), con 1 y con 8 hilos."""
     out = {}
@@ -498,13 +709,16 @@ def correr(ejecutar) -> int:
     os.makedirs(raiz, exist_ok=True)
     previa = LT.configurar_reintentos(esperas_s=(1.0, 2.0, 4.0, 8.0), dormir=lambda s: None, espera_conexion_s=5)
     try:
-        for p in (prueba_codificacion, prueba_contrato_v2, prueba_cliente_reintentos_y_errores, prueba_tarea_xml):
+        for p in (prueba_codificacion, prueba_contrato_v2, prueba_cliente_reintentos_y_errores, prueba_tarea_xml,
+                  prueba_regla_1d_igual_que_v2, prueba_ritmo_unitario):
             p()
             print(f"ok  {p.__name__}")
         prueba_candado(raiz)
         print("ok  prueba_candado")
         r = prueba_extremo_a_extremo(ejecutar, raiz)
         print(f"ok  prueba_extremo_a_extremo ({r['objetos']} objetos en qn falso; {r['ficheros']} ficheros sin secretos)")
+        prueba_fase_c_extremo_a_extremo(ejecutar, raiz)
+        print("ok  prueba_fase_c_extremo_a_extremo")
         ritmo = prueba_ritmo()
         print("ok  prueba_ritmo (qn falso local, cota superior): "
               + ", ".join(f"{h} hilo{'s' if h > 1 else ''} {v:.0f} POST/s" for h, v in ritmo.items()))
