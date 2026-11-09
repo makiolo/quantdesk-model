@@ -131,9 +131,9 @@ zero-shot en CPU, no los tokens.
 | TS-00-BENCH | `baa4ee6` (fase 1) y `8a849c6` (Toto) | CERRADA 2026-11-09 | `execution/TS-00-BENCH/informe.md`; intento BDD 127 |
 | TS-00-OBJ | `quantdesk` `905b1670` (umbrales) y `c5f2be51` (FinCast en D-08) | CERRADA 2026-11-09, puerta 3 | PLAN_TSFM_FINANZAS «Fase 0» |
 
-- **Suite del DoD.** `run_selftests.py` sobre `git archive` del HEAD de cierre da 12 OK y 0 FALLO. Los selftests del
+- **Suite del DoD.** `run_selftests.py` sobre `git archive` del HEAD de cierre (beaf81c) da 12 OK y 0 FALLO. Los selftests del
   extractor, el publicador, el banco y el cuadre están en verde. El resultado está en
-  `E:/quantdesk-lab/tmp/verif_cierre_<HEAD>.log`.
+  `E:/quantdesk-lab/tmp/verif_cierre_beaf81c.log`.
 - **Datasets e informes:** cada uno con hash, semilla, corte y versión del motor, en sus informes. Ninguna credencial en
   el repo.
 - **Incidencias:**
