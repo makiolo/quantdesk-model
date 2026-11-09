@@ -393,6 +393,30 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
     nunca órdenes).
   - La exportación y el cuadre contra el diario esperan a la pregunta sobre el lago.
 
+### Decisión del usuario: MT5 publica en el lago desde esta máquina (2026-11-09, A16)
+
+> «Lo recomendado es el backend, pero metatrader 5 solo funciona en windows, asi que haz un script que se ejecuta con
+> frecuencia en esta máquina, y lo podemos poner en taskscheduler, pero teniendo en cuenta que esta máquina se apaga, y
+> el proceso debe ser capaz de rellenar huecos del pasado, para asegurar a cualquier consumidor de qn la continuidad»
+
+- La fase B de TI-12-MT5 pasa a ser un **publicador MT5 → qn** en este Windows: se lanza periódicamente desde el
+  Programador de tareas y en cada ejecución rellena los huecos desde la última barra publicada (la máquina se apaga).
+- Antes de diseñarlo, la raíz investiga en solo lectura el contrato de publicación de qn, el esquema de
+  `market.ohlcv` del backend, la deduplicación del lago y las condiciones de un token `pub:` de larga vida fuera de la
+  flota.
+- El token de publicación necesita la confirmación del usuario según la skill `qn-token`, con nombre, entorno y
+  concesión.
+- Ampliación del usuario (A16 bis): «todo eso … puede montarse en el backend, en Dagster como un script de python que
+  se ejecuta con frecuencia en Linux. Tendríamos varios publicadores, según las restricciones tecnológicas».
+  - Los datos de mercado entran al lago por publicadores. MT5, que sólo funciona en Windows, va en esta máquina; las
+    fuentes públicas (Yahoo, Stooq, FRED, cripto) van en el backend como jobs de Dagster en Linux.
+  - El laboratorio consume siempre vía qn.
+  - La ampliación de TI-13-PUB del sprint siguiente deja de ser ingesta directa al laboratorio y pasa a depender de
+    publicadores del backend. El laboratorio no escribe en el backend: la petición se registra como dependencia
+    externa y la lleva el usuario o una sesión del backend.
+  - Los corpus genéricos de preentrenamiento (Chronos, LOTSA) no son datos de mercado en vivo y siguen siendo una
+    ingesta del laboratorio.
+
 ### TI-02-DATA-DEUDA — CERRADA (2026-11-09)
 
 - Autor: Opus 5.5 high, intento BDD 125. Commit `0e67465`, con los tres arreglos de la revisión 2 de TI-02-DATA:
