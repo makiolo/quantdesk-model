@@ -774,3 +774,23 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
   publicador.
 - **TS-00-BENCH:** Toto sobre FX terminado (28 pares, 1400 orígenes, 0 fallos, 15 178 s de pared). Toto sobre
   Binance, en curso.
+- **Fase C (`9e9dfe5`) — ACEPTADA.**
+  - **Universos con nombre** en `extractor_mt5_lib/universos/universos.json`: `@fx60` 60, `@metales_energia` 16,
+    `@indices` 23, `@crypto` 17, `@crypto_alts` 77, `@continuo` 193 y `@us_grandes` 484.
+  - **S&P 500**, de Wikipedia (revid 1384572480, 2026-11-09, 503 componentes), cruzado con la sesión normal (`.NYSE`,
+    `.NAS`, `.US`):
+    - 484 casan.
+    - 13 sólo existen en `-24`, entre ellos META, BDX y SHW; su inclusión la decide el usuario.
+    - 6 no están en el broker: GOOGL, MDT, OKE, FDXF, HONA y VYLR.
+  - **Vela 1d de todas las clases:** `date` es la fecha de servidor de la vela, y se publica cuando el servidor pasa
+    al día siguiente (17:00 de Nueva York). Para fx28 coincide con lo publicado.
+  - **Huecos por clase** con calendarios de 16 bolsas. Sólo se informan; no bloquean.
+  - **Ritmo:** `--max-objetos-por-5min` y `--max-objetos`, los dos sin límite por defecto.
+  - **Volumen estimado en `fase-c.md`:** 1d de `@continuo` ≈ 351 000 objetos; 1d de `@us_grandes` entre 1,2 y
+    3,3 millones; 1h de `@continuo` ≈ 11 millones.
+  - **Verificación de la raíz** sobre `git archive 9e9dfe5`: los dos selftests ok, la suite 11 OK y ninguna función de
+    órdenes.
+  - **Comprobación contra qn:** `--ejecutar --intervalos 1d --max-objetos 1` con fx28 da 0 nuevas, 0 publicadas y 0
+    revisiones, así que lo publicado no cambia. (`--simular` no consulta qn y por eso cuenta todo como nuevo.)
+  - Intento BDD 131 aceptado.
+  - Descarga local en 1d de `@us_grandes` lanzada, a `E:/quantdesk-lab/data/mt5/us_grandes_1d_20261109`.
