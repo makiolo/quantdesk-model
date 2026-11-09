@@ -62,5 +62,24 @@ graph LR
     end
 
     N --> C
+
+    click N1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/next/SPRINT.md" _blank
+    click N2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/future/SPRINT-03/SPRINT.md" _blank
+    click N3 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/future/SPRINT-04/SPRINT.md" _blank
+    click C1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/current/SPRINT.md" _blank
 ```
+
+<details><summary>Enlaces de los planes e issues</summary>
+
+**⏳ Próximos (next y future)**
+
+- [SPRINT-02](next/SPRINT.md) — Rueda fijada, HMM causal y ampliación de datos y banco
+- [SPRINT-03](future/SPRINT-03/SPRINT.md) — Ciclo sintético-real y procedencia en el manifiesto
+- [SPRINT-04](future/SPRINT-04/SPRINT.md) — Escalera de entrenamiento, ajuste fino y adaptadores
+
+**📦 SPRINT-01 activo**
+
+- [SPRINT-01](current/SPRINT.md) — Entorno, datos reales y banco de referencia
+
+</details>
 <!-- kanban:fin -->
