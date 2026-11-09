@@ -12,6 +12,8 @@
 > **Responsable:** raíz del laboratorio\
 > **Seguimiento:** TI-12-MT5-INTRA-LOCAL en [PLAN_DATOS_VIA_QN.md](../backlog/PLAN_DATOS_VIA_QN.md)
 
+**Snapshot al cierre de SPRINT-01 (2026-11-09, NO RESUELTA):** [archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md](../archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md)
+
 ---
 
 ## 1. Contexto y comportamiento observado

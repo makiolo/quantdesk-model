@@ -25,10 +25,10 @@ Ciclo: planificación → inicio → ejecución → cierre y archivo → freeze 
 
 | Fase | Sprint | Enlace |
 |---|---|---|
-| Activo | SPRINT-01 — Entorno, datos reales y banco de referencia (desde 2026-11-07) | [current/SPRINT.md](current/SPRINT.md) |
-| Próximo | SPRINT-02 — Rueda fijada, HMM causal y ampliación de datos y banco (tras quantdesk SPRINT-02) | [next/SPRINT.md](next/SPRINT.md) |
+| Activo | ninguno: el proyecto está en planificación desde el 2026-11-09 (sin release) | [current/](current/README.md) |
+| Próximo | SPRINT-02 — Rueda fijada, HMM causal y ampliación de datos y banco (en preparación; tras quantdesk SPRINT-02) | [next/SPRINT.md](next/SPRINT.md) |
 | Futuros | SPRINT-03 (tras quantdesk SPRINT-03), SPRINT-04 (tras quantdesk SPRINT-04) | [future/](future/README.md) · [DEPENDENCIAS](DEPENDENCIAS.md) |
-| Último cerrado | ninguno | [archive/](archive/index.md) |
+| Último cerrado | SPRINT-01 — Entorno, datos reales y banco de referencia (2026-11-07 a 2026-11-09), cerrado y archivado | [archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md](archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md) · [archive/](archive/index.md) |
 
 ## Backlog
 
@@ -36,7 +36,7 @@ Ciclo: planificación → inicio → ejecución → cierre y archivo → freeze 
 |---|---|---|---|
 | [Backlog del laboratorio](backlog/README.md) | Índice, regla de separación, estado de las tareas ya en sprint (TS-00-*, TS-02-DISC, ejecuciones de entrenamiento) y calendario del laboratorio | Repartido en SPRINT-01…04 | Antes en `docs/plans/BACKLOG.md` (ahora puntero). Especificación en los planes de `quantdesk` (sólo lectura). Dividido el 2026-11-09 (usuario) |
 | [PLAN_ARCHIVO_OPCIONES](backlog/PLAN_ARCHIVO_OPCIONES.md) | TI-09-ARCH (parte laboratorio), TI-09-SONDA, copia propia del archivo de opciones | Backlog; sonda fuera de sprint (issue) | Lector del lago de `market.options.chain` con hash; espera a OC-03 del backend (GAP-BACKLOG_README-01) |
-| [PLAN_DATOS_VIA_QN](backlog/PLAN_DATOS_VIA_QN.md) | TI-12-MT5 (fase C, intradía, INTRA-LOCAL, tarea programada), TI-13-PUB (mercado público, movido al backend), TI-02-DATA-V2, TI-02-DIARIO | Fase C en SPRINT-01; INTRA-LOCAL fuera de sprint (issue); resto backlog | Datos de mercado sólo por publicadores y consumo vía qn (A16 bis); Binance como corpus congelado |
+| [PLAN_DATOS_VIA_QN](backlog/PLAN_DATOS_VIA_QN.md) | TI-12-MT5 (fase C, intradía, INTRA-LOCAL, tarea programada), TI-13-PUB (mercado público, movido al backend), TI-02-DATA-V2, TI-02-DIARIO | Fase C cerrada en SPRINT-01 (2026-11-09); INTRA-LOCAL fuera de sprint (issue); resto backlog | Datos de mercado sólo por publicadores y consumo vía qn (A16 bis); Binance como corpus congelado |
 
 ## 🧭 Tablero Kanban de Planes
 
@@ -53,35 +53,68 @@ graph LR
     classDef completed fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
     classDef issues fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
 
-    subgraph N["⏳ 1. Próximos (next y future)"]
+    subgraph B["📌 1. Backlog (futuros)"]
+        B1["PLAN_ARCHIVO_OPCIONES<br/>Archivo de cadenas de opciones del laboratorio (TI-09-ARCH)"]:::backlog
+        B2["PLAN_DATOS_VIA_QN<br/>Datos de mercado vía qn (MT5, publicadores públicos, export…"]:::backlog
+    end
+
+    subgraph N["⏳ 2. Próximos (next y future)"]
         N1["SPRINT-02<br/>Rueda fijada, HMM causal y ampliación de datos y banco · En planificación"]:::next
-        N2["SPRINT-03<br/>Ciclo sintético-real y procedencia en el manifiesto · En planificación"]:::next
-        N3["SPRINT-04<br/>Escalera de entrenamiento, ajuste fino y adaptadores · En planificación"]:::next
+        N2["PLAN_DATOS_VIA_QN<br/>Datos de mercado vía qn (MT5, publicadores públicos, export…"]:::next
+        N3["SPRINT-03<br/>Ciclo sintético-real y procedencia en el manifiesto · En planificación"]:::next
+        N4["SPRINT-04<br/>Escalera de entrenamiento, ajuste fino y adaptadores · En planificación"]:::next
+        N1 --> N2
     end
 
-    subgraph C["📦 2. SPRINT-01 activo"]
-        C1["SPRINT-01<br/>Entorno, datos reales y banco de referencia · 5/8 cerradas"]:::current
+    subgraph D["✅ 3. Sprints cerrados"]
+        D1["SPRINT-01<br/>Entorno, datos reales y banco de referencia · Cerrado"]:::completed
     end
 
-    N --> C
+    subgraph P["⚠️ 4. Issues abiertas"]
+        P1["ISSUE-LAGO-FX-1D-CLOSE<br/>El «close» del FX diario del lago (yfinance) es el precio d… · Abierto"]:::issues
+        P2["ISSUE-TI09-SONDA-CADENAS<br/>¿Hay cadenas de opciones en qn? Sonda de sólo lectura · Abierto"]:::issues
+        P3["ISSUE-TI12-MT5-INTRADIA-LOCAL<br/>Guardar en local el 1m y 5m de MT5 antes de que el bróker l… · Abierto"]:::issues
+    end
 
+    B --> N
+    N --> D
+    D --> P
+
+    click B1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/backlog/PLAN_ARCHIVO_OPCIONES.md" _blank
+    click B2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/backlog/PLAN_DATOS_VIA_QN.md" _blank
     click N1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/next/SPRINT.md" _blank
-    click N2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/future/SPRINT-03/SPRINT.md" _blank
-    click N3 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/future/SPRINT-04/SPRINT.md" _blank
-    click C1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/current/SPRINT.md" _blank
+    click N2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/backlog/PLAN_DATOS_VIA_QN.md" _blank
+    click N3 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/future/SPRINT-03/SPRINT.md" _blank
+    click N4 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/future/SPRINT-04/SPRINT.md" _blank
+    click D1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md" _blank
+    click P1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/issues/ISSUE-LAGO-FX-1D-CLOSE.md" _blank
+    click P2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/issues/ISSUE-TI09-SONDA-CADENAS.md" _blank
+    click P3 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md" _blank
 ```
 
 <details><summary>Enlaces de los planes e issues</summary>
 
+**📌 Backlog (futuros)**
+
+- [PLAN_ARCHIVO_OPCIONES](backlog/PLAN_ARCHIVO_OPCIONES.md) — Archivo de cadenas de opciones del laboratorio (TI-09-ARCH)
+- [PLAN_DATOS_VIA_QN](backlog/PLAN_DATOS_VIA_QN.md) — Datos de mercado vía qn (MT5, publicadores públicos, export…
+
 **⏳ Próximos (next y future)**
 
 - [SPRINT-02](next/SPRINT.md) — Rueda fijada, HMM causal y ampliación de datos y banco
+  - [PLAN_DATOS_VIA_QN](backlog/PLAN_DATOS_VIA_QN.md) — Datos de mercado vía qn (MT5, publicadores públicos, export…
 - [SPRINT-03](future/SPRINT-03/SPRINT.md) — Ciclo sintético-real y procedencia en el manifiesto
 - [SPRINT-04](future/SPRINT-04/SPRINT.md) — Escalera de entrenamiento, ajuste fino y adaptadores
 
-**📦 SPRINT-01 activo**
+**✅ Sprints cerrados**
 
-- [SPRINT-01](current/SPRINT.md) — Entorno, datos reales y banco de referencia
+- [SPRINT-01](archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md) — Entorno, datos reales y banco de referencia
+
+**⚠️ Issues abiertas**
+
+- [ISSUE-LAGO-FX-1D-CLOSE](issues/ISSUE-LAGO-FX-1D-CLOSE.md) — El «close» del FX diario del lago (yfinance) es el precio d…
+- [ISSUE-TI09-SONDA-CADENAS](issues/ISSUE-TI09-SONDA-CADENAS.md) — ¿Hay cadenas de opciones en qn? Sonda de sólo lectura
+- [ISSUE-TI12-MT5-INTRADIA-LOCAL](issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md) — Guardar en local el 1m y 5m de MT5 antes de que el bróker l…
 
 </details>
 <!-- kanban:fin -->

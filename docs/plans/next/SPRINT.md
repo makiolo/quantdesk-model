@@ -63,7 +63,7 @@ LAB-00-ENV re-fijado primero (barrera); luego banco y datos en paralelo, como en
 
 ## 7. Definition of Done
 
-La de [SPRINT-01](../current/SPRINT.md#8-definition-of-done).
+La de [SPRINT-01](../archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md#8-definition-of-done).
 
 ## 8. Capacidad y presupuesto
 

@@ -1,8 +1,8 @@
 # LAUNCH — SPRINT-01 de quantdesk-model
 
 Preparado el 2026-11-07 al activar el sprint. Escribirlo no lanza nada: el usuario abre **una** sesión de Claude Code
-(la raíz) y pega el prompt de §8. Fuentes: [SPRINT.md](SPRINT.md), [SPRINT_PROJECT](../SPRINT_PROJECT.md),
-[GOBERNANZA](../GOBERNANZA.md), [DEPENDENCIAS](../DEPENDENCIAS.md) y la skill global `sprint` (`execute-plan`,
+(la raíz) y pega el prompt de §8. Fuentes: [SPRINT.md](SPRINT.md), [SPRINT_PROJECT](../../SPRINT_PROJECT.md),
+[GOBERNANZA](../../GOBERNANZA.md), [DEPENDENCIAS](../../DEPENDENCIAS.md) y la skill global `sprint` (`execute-plan`,
 `references/delegation.md`, `ficha.md`, `handoff.md`).
 
 ## 1. Guardia de activación
@@ -67,7 +67,7 @@ Preparado el 2026-11-07 al activar el sprint. Escribirlo no lanza nada: el usuar
   `EXECUTION.md` (crear al arrancar). Si no alcanza para la ola, esperar al reinicio; no recortar alcance.
 - Lectura inicial (2026-11-07): Claude 38 % con el 69,6 % de la ventana (reinicio 2026-11-10 00:00 UTC); Codex 36 %
   con el 51,4 % (reinicio 2026-11-11 06:41 UTC).
-- Medición según [USAGE_PROTOCOL](../USAGE_PROTOCOL.md); coordinador de costes: la raíz. `USAGE.md` del sprint en
+- Medición según [USAGE_PROTOCOL](../../USAGE_PROTOCOL.md); coordinador de costes: la raíz. `USAGE.md` del sprint en
   `current/`; tabla con `sprint_costs.py` de la skill global.
 
 ## 6. Relevo

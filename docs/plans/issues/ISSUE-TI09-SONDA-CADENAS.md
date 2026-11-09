@@ -12,6 +12,8 @@
 > **Responsable:** raíz del laboratorio; puerta de usuario (token `sub:` de lectura de qn)\
 > **Seguimiento:** TI-09-SONDA en [PLAN_ARCHIVO_OPCIONES.md](../backlog/PLAN_ARCHIVO_OPCIONES.md)
 
+**Snapshot al cierre de SPRINT-01 (2026-11-09, NO RESUELTA):** [archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-TI09-SONDA-CADENAS.md](../archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-TI09-SONDA-CADENAS.md)
+
 ---
 
 ## 1. Contexto y comportamiento observado

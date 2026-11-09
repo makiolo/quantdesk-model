@@ -1,9 +1,9 @@
 # SPRINT-01 — Entorno, datos reales y banco de referencia
 
-**Estado:** Activo
+**Estado:** Cerrado (sin arrastres; TI-09-ARCH retirada por el usuario el 2026-11-08). Cierre en §10.
 **Inicio de planificación:** 2026-11-07
 **Inicio:** 2026-11-07
-**Fin:** pendiente
+**Fin:** 2026-11-09
 **Orígenes:** etiqueta `archive/2026-11-07/sprint-01-sources` (commit `b9b576d`); planes de `quantdesk` en `af941862`
 (`PLAN_TSFM_FINANZAS`, `PLAN_TSFM_INTEGRACION`, sólo lectura). Los planes de backlog del laboratorio no se consumen:
 la especificación vive en `quantdesk` (GOBERNANZA).
@@ -21,7 +21,7 @@ los umbrales de éxito del modelo.
 
 ## 2. Responsabilidades y gobernanza
 
-Filas de [GOBERNANZA.md](../GOBERNANZA.md) que afectan a este sprint.
+Filas de [GOBERNANZA.md](../../GOBERNANZA.md) que afectan a este sprint.
 
 | Cosa | Dueño | Escribe | Decide | Cambios desde otro proyecto |
 |---|---|---|---|---|
@@ -34,7 +34,7 @@ Filas de [GOBERNANZA.md](../GOBERNANZA.md) que afectan a este sprint.
 ## 3. Tareas
 
 Especificación y aceptación: [PLAN_TSFM_INTEGRACION] §5 (TI-*) y [PLAN_TSFM_FINANZAS] §5 fase 0 (TS-00-*);
-comprobaciones previas en [backlog §2.1](../backlog/README.md#21-comprobaciones-2026-11-07).
+comprobaciones previas en [backlog §2.1](../../backlog/README.md#21-comprobaciones-2026-11-07).
 
 | Orden | ID | Nivel (plan) | Qué se hace aquí | Aceptación | Depende de |
 |---|---|---|---|---|---|
@@ -50,7 +50,7 @@ comprobaciones previas en [backlog §2.1](../backlog/README.md#21-comprobaciones
 
 ## 4. Dependencias externas
 
-Ninguna dependencia de sprint en [DEPENDENCIAS.md](../DEPENDENCIAS.md): SPRINT-01 es «lo que se puede hacer ya» y
+Ninguna dependencia de sprint en [DEPENDENCIAS.md](../../DEPENDENCIAS.md): SPRINT-01 es «lo que se puede hacer ya» y
 su activación no espera a nadie. Consume `quantdesk` desde un commit fijo (GAP-03).
 
 Dependencias de tarea (DEPENDENCIAS.md «Dependencias de tarea», decididas por el usuario el 2026-11-07):
@@ -81,9 +81,9 @@ SPRINT-02). El cierre de SPRINT-01 no espera a los OC: lo que falte queda como a
 
 | Qué | Motivo | Destino |
 |---|---|---|
-| TI-09-ARCH (parte laboratorio) | Sin datos de origen: `market.options.chain` y `market.options.fx` vacíos en `main` de 2024 a hoy (TI-01-INV). Retirada por el usuario el 2026-11-08 «hasta que tengamos más datos» | [backlog](../backlog/README.md), cuando el backend publique la cadena en qn |
-| TS-02-DISC (parte laboratorio) | Necesita TS-02-GEN (SPRINT-03 de `quantdesk`, ola 3) | [future/SPRINT-03](../future/SPRINT-03/SPRINT.md) |
-| Ejecuciones de entrenamiento, TS-05-*, TS-06-FT, TS-18-WF, TS-15-FINAL | Necesitan TI-06-CLI y DL-07-TRAIN (SPRINT-04 de `quantdesk`) | [future/SPRINT-04](../future/SPRINT-04/SPRINT.md) |
+| TI-09-ARCH (parte laboratorio) | Sin datos de origen: `market.options.chain` y `market.options.fx` vacíos en `main` de 2024 a hoy (TI-01-INV). Retirada por el usuario el 2026-11-08 «hasta que tengamos más datos» | [backlog](../../backlog/README.md), cuando el backend publique la cadena en qn |
+| TS-02-DISC (parte laboratorio) | Necesita TS-02-GEN (SPRINT-03 de `quantdesk`, ola 3) | [future/SPRINT-03](../../future/SPRINT-03/SPRINT.md) |
+| Ejecuciones de entrenamiento, TS-05-*, TS-06-FT, TS-18-WF, TS-15-FINAL | Necesitan TI-06-CLI y DL-07-TRAIN (SPRINT-04 de `quantdesk`) | [future/SPRINT-04](../../future/SPRINT-04/SPRINT.md) |
 | Cualquier cambio en código o sprints de `quantdesk` o en el scraper del backend | Gobernanza (GOBERNANZA.md, SPRINT_PROJECT §5) | backlog de cada repo |
 | GPU para Chronos-2/Toto | PyTorch con ROCm en Windows no se da por supuesto; carriles DL-02-GATES aún no existen | CPU ahora; GPU en SPRINT-03 si procede |
 
@@ -112,6 +112,57 @@ Suscripciones compartidas con `quantdesk` (SPRINT-02 activo), sin tope ni reserv
 (`claude-or quota --weekly`) y se registra en el LAUNCH; si no alcanza para la ola, se espera al reinicio en lugar de
 recortar el alcance. Tareas L3–L6, sin GPU; el tiempo de pared lo dominan las descargas (MT5, públicas) y el
 zero-shot en CPU, no los tokens.
+
+## 10. Cierre (2026-11-09)
+
+**Estado:** Cerrado. Fin real: 2026-11-09. No hay release (SPRINT_PROJECT §10): se pasa de cerrado a planificación.
+
+**Freeze:** no aplica (sin release); el proyecto pasa a planificación el 2026-11-09.
+
+| ID | Commits (rama `main`, sin push) | Veredicto | Evidencia |
+|---|---|---|---|
+| LAB-00-ENV | `cb46ce2` (motor `69fdb39d`) | CERRADA 2026-11-08 | EXECUTION «Cierre de LAB-00-ENV» |
+| TI-01-INV | `cb46ce2`; informe del usuario | CERRADA 2026-11-08 | `execution/TI-01-INV/` |
+| TI-09-ARCH | — | RETIRADA por el usuario el 2026-11-08: sin datos de origen | §6; [backlog](../../backlog/README.md) |
+| TI-12-MT5 | fases `7d38136`, `1ed4dfd`, `558baee`, `773965e`, `9e9dfe5`, `f9dcd0c` y `fdfa3a7` (cuadre); raíz `4cd1237` (`run_scheduler.cmd`) | CERRADA 2026-11-09 | `execution/TI-12-MT5/` (fase-a/b/c, `cuadre.md`); intentos BDD 126, 129–133 |
+| TI-13-PUB | `7ea6d94`, `cd4e4ba`, `4a56315`, `e001a97` | CERRADA 2026-11-08 | EXECUTION «Cierre de TI-13-PUB» |
+| TI-02-DATA | `906f73e`, deuda `0e67465` | CERRADA 2026-11-09 | EXECUTION «Cierre de TI-02-DATA» |
+| TS-00-PREC | `5afc795` | CERRADA 2026-11-08 | `execution/TS-00-PREC/` |
+| TS-00-BENCH | `baa4ee6` (fase 1) y `8a849c6` (Toto) | CERRADA 2026-11-09 | `execution/TS-00-BENCH/informe.md`; intento BDD 127 |
+| TS-00-OBJ | `quantdesk` `905b1670` (umbrales) y `c5f2be51` (FinCast en D-08) | CERRADA 2026-11-09, puerta 3 | PLAN_TSFM_FINANZAS «Fase 0» |
+
+- **Suite del DoD.** `run_selftests.py` sobre `git archive` del HEAD de cierre da 12 OK y 0 FALLO. Los selftests del
+  extractor, el publicador, el banco y el cuadre están en verde. El resultado está en
+  `E:/quantdesk-lab/tmp/verif_cierre_<HEAD>.log`.
+- **Datasets e informes:** cada uno con hash, semilla, corte y versión del motor, en sus informes. Ninguna credencial en
+  el repo.
+- **Incidencias:**
+  - [ISSUE-LAGO-FX-1D-CLOSE](../../issues/ISSUE-LAGO-FX-1D-CLOSE.md): abierta, destino SPRINT-02. La tabla de cabecera
+    del banco usa un close de yfinance que en realidad es el precio de las 00:00 UTC; hay que repetirla sobre el 1d de
+    MT5.
+  - [ISSUE-TI12-MT5-INTRADIA-LOCAL](../../issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md): en investigación; descarga local de
+    m1 y m5 de `@continuo` en curso.
+  - [ISSUE-TI09-SONDA-CADENAS](../../issues/ISSUE-TI09-SONDA-CADENAS.md): abierta, fuera de sprint.
+  - Ninguna se resolvió dentro del sprint. Las tres siguen vivas en `issues/`.
+- **Operación que sigue fuera del sprint:**
+  - publicador 1d de fx28 con la tarea programada `quantdesk\publicador_mt5`, que registró el usuario;
+  - noche 1 de la carga 1d de `@continuo` en qn, programada a las 02:03 del 2026-11-10 con el OK de network y backend;
+  - noche 2, la de las acciones, a la espera de network y del usuario.
+- **Costes:** no hay `USAGE.md` del sprint ni lectura final de cuota. Los intentos están en la BDD de sprints (`sprint_db`,
+  intentos 119–133), todos con Opus 5.5 o Sonnet 5.5 por suscripción. Faltan pp aislados por tarea, así que no entran
+  en la media de calibración: es un hueco, no un cero.
+
+### Retrospectiva y trinquete
+
+| Fallo repetido o grave | Causa | Control añadido | Prueba de que lo detecta | ¿Bloquea o avisa? |
+|---|---|---|---|---|
+| El extractor y el publicador fallaban con el terminal real («Call failed», -6, -10005) | Comportamiento real de MT5: historia sincronizándose, relogin sobre un terminal abierto, `count = maxbars` | Reintento acotado, enganche al terminal abierto y profundidad con una sola consulta (entregas 6 y 6b) | El MT5 falso de los selftests reproduce los códigos -1, -2, -6 y -10005 | Bloquea (suite) |
+| `schtasks` rechazaba el XML («unable to switch the encoding») | `schtasks` exige UTF-16 y el XML del repo es UTF-8 | `run_scheduler.cmd` y `registrar_tareas.ps1` convierten a UTF-16 y registran de forma idempotente | Registro real por el usuario: tarea CREADA y Ready. Sin test automático | Avisa |
+| La raíz afirmó a backend datos sin comprobar (`EURUSD=X`; «ningún símbolo de 6 letras no FX») | Respuesta de memoria | Regla: comprobar contra el universo o el inventario antes de afirmar a otro proyecto; corregido en ambos casos | Sin control automático | Avisa (regla escrita) |
+| El close del FX diario del lago no es el del final del día | Captura de yfinance en el backend | `cuadre_mt5.py` cruza el 1d con el 1m de MT5; ISSUE-LAGO-FX-1D-CLOSE | El cuadre lo detectó (41,7 % de filas con `open == close`). Falta una comprobación en el exportador TI-02-DATA (SPRINT-02) | Avisa |
+| Las corridas de Toto pasaron de las 2 h de pared | Máquina cargada (antivirus, MT5) | Coste de CPU por origen medido en piloto antes de cada corrida | Informe del banco | Avisa |
+
+Reglas que se retiran: ninguna.
 
 [PLAN_TSFM_FINANZAS]: S:/projects/quantdesk/docs/plans/backlog/PLAN_TSFM_FINANZAS.md
 [PLAN_TSFM_INTEGRACION]: S:/projects/quantdesk/docs/plans/backlog/PLAN_TSFM_INTEGRACION.md

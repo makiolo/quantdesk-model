@@ -14,6 +14,8 @@
 > **Responsable:** raíz del laboratorio; el arreglo en origen lo decide el usuario con el backend\
 > **Seguimiento:** SPRINT-02, fila 2 (TS-00-BENCH, ampliación): repetir la tabla FX sobre el 1d de MT5
 
+**Snapshot al cierre de SPRINT-01 (2026-11-09, NO RESUELTA):** [archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-LAGO-FX-1D-CLOSE.md](../archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-LAGO-FX-1D-CLOSE.md)
+
 ---
 
 ## 1. Contexto y comportamiento observado

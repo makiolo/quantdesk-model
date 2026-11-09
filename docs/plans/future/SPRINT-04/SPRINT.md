@@ -50,7 +50,7 @@ a la decisión de 80 M; TS-06-FT tras el tamaño elegido; TS-18-WF y TS-15-FINAL
 
 ## 6. Definition of Done
 
-La de [SPRINT-01](../../current/SPRINT.md#8-definition-of-done), más recibo completo por ejecución (hash del dataset,
+La de [SPRINT-01](../../archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md#8-definition-of-done), más recibo completo por ejecución (hash del dataset,
 ventana, semilla, versión del código, métricas fuera de muestra).
 
 ## 7. Capacidad y presupuesto
