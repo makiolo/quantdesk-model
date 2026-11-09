@@ -827,3 +827,28 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
     - Ninguna vela en fin de semana, así que la duda de `acciones_us_24` queda resuelta.
     - Para calibrar sirven poco: la historia larga de META, BDX, SHW y las demás tiene que venir de otra fuente (Yahoo,
       vía TI-13-PUB o el lago).
+
+### Cierre de TS-00-BENCH (2026-11-09) — CERRADA
+
+- **Fase 2, Toto (`8a849c6`) — ACEPTADA.**
+  - Toto-Open-Base-1.0 (revisión `0411ceb2…`, Apache-2.0) corre en su propio venv, `E:/quantdesk-lab/venvs/toto`, a
+    través de un subproceso con el contrato de 21 cuantiles. Si el venv no existe, Toto queda SALTADO.
+  - Submuestra declarada en el informe:
+    - FX (`lago_cierre_c20261101`, proxy): uno de cada 5 orígenes, 1400 pares.
+    - Binance: uno de cada 10 orígenes, 360 pares.
+    - 0 fallos.
+  - Las dos corridas superaron las 2 h de pared (4,2 h y 3,7 h) porque la máquina estaba cargada; el CPU por origen
+    fue el del piloto. Se aceptan así: los datos son válidos, y la rejilla completa en tandas queda como mejora
+    opcional.
+- **Verificación de la raíz** sobre `git archive 8a849c6`:
+  - selftest ok;
+  - suite 11 OK;
+  - repetición de EURUSD y USDJPY con 12 orígenes: 216 filas idénticas, con diferencia 0 en predicciones y métricas;
+  - informe y CSV iguales al commit.
+- **Resultado (medianas; referencia GARCH = 1):**
+  - En FX, h=1: GARCH ≈ HMM; Chronos-2 1,03; Toto 1,04, con colas estrechas (Kupiec rechaza en 9 y 5 activos de 28).
+  - En FX, h=20: gana Chronos-2 (0,967, mejor en 14 de 28 activos). Toto genera bandas explosivas (p99 de la banda
+    1–99 % igual a 4,4 frente a ≤ 0,22 en los demás modelos).
+  - En Binance todos quedan entre 1,00 y 1,05. HMM y GARCH ganan a h=1 y en QLIKE.
+  - Ningún modelo zero-shot mejora claramente a GARCH.
+- Intento BDD 127 aceptado y tarea cerrada en la BDD. TS-00-OBJ pasa a en curso (puerta 3 del usuario).
