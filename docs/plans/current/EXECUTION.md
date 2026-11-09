@@ -283,3 +283,43 @@ dd43fa94, HANDOFF relevo 1 (`674344b`). Ningún hijo vivo; ningún WIP sin commi
   del autor (Sonnet; LAUNCH §2). Intento BDD 120. La raíz le pide comprobar, entre otras cosas, que rates aparece desde
   2014 (`valuation_date` del histórico que trae cada captura) cuando el inventario lo situaba en 2025-12.
 - Incidente menor del autor: una edición de código hecha con un heredoc de Bash, contra la regla. No escribió datos.
+- **Revisión 1 (Opus, BDD 120): RECHAZAR.** Salida en `E:/quantdesk-lab/tmp/TI-02-DATA/revision1/revision.md`, con un
+  recálculo independiente desde el crudo. Los datasets estrictos y Binance cuadran fila a fila. Hallazgos:
+  - ALTA: el proxy `cierre` va como `available_at_ms` declarado por fila, y el motor lo cuenta como evidencia
+    (`declared`). La ficha pide `default_lag_ms`.
+  - MEDIA: el nombre por defecto del proxy choca con el del estricto.
+  - BAJA:
+    - 3xx con Authorization en `descarga_lago.py`;
+    - redondeo de ns a ms hacia abajo;
+    - el informe no explica rates de 2014/2021 (son correctos: `valuation_date` de cotizaciones congeladas) ni el
+      desfase de 1 h (hora de verano británica);
+    - la etiqueta de proxy de Binance no es coherente.
+  - La raíz acepta los 6 hallazgos. El intento 119 queda rechazado y se abre el intento 2 (BDD 121), con el mismo autor
+    y la misma sesión.
+- Pregunta al usuario: qué precios del lago usa TS-00-BENCH, el proxy `cierre` (recomendado) o sólo el estricto.
+
+### TI-02-DATA — intento 2 (2026-11-09)
+
+- El autor (BDD 121) entregó `906f73e`, con los 6 hallazgos corregidos y sin heredocs:
+  - el proxy `cierre` va con `available_at_ms` nulo y `default_lag_ms: 0`. El motor cuenta 14 448 filas de 1d y 6 651 de
+    1h como `defaulted` y 0 como `declared`. La política estricta da `DPOL-AVL-001` en esas dos tablas, como debe;
+  - los nombres de dataset no chocan entre modos, y `procedencia.json` guarda el modo;
+  - `descarga_lago.py` no sigue redirecciones, con prueba;
+  - el redondeo de ns a ms es hacia arriba;
+  - el informe explica las rates de 2014 y 2021 y el desfase de 3600 s, y etiqueta la disponibilidad de cada tabla.
+- `dataset_hash` nuevos:
+  - `lago_cierre_c20261101`: `aff96e6c…`;
+  - `lago_c20261107`: `853d8e8a…` (+1 ms en `available_at_ms` por el redondeo);
+  - `lago_c20261101` (`cce80ad2…`) y `binance_c20261101` (`d765d560…`) no cambian.
+  - Los datasets del intento 1 están en `E:/quantdesk-lab/tmp/TI-02-DATA/datasets-intento1/`.
+- Verificación de la raíz sobre `git archive 906f73e`, en `E:/quantdesk-lab/tmp/verif-906f73e` con el script
+  `E:/quantdesk-lab/tmp/verif-ti02.sh`:
+  - los dos `--selftest` dan ok y `run_selftests.py` da 8 OK, 0 FALLO;
+  - al reexportar `lago_cierre_c20261101`, el `manifest.json` sale idéntico byte a byte;
+  - el modo `cierre` con el nombre `lago_c20261101` da salida 2;
+  - `--validar` da 0 en los cuatro datasets.
+- Hallazgo menor de la raíz: `procedencia.json` (`codigo_sha256`) hashea los bytes del checkout. Con `core.autocrlf=true`,
+  `git archive` sale con CRLF y da otro hash, aunque el contenido en LF es el mismo. Por eso `procedencia.json` difiere
+  sólo en esas cuatro líneas. Pasa al revisor.
+- Revisión 2: Codex está al 100 % semanal (reinicio el 2026-11-11), así que revisa el mismo Opus 5.5 de la revisión 1,
+  retomado con su contexto. Intento BDD 122; salida en `E:/quantdesk-lab/tmp/TI-02-DATA/revision2/revision.md`.
