@@ -554,3 +554,15 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
   `transformers==4.52.1` y más versiones exactas: instalarlo en el `.venv` lo rompería. El informe propone un venv aparte
   en `E:/quantdesk-lab/venvs/toto`, llamado desde el banco en un subproceso. Esa sería la fase 2.
 - Intento BDD 123 cerrado como aceptado. TS-00-BENCH sigue abierta hasta que se decida lo de Toto.
+
+### Decisiones del usuario (2026-11-09 06:30, A18)
+
+- **Toto:** se instala en un venv aparte, `E:/quantdesk-lab/venvs/toto`, sin tocar el `.venv`. Fase 2 de TS-00-BENCH,
+  mismo autor, intento BDD 127:
+  - instala sólo `torch==2.7.0` CPU, `toto-ts==0.2.0` y `pyarrow`;
+  - el banco llama a Toto en un subproceso; si el venv no existe, Toto queda SALTADO;
+  - hace un piloto de CPU antes de las corridas, cada corrida en ≤ 2 h, y el informe declara cualquier subconjunto.
+- **Network y backend:** la raíz les mandó la petición a las 06:30, en mensajes a `quantdesk-network-5f` y
+  `quantdesk-backend-01`. A network: `source` como tag en `market.ohlcv`, más las confirmaciones de `/objects`, de
+  `env` en `latest` y `schema`, y del bucket @1d. A backend: el scraper publica con el tag; Bento qn2clickhouse,
+  ClickHouse `fx_spot`, `/api/fxspot` y Grafana distinguen la fuente. El laboratorio no toca esos repos.
