@@ -486,8 +486,10 @@ def prueba_tarea_xml() -> None:
     assert v("t:Principals/t:Principal/t:RunLevel") == "LeastPrivilege"
     assert v("t:Principals/t:Principal/t:LogonType") == "InteractiveToken"
     assert raiz.find("t:Principals/t:Principal/t:UserId", ns) is None  # el usuario que la registra
-    # Topic elegido por el usuario (la guarda del marcador TOPIC_POR_DECIDIR sigue en el codigo y se prueba aparte).
-    assert v("t:Actions/t:Exec/t:Arguments").endswith("scripts\\publicador_mt5.py --ejecutar --topic market.ohlcv.v2")
+    # Topic elegido por el usuario (la guarda del marcador TOPIC_POR_DECIDIR sigue en el codigo y se prueba aparte) y
+    # solo 1d (decision del usuario del 2026-11-09).
+    assert v("t:Actions/t:Exec/t:Arguments").endswith(
+        "scripts\\publicador_mt5.py --ejecutar --topic market.ohlcv.v2 --intervalos 1d")
     assert v("t:Actions/t:Exec/t:Command").endswith("\\.venv\\Scripts\\pythonw.exe")
 
 

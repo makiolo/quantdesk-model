@@ -14,7 +14,8 @@
     el terminal de MT5) y SIN privilegios elevados (LeastPrivilege). No guarda ninguna contrasena de Windows.
   - Accion: pythonw.exe del .venv del repo (sin ventana) con scripts\publicador_mt5.py \-\-ejecutar \-\-topic
     market.ohlcv.v2 (topic elegido por el usuario; tags symbol, interval y source; lo define quantdesk-network en
-    d61b65b). El propio script escribe su registro en E:\quantdesk-lab\runs\TI-12-MT5\publicador\ (ultimo.json y
+    d61b65b) \-\-intervalos 1d (decision del usuario del 2026-11-09: solo 1d; 1h, 5m y 1m quedan fuera hasta que se
+    pidan, avisando antes a network del volumen). El propio script escribe su registro en E:\quantdesk-lab\runs\TI-12-MT5\publicador\ (ultimo.json y
     publicador_<fecha>.jsonl).
   - Mientras market.ohlcv.v2 no este registrado en qn, cada ejecucion sale BLOQUEADO (UnknownTopic) sin publicar nada.
   - Tiempo maximo de una ejecucion: 6 h (la carga inicial de 1 h desde 2000 puede tardar); despues Windows la para y la
@@ -68,7 +69,7 @@
   <Actions Context="Usuario">
     <Exec>
       <Command>S:\Projects\quantdesk-model\.venv\Scripts\pythonw.exe</Command>
-      <Arguments>-X utf8 scripts\publicador_mt5.py --ejecutar --topic market.ohlcv.v2</Arguments>
+      <Arguments>-X utf8 scripts\publicador_mt5.py --ejecutar --topic market.ohlcv.v2 --intervalos 1d</Arguments>
       <WorkingDirectory>S:\Projects\quantdesk-model</WorkingDirectory>
     </Exec>
   </Actions>

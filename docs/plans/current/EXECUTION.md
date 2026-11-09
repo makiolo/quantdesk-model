@@ -693,3 +693,43 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
   2. La variable de usuario `QN_URLS` (hoy no existe).
   3. La primera ejecución real.
   4. Que el usuario registre la tarea programada.
+
+### TI-12-MT5 — primeros contactos con el terminal real y primera publicación (2026-11-09)
+
+- **Primeros contactos.** El usuario lanzó el extractor y el publicador con credenciales y fallaron:
+  - `copy_rates_from_pos` dio -1 «Call failed»: la historia aún se estaba sincronizando.
+  - Reiniciar el terminal con login cuando ya estaba abierto dio -6 «Authorization failed» y -10005 «IPC timeout».
+  - La raíz no hace login con contraseñas en cuentas financieras. Por eso usa `--sin-credenciales` sobre el terminal
+    que abrió la ejecución del usuario.
+- **Sondas de sólo lectura de la raíz** (`E:/quantdesk-lab/tmp/sonda_*.py`; build 6230, `maxbars` 100000):
+  - `copy_rates_from_pos(...,pos,1)` fuera de la historia también da -1, así que la bisección no servía.
+  - `copy_rates_from_pos(...,0,count)` con count ≤ maxbars-1 devuelve lo disponible, y con count = maxbars da -2.
+  - `copy_rates_range` con un rango anterior a la ventana devuelve una vela fuera del rango; la descarga ya la descarta
+    (`descarga.py`, máscara `dentro`).
+- **Entrega 6 (`558baee`):** reintento acotado de -1 y -10005 (1, 2, 4 y 8 s), arranque que se engancha al terminal ya
+  abierto y espera a `connected`.
+- **Entrega 6b (`773965e`):** la profundidad se mide con una sola consulta de count maxbars-1, el falso imita las tres
+  respuestas medidas, y un periodo sin historia queda con `velas` 0 en lugar de parar.
+- **Verificación de la raíz** sobre `git archive` de los dos commits: los selftests ok, la suite 11 OK y ninguna función
+  de órdenes. Intento BDD 130 aceptado.
+- **Inventario real fx28** (`E:/quantdesk-lab/data/mt5/inventario/inventario_20261109T110036Z.json`):
+  - 28 de 9421 símbolos, sin sufijo, todos con ticks.
+  - Desfase del servidor de 2 h, coherente en vivo.
+  - Primera vela (mediana): m1 2025-11, m5 2025-07, h1 2010-10 y d1 1993-05.
+  - Limitadas por maxbars: m1 28, m5 28, h1 27 y d1 0.
+- **`--simular` real con los cuatro periodos:** 28 pares, 0 errores y 3,97 M de barras: 1d 178 522, 1h 2 799 673,
+  5m 165 561 y 1m 826 384.
+- **Decisión del usuario (AskUserQuestion): «Solo 1d»**, que es lo que necesita el laboratorio. 1h, 5m y 1m quedan
+  fuera hasta que se pidan, y antes se avisa a network del volumen.
+  - La raíz cambia la tarea a `--intervalos 1d` y ajusta su prueba (`prueba_tarea_xml`). `--selftest` ok.
+- **Primera publicación real en `market.ohlcv.v2`:**
+  - `--ejecutar --intervalos 1d --sin-credenciales`, desde 2000-01-01: 28 series y **178 522 barras publicadas**, con 0
+    duplicadas y 0 sin publicar. Registro en `E:/quantdesk-lab/tmp/ejecutar_v2_1d.log`.
+  - `latest` en mini, silver y macold coincide. EURUSD y USDJPY tienen `ts` 2026-11-06T00:00Z y `date` 2026-11-06 (el
+    viernes; la sesión del lunes aún no ha cerrado), con tags `{symbol, interval: 1d, source: mt5}`.
+  - Segunda pasada: 0 nuevas, 0 publicadas y 0 revisiones, así que es idempotente.
+  - `QN_URLS` existe como variable de usuario (la creó el usuario). El shell de la raíz la lee del registro porque es
+    anterior a ella.
+- **Falta:**
+  1. Que el usuario registre la tarea programada (`schtasks /Create /XML scripts\publicador_mt5_tarea.xml /TN ...`).
+  2. Que el backend corte a v2 cuando el usuario lo priorice.
