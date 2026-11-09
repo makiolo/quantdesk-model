@@ -478,6 +478,29 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
   3. La comprobación de la cola se acota por la fecha inicial configurada, con una prueba nueva.
 - El intento BDD 126 sigue abierto.
 
+### TI-12-MT5 fase B — entrega 2 (2026-11-09 05:10) — código ACEPTADO
+
+- Commit `90fa001`: `nucleo.py`, `selftests.py` y `fase-b.md`. Implementa las tres respuestas:
+  - En 1d, `date` es la fecha de la sesión (el cierre de Nueva York) y `ts` el inicio real en UTC. Se prueba en los dos
+    horarios de EE. UU. y en el cambio de marzo.
+  - La comprobación de la cola empieza en la fecha inicial configurada, con un día de margen si esa fecha es relativa.
+  - Prueba nueva: un fallo en la carga inicial deja 2 huecos. La siguiente ejecución los rellena sin duplicados.
+- Verificación de la raíz sobre `git archive 90fa001` (`E:/quantdesk-lab/tmp/verif-mt5.sh`, que ahora también mira el
+  publicador):
+  - los dos selftests dan ok y la suite 10 OK (el autor tuvo 11 porque contaba `banco_walkforward.py`, que aún no
+    está en Git);
+  - no aparece ninguna función de órdenes en el extractor ni en el publicador;
+  - `password` sólo sale en el MT5 falso y en la clase de credenciales;
+  - `git show --name-only` sólo lista las rutas del autor.
+- Intento BDD 126 cerrado como aceptado. TI-12-MT5 sigue abierta y bloqueada por fuera:
+  1. el usuario abre y autentica el terminal;
+  2. inventario con `--sin-credenciales` y `--simular`;
+  3. network añade `source` como tag en `market.ohlcv` y backend adapta sus consumidores (falta el sí del usuario para
+     pedírselo);
+  4. la raíz emite el token;
+  5. primera ejecución real;
+  6. el usuario registra la tarea programada.
+
 ### Franja exclusiva de máquina (2026-11-09, 03:15–05:30 CET)
 
 - Petición de la raíz de quantdesk (`quantdesk-ab`, relevo 38), por decisión del usuario («franja nocturna»): medir el
