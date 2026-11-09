@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+import os
 import socket
 
 import numpy as np
@@ -181,11 +182,62 @@ def prueba_reproducible():
           f"predicciones y metricas identicas ({banco.hash_predicciones(p1)[:16]}): ok")
 
 
+def prueba_toto():
+    """Toto por subproceso: ausencia del venv -> SALTADO sin romper nada; protocolo y contrato con un Toto falso
+    (el trabajador real en modo --falso, con el Python de este venv: sin torch, sin pesos, sin red)."""
+    import sys
+
+    import pandas as pd
+
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import banco_walkforward as bw
+
+    falta = "E:/quantdesk-lab/venvs/no-existe/Scripts/python.exe"
+    try:
+        modelos.Toto(python=falta)
+        raise AssertionError("Toto sin venv deberia quedar SALTADO")
+    except modelos.ModeloSaltado as exc:
+        assert "SALTADO" in str(exc)
+    ms, salt = bw.fabrica_modelos(["garch", "toto"], 1, toto_python=falta)
+    assert [m.nombre for m in ms] == ["garch"] and "toto" in salt and "SALTADO" in salt["toto"], salt
+    n = 500
+    close = 100 * np.exp(np.cumsum(simular_garch(n, semilla=13)) / 100)
+    s = datos.series_desde_tabla(_tabla(n, close), None)["SINT"]
+    cortes, _ = datos.cortes_de_serie(s, datos.rejilla_origenes(datos.fecha(T0 + 400 * DIA),
+                                                                 datos.fecha(T0 + 470 * DIA), 20), 300, banco.HMAX)
+    t = modelos.Toto(hilos=1, python=sys.executable, falso=True, muestras=500)
+    try:
+        assert t.versiones and t.pesos is None
+        q1, i1 = t.predecir(cortes[0].precios, 7, banco.HMAX)
+        q2, _ = t.predecir(cortes[0].precios, 7, banco.HMAX)
+        q3, _ = t.predecir(cortes[0].precios, 8, banco.HMAX)
+        assert q1.shape == (banco.HMAX, len(metricas.NIVELES)) and np.all(np.diff(q1, axis=1) >= 0)
+        assert np.array_equal(q1, q2) and not np.array_equal(q1, q3), "semilla del trabajador"
+        assert "cpu_s_externo" in i1, "el CPU del subproceso debe volver al banco"
+        # los precios viajan en JSON sin perder bits: el contexto del trabajador es el del banco
+        sd = float(np.std(np.diff(np.log(cortes[0].precios))))
+        _cerca(float(q1[0, metricas.I90] - q1[0, metricas.I10]), 2 * metricas.Z90 * sd, 0.25 * sd, "escala falsa")
+        try:
+            t.predecir(np.array([1.0, -1.0, 2.0]), 1, banco.HMAX)
+            raise AssertionError("un error del trabajador debe propagarse")
+        except RuntimeError:
+            pass
+        filas = pd.DataFrame(banco.correr_serie(s, cortes, [modelos.Garch(s_caminos=200), t], banco.SEMILLA))
+        assert filas["ok"].all() and set(filas["modelo"]) == {"garch", "toto"}, filas["error"].unique()
+        met = banco.metricas_tabla(filas, ["garch", "toto"])
+        assert set(met["modelo"]) == {"garch", "toto"} and np.all(np.isfinite(met["crps"]))
+    finally:
+        t.cerrar()
+    print(f"toto: venv ausente -> SALTADO sin romper la corrida; trabajador falso por subproceso con el mismo "
+          f"contrato de cuantiles, semilla y errores ({len(cortes)} origenes): ok")
+
+
 def selftest() -> int:
     _sin_red()
     prueba_metricas()
     prueba_look_ahead()
     prueba_garch_conocido()
     prueba_reproducible()
+    prueba_toto()
     print("selftest ok")
     return 0

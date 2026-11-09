@@ -13,6 +13,7 @@ Ningun modelo ve otra cosa que `precios`.
 - chronos2: Chronos-2 (amazon/chronos-2, revision fijada) zero-shot sobre el log-precio; cuantiles nativos del
   modelo a hmax pasos menos el ultimo log-precio. Lote de una serie por llamada (el resultado depende en ~1e-6 de
   la composicion del lote; con lote 1 un subconjunto reproduce bit a bit la corrida completa).
+- toto: Toto-Open-Base-1.0 zero-shot en un subproceso con el venv aparte (clase Toto, toto_trabajador.py).
 - trivial: sustituto de chronos2 en el selftest (sin pesos ni red): normal de media 0 y desviacion la de los
   rendimientos del contexto por raiz de h.
 """
@@ -147,6 +148,70 @@ class Trivial:
         z = norm.ppf(metricas.NIVELES)
         Q = np.array([z * sd * np.sqrt(h) for h in range(1, hmax + 1)])
         return Q, {}
+
+
+class ModeloSaltado(RuntimeError):
+    """El modelo no se puede ejecutar en esta maquina (p. ej. falta el venv de Toto): se salta y se dice."""
+
+
+TOTO_PY = "E:/quantdesk-lab/venvs/toto/Scripts/python.exe"
+TOTO_ID = "Datadog/Toto-Open-Base-1.0"
+TOTO_REV = "0411ceb27bdf7fc3e4892e99edc8ad08192dc3c5"
+TOTO_MUESTRAS = 256
+TRABAJADOR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "toto_trabajador.py")
+
+
+class Toto:
+    """Toto zero-shot en un subproceso con el venv aparte (toto-ts 0.2.0 fija torch 2.7.0 y numpy 1.26.4, incompatibles
+    con el .venv del laboratorio). Mismo contrato que chronos2: contexto en log-precio, 21 cuantiles (empiricos, de
+    TOTO_MUESTRAS trayectorias) de ln(P_{t+h}/P_t). El CPU del subproceso lo mide el propio trabajador y se suma al
+    del modelo (`cpu_s_externo`). `falso=True` usa una normal sembrada (selftest)."""
+
+    nombre = "toto"
+
+    def __init__(self, hilos: int = 2, python: str = TOTO_PY, falso: bool = False, muestras: int = TOTO_MUESTRAS,
+                 log: str | None = None):
+        import json
+        import subprocess
+
+        if not os.path.isfile(python):
+            raise ModeloSaltado(f"toto SALTADO: no existe el venv de Toto ({python})")
+        self.json = json
+        env = dict(os.environ)
+        env["HF_HUB_OFFLINE"] = "1"
+        for v in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
+            env[v] = str(hilos)
+        cmd = [python, "-I", "-X", "utf8", TRABAJADOR, "--hilos", str(hilos), "--muestras", str(muestras),
+               "--revision", TOTO_REV] + (["--falso"] if falso else [])
+        self._log = open(log, "a", encoding="utf-8") if log else subprocess.DEVNULL
+        self.p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self._log, text=True,
+                                  encoding="utf-8", env=env, cwd=os.path.dirname(TRABAJADOR))
+        hola = self._leer()
+        if not hola.get("listo"):
+            raise ModeloSaltado(f"toto SALTADO: el trabajador no arranco: {hola}")
+        self.versiones, self.pesos, self.muestras = hola["versiones"], hola["pesos"], muestras
+
+    def _leer(self):
+        linea = self.p.stdout.readline()
+        if not linea:
+            raise RuntimeError(f"el trabajador de Toto termino (codigo {self.p.poll()})")
+        return self.json.loads(linea)
+
+    def predecir(self, precios, semilla, hmax):
+        req = {"precios": [float(x) for x in np.asarray(precios, float)], "semilla": int(semilla), "hmax": int(hmax)}
+        self.p.stdin.write(self.json.dumps(req) + "\n")
+        self.p.stdin.flush()
+        r = self._leer()
+        if "error" in r:
+            raise RuntimeError(r["error"])
+        return np.asarray(r["Q"], float), {"cpu_s_externo": float(r["cpu_s"])}
+
+    def cerrar(self):
+        try:
+            self.p.stdin.close()
+            self.p.wait(timeout=30)
+        except Exception:  # noqa: BLE001
+            self.p.kill()
 
 
 def pesos_chronos() -> dict:

@@ -10,12 +10,16 @@ Uso, con el venv del laboratorio:
   .venv/Scripts/python -X utf8 scripts/banco_walkforward.py --dataset lago_cierre_c20261101 \
       --activos EURUSD,USDJPY --max-origenes 12 --out E:/quantdesk-lab/runs/TS-00-BENCH/repeticion \
       --comparar E:/quantdesk-lab/runs/TS-00-BENCH/lago_cierre_c20261101
+  (Toto, fase 2: venv aparte E:/quantdesk-lab/venvs/toto; submuestra declarada de origenes)
+  .venv/Scripts/python -X utf8 scripts/banco_walkforward.py --dataset lago_cierre_c20261101 --modelos toto \
+      --cada 5 --out E:/quantdesk-lab/runs/TS-00-BENCH/toto_lago_cierre_c20261101
   (informe a partir de las corridas)
-  .venv/Scripts/python -X utf8 scripts/banco_walkforward.py --informe RUN1 RUN2 [--repeticion RUN] \
-      [--pilotos RUN ...] --destino docs/plans/current/execution/TS-00-BENCH
+  .venv/Scripts/python -X utf8 scripts/banco_walkforward.py --informe RUN1 RUN2 [--toto RUN ...] \
+      [--repeticion RUN ...] [--pilotos RUN ...] --destino docs/plans/current/execution/TS-00-BENCH
 
 Cada origen es independiente (semilla derivada de semilla|activo|origen|modelo, Chronos-2 con lote 1), asi que un
-subconjunto reproduce exactamente las filas de la corrida completa. Toto no esta instalado: ver el informe.
+subconjunto reproduce exactamente las filas de la corrida completa. Toto corre en un subproceso con su venv aparte
+(modelos.Toto); si el venv no existe queda SALTADO y la corrida sigue con los demas modelos.
 Solo CPU. Los datasets se leen de E:/quantdesk-lab/datasets/TI-02-DATA (solo lectura); las salidas pesadas van a
 E:/quantdesk-lab/runs/TS-00-BENCH/; los pesos de Chronos-2 se leen de la cache de HF del laboratorio sin red.
 """
@@ -36,6 +40,8 @@ sys.path.insert(0, HERE)
 from banco_walkforward_lib import rutas  # noqa: E402
 
 C_MIN_GB = 2.0
+# Toto (fase 2) se pide con --modelos ...,toto: el valor por defecto sigue siendo el de la fase 1 para que sus
+# comandos documentados (y la repeticion con --comparar) se reproduzcan igual. Sin su venv, Toto queda SALTADO.
 MODELOS = ("hmm", "garch", "chronos2")
 
 
@@ -50,10 +56,11 @@ def espacio_c_ok() -> bool:
     return True
 
 
-def fabrica_modelos(nombres, hilos):
+def fabrica_modelos(nombres, hilos, toto_python=None):
+    """(modelos, saltados). Toto sin su venv aparte no rompe la corrida: queda SALTADO con el motivo."""
     from banco_walkforward_lib import modelos
 
-    out = []
+    out, saltados = [], {}
     for n in nombres:
         if n == "hmm":
             out.append(modelos.Hmm())
@@ -61,9 +68,16 @@ def fabrica_modelos(nombres, hilos):
             out.append(modelos.Garch())
         elif n == "chronos2":
             out.append(modelos.Chronos2(hilos))
+        elif n == "toto":
+            try:
+                os.makedirs(rutas.TMP, exist_ok=True)
+                out.append(modelos.Toto(hilos, python=toto_python or modelos.TOTO_PY,
+                                        log=rutas.TMP + "/toto_trabajador.log"))
+            except modelos.ModeloSaltado as exc:
+                saltados[n] = str(exc)
         else:
             raise ValueError(f"modelo desconocido {n!r}")
-    return out
+    return out, saltados
 
 
 def cmd_correr(a) -> int:
@@ -90,11 +104,11 @@ def cmd_correr(a) -> int:
     activos = [x for x in a.activos.split(",") if x] if a.activos else None
     comando = ".venv/Scripts/python -X utf8 scripts/banco_walkforward.py " + " ".join(sys.argv[1:]).replace(os.sep, "/")
     pred, met, meta = banco.ejecutar(a.dataset, out, nombres, activos, a.max_origenes, a.semilla, a.hilos, comando,
-                                     a.reanudar, fabrica_modelos)
+                                     a.reanudar, fabrica_modelos, cada=a.cada)
     if "chronos2" in nombres:
         from banco_walkforward_lib import modelos
 
-        meta["pesos"] = {"chronos2": modelos.pesos_chronos()}
+        meta.setdefault("pesos", {})["chronos2"] = modelos.pesos_chronos()
     if a.comparar:
         meta["comparacion"] = banco.comparar(out, os.path.abspath(a.comparar))
         print("comparacion:", json.dumps(meta["comparacion"], ensure_ascii=False))
@@ -119,12 +133,14 @@ def main(argv=None) -> int:
     ap.add_argument("--modelos", default=",".join(MODELOS))
     ap.add_argument("--activos", default="", help="lista separada por comas (por defecto, todos)")
     ap.add_argument("--max-origenes", type=int, default=0, help="primeros N origenes por activo (0 = todos)")
+    ap.add_argument("--cada", type=int, default=1, help="uno de cada N origenes validos por activo (submuestra)")
     ap.add_argument("--semilla", type=int, default=None)
     ap.add_argument("--hilos", type=int, default=2, help="hilos de torch para Chronos-2")
     ap.add_argument("--reanudar", action="store_true", help="reutiliza out/pred/<activo>.parquet ya escritos")
     ap.add_argument("--comparar", metavar="RUN", help="compara las predicciones con las de otra corrida")
     ap.add_argument("--informe", nargs="+", metavar="RUN", help="genera informe.md y metricas.csv desde corridas")
-    ap.add_argument("--repeticion", metavar="RUN", help="corrida de repeticion (con --comparar) para el informe")
+    ap.add_argument("--repeticion", nargs="*", metavar="RUN", help="corridas de repeticion (con --comparar)")
+    ap.add_argument("--toto", nargs="*", metavar="RUN", help="corridas de Toto (--modelos toto) para el informe")
     ap.add_argument("--pilotos", nargs="*", metavar="RUN", help="corridas piloto de medida de CPU para el informe")
     ap.add_argument("--destino", metavar="DIR", help="directorio del informe")
     a = ap.parse_args(argv)
@@ -140,7 +156,7 @@ def main(argv=None) -> int:
         except rutas.RutaNoAutorizada as exc:
             print(f"banco_walkforward: {exc}")
             return 2
-        return informe.escribir(a.informe, a.repeticion, destino, a.pilotos)
+        return informe.escribir(a.informe, a.repeticion, destino, a.pilotos, a.toto)
     if not (a.dataset and a.out):
         ap.error("--selftest, --informe o bien --dataset y --out")
     from banco_walkforward_lib import banco

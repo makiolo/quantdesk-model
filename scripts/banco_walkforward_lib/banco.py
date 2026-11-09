@@ -31,6 +31,10 @@ PRESETS = {
 }
 
 
+def caminos_por_modelo(modelos):
+    return {m.nombre: getattr(m, "s", getattr(m, "muestras", None)) for m in modelos}
+
+
 def semilla_par(semilla: int, instrument: str, origen_ms: int, modelo: str) -> int:
     h = hashlib.sha256(f"{semilla}|{instrument}|{origen_ms}|{modelo}".encode()).digest()
     return int.from_bytes(h[:4], "little") & 0x7FFFFFFF
@@ -83,7 +87,9 @@ def correr_serie(serie, cortes, modelos, semilla, progreso=None):
                 err = None
             except Exception as exc:  # noqa: BLE001 -- se cuenta y se informa, nunca se oculta
                 Q, info, err = None, {}, f"{type(exc).__name__}: {exc}"[:300]
-            filas += _filas_corte(serie.instrument, c, m.nombre, Q, info, time.process_time() - t0, err)
+            # el CPU de un subproceso (Toto) no lo ve process_time: lo mide el trabajador y se suma aqui
+            externo = float(info.pop("cpu_s_externo", 0.0)) if isinstance(info, dict) else 0.0
+            filas += _filas_corte(serie.instrument, c, m.nombre, Q, info, time.process_time() - t0 + externo, err)
         if progreso:
             progreso(i + 1, len(cortes))
     return filas
@@ -108,9 +114,11 @@ def metricas_tabla(pred, modelos):
 
 
 def ejecutar(dataset, out, nombres_modelos, activos, max_origenes, semilla, hilos, comando, reanudar,
-             fabrica_modelos):
+             fabrica_modelos, cada=1):
     """Corrida sobre un dataset real. Escribe out/pred/<activo>.parquet, out/predicciones.parquet,
-    out/metricas.csv y out/meta.json."""
+    out/metricas.csv y out/meta.json. `fabrica_modelos(nombres, hilos)` devuelve (modelos, saltados); un modelo
+    saltado (p. ej. Toto sin su venv) se anota en meta["saltados"] y la corrida sigue con los demas.
+    `cada` > 1 evalua uno de cada `cada` origenes validos de cada activo (submuestra declarada)."""
     import pandas as pd
 
     from . import rutas
@@ -125,17 +133,29 @@ def ejecutar(dataset, out, nombres_modelos, activos, max_origenes, semilla, hilo
         raise ValueError(f"activos inexistentes: {sorted(set(activos) - set(series))}")
     os.makedirs(os.path.join(out, "pred"), exist_ok=True)
     t_carga = time.process_time()
-    modelos = fabrica_modelos(nombres_modelos, hilos)
+    modelos, saltados = fabrica_modelos(nombres_modelos, hilos)
     t_carga = time.process_time() - t_carga
+    for n, motivo in saltados.items():
+        print(f"modelo {n}: {motivo}", flush=True)
+    if not modelos:
+        raise RuntimeError(f"ningun modelo ejecutable: {saltados}")
     meta = {"dataset": meta_ds, "config": {**cfg, "horizontes": list(HORIZONTES), "semilla": semilla,
-                                           "s_caminos": getattr(modelos[0], "s", None), "hilos_torch": hilos,
-                                           "activos": nombres, "max_origenes": max_origenes,
+                                           "s_caminos": caminos_por_modelo(modelos), "hilos_torch": hilos,
+                                           "activos": nombres, "max_origenes": max_origenes, "cada": cada,
                                            "modelos": [m.nombre for m in modelos], "n_rejilla": len(rej)},
-            "comando": comando, "versiones": versiones(), "omitidos": {}, "cpu_carga_modelos_s": t_carga}
+            "comando": comando, "versiones": versiones(), "omitidos": {}, "cpu_carga_modelos_s": t_carga,
+            "saltados": saltados}
+    for m in modelos:
+        if getattr(m, "versiones", None) is not None:
+            meta.setdefault("versiones_externas", {})[m.nombre] = m.versiones
+        if getattr(m, "pesos", None):
+            meta.setdefault("pesos", {})[m.nombre] = m.pesos
     partes = []
     w0 = time.perf_counter()
     for ins in nombres:
         cortes, omit = datos.cortes_de_serie(series[ins], rej, cfg["ventana"], HMAX)
+        if cada > 1:
+            cortes = cortes[::cada]
         if max_origenes:
             cortes = cortes[:max_origenes]
         meta["omitidos"][ins] = {**omit, "evaluados": len(cortes)}
@@ -154,6 +174,9 @@ def ejecutar(dataset, out, nombres_modelos, activos, max_origenes, semilla, hilo
         df.to_parquet(fp + ".tmp", index=False)
         os.replace(fp + ".tmp", fp)
         partes.append(df)
+    for m in modelos:
+        if hasattr(m, "cerrar"):
+            m.cerrar()
     pred = pd.concat(partes, ignore_index=True)
     pred = pred.sort_values(["instrument", "origen_ms", "modelo", "h"], kind="mergesort").reset_index(drop=True)
     pred.to_parquet(os.path.join(out, "predicciones.parquet"), index=False)

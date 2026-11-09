@@ -5,6 +5,8 @@ import json
 import math
 import os
 import sys
+
+import numpy as np
 from datetime import datetime, timezone
 
 from . import banco, datos, modelos, rutas
@@ -22,6 +24,10 @@ LICENCIAS = [
     ("arch 8.0.0 (GARCH)", "NCSA", "https://github.com/bashtage/arch", "sin pesos"),
     ("HMM del motor (quantdesk 69fdb39d)", "propio", "S:/Projects/quantdesk", "sin pesos"),
 ]
+
+LICENCIAS_TOTO = [x if not x[0].startswith(("Toto", "toto-ts")) else
+                  (x[0], x[1], x[2], "permite uso de investigacion interno; usado (venv aparte, fase 2)")
+                  for x in LICENCIAS]
 
 TOTO = """**Pendiente de decision (GAP-04).** No esta en el `.venv` y no se ha instalado nada.
 
@@ -100,26 +106,74 @@ def _resumen(met, modelos_):
     return filas
 
 
-def escribir(runs, repeticion, destino, pilotos=None) -> int:
+MODELOS4 = ("hmm", "garch", "chronos2", "toto")
+
+
+def _cpu_celda(meta):
+    return "; ".join(f"{m} {c['total_s']:.0f} ({c['por_origen_s']:.3f})" for m, c in meta["cpu"].items())
+
+
+def _cargar_toto(run, base_runs):
+    """Une las predicciones de una corrida de Toto con las de la corrida de 3 modelos del mismo dataset y calcula las
+    metricas de los 4 modelos sobre los origenes comunes (los de la submuestra de Toto)."""
+    import pandas as pd
+
+    meta_t, _ = _cargar(run)
+    ds = meta_t["dataset"]["dataset_id"]
+    base = [r for r in base_runs if _cargar(r)[0]["dataset"]["dataset_id"] == ds]
+    if len(base) != 1:
+        raise ValueError(f"corrida de Toto {run} sin una unica corrida base del dataset {ds}")
+    meta_b = _cargar(base[0])[0]
+    if meta_b["dataset"]["dataset_hash"] != meta_t["dataset"]["dataset_hash"]:
+        raise ValueError(f"dataset_hash distinto entre {run} y {base[0]}")
+    pt = pd.read_parquet(os.path.join(run, "predicciones.parquet"))
+    pb = pd.read_parquet(os.path.join(base[0], "predicciones.parquet"))
+    pt = pt[pt["modelo"] == "toto"]
+    claves = pt[["instrument", "origen_ms"]].drop_duplicates()
+    pb = pb.merge(claves, on=["instrument", "origen_ms"], how="inner")
+    # el objetivo de cada origen es el mismo en las dos corridas (mismo dataset y mismo corte)
+    chk = pt[["instrument", "origen_ms", "h", "y", "rv"]].drop_duplicates().merge(
+        pb[["instrument", "origen_ms", "h", "y", "rv"]].drop_duplicates(), on=["instrument", "origen_ms", "h"])
+    if not (np.array_equal(chk["y_x"], chk["y_y"]) and np.array_equal(chk["rv_x"], chk["rv_y"])):
+        raise ValueError("el objetivo difiere entre la corrida de Toto y la base")
+    pred = pd.concat([pb, pt], ignore_index=True)
+    met = banco.metricas_tabla(pred, list(MODELOS4))
+    pred["w80"] = pred["q18"] - pred["q02"]
+    pred["w98"] = pred["q20"] - pred["q00"]
+    pred["cola"] = pred["w98"] / pred["w80"]
+    g = pred.groupby(["h", "modelo"])
+    anchos = g[["w80", "w98", "cola"]].median().join(g["w98"].quantile(0.99).rename("w98_p99")).reset_index()
+    meta_t["_anchos"] = anchos.to_dict("records")
+    return meta_t, met, base[0]
+
+
+def escribir(runs, repeticiones, destino, pilotos=None, totos=None) -> int:
     import pandas as pd
 
     cargados = [(_cargar(r), r) for r in runs]
     cargados.sort(key=lambda x: (x[0][0]["dataset"]["dataset_id"] != CABECERA, x[0][0]["dataset"]["dataset_id"]))
+    tt = [_cargar_toto(r, runs) + (r,) for r in (totos or [])]
+    tt.sort(key=lambda x: (x[0]["dataset"]["dataset_id"] != CABECERA, x[0]["dataset"]["dataset_id"]))
     L = []
     w = L.append
     ahora = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    w("# TS-00-BENCH: banco walk-forward (HMM del motor, GARCH(1,1), Chronos-2 zero-shot; Toto pendiente)")
+    w("# TS-00-BENCH: banco walk-forward (HMM del motor, GARCH(1,1), Chronos-2 y Toto en zero-shot)" if tt else
+      "# TS-00-BENCH: banco walk-forward (HMM del motor, GARCH(1,1), Chronos-2 zero-shot; Toto pendiente)")
     w("")
     w(f"- Generado por `scripts/banco_walkforward.py --informe` el {ahora} a partir de las salidas de las corridas "
       "(`meta.json`, `metricas.csv`, `predicciones.parquet` en `E:/quantdesk-lab/runs/TS-00-BENCH/`). Comando: "
       "`.venv/Scripts/python -X utf8 scripts/banco_walkforward.py "
       + " ".join(sys.argv[1:]).replace(os.sep, "/").replace(rutas.REPO.replace(os.sep, "/") + "/", "") + "`.")
     w("- Selftest: `.venv/Scripts/python -X utf8 scripts/banco_walkforward.py --selftest` (sin red: el selftest "
-      "bloquea los sockets; sin datos reales; Chronos-2 sustituido por un modelo trivial con la misma interfaz).")
+      "bloquea los sockets; sin datos reales; Chronos-2 sustituido por un modelo trivial con la misma interfaz; "
+      "Toto, por su trabajador real en modo `--falso` lanzado como subproceso, y un venv de Toto inexistente deja "
+      "Toto SALTADO sin romper la corrida).")
     w(f"- Motor: **{banco.MOTOR}** (commit `{banco.MOTOR_COMMIT}`). Semilla: **{banco.SEMILLA}**. Solo CPU.")
     w(f"- **Tabla de cabecera: `{CABECERA}`** (FX diario del lago; decision del usuario del 2026-11-09). Su "
       "disponibilidad es un **proxy** (`available_at_ms` nulo, `default_lag_ms` = 0: valores que qn recibio "
       "despues del corte) y cada tabla y cifra suya lleva la etiqueta «proxy». `binance_c20261101` es la segunda tabla.")
+    w("- Datasets: los dos que fija la ficha. De los otros dos de TI-02-DATA, `lago_c20261101` (estricto) tiene las "
+      "tablas OHLCV vacias tras el corte (0 filas; no hay serie que evaluar) y `lago_c20261107` no esta en la ficha.")
     w("- No se fijan umbrales de exito (TS-00-OBJ). Las cifras son descriptivas.")
     w("")
     w("## Resumen por modelo")
@@ -140,6 +194,40 @@ def escribir(runs, repeticion, destino, pilotos=None) -> int:
             w(f"| {r['h']} | {r['modelo']} | {r['activos']} | {_f(r['crps'])} | {_f(r['crps_rel'], 3)} | "
               f"{_f(r['p01'])} | {_f(r['p99'])} | {_f(r['exc01'], 3)} | {_f(r['exc99'], 3)} | {r['ku01']}/{r['ku99']} | "
               f"{r['ch01']}/{r['ch99']} | {_f(r['qlike'])} | {r['gana']} | {r['gana_q']} |")
+    if tt:
+        w("")
+        w("## Toto frente a HMM, GARCH y Chronos-2 (submuestra de origenes)")
+        w("")
+        w("Toto cuesta mucho mas CPU por origen que los otros tres (ver presupuesto de CPU), asi que no cabe en 2 h "
+          "con la rejilla completa: se corre sobre una submuestra declarada de origenes (`--cada N`: uno de cada N "
+          "origenes validos de cada activo, todos los activos) y aqui los CUATRO modelos se comparan sobre exactamente "
+          "esos origenes (las predicciones de HMM, GARCH y Chronos-2 son las de la corrida completa: cada origen es "
+          "independiente y reproducible). Las tablas de arriba (3 modelos, rejilla completa) no cambian.")
+        for meta_t, met4, base, run in tt:
+            c = meta_t["config"]
+            n = sum(v["evaluados"] for v in meta_t["omitidos"].values())
+            w("")
+            w(f"### {_etiqueta(meta_t)}" + (" — tabla de cabecera" if meta_t["dataset"]["dataset_id"] == CABECERA
+                                            else "") + f": uno de cada {c.get('cada', 1)} origenes ({n} pares)")
+            w("")
+            w("| h | modelo | activos | CRPS (med.) | CRPS rel. GARCH | pinball 0,01 | pinball 0,99 | exc. 1 % | exc. 99 % "
+              "| Kupiec p<0,05 (1 %/99 %) | Chr. p<0,05 (1 %/99 %) | QLIKE (med.) | gana CRPS | gana QLIKE |")
+            w("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+            for r in _resumen(met4, list(MODELOS4)):
+                w(f"| {r['h']} | {r['modelo']} | {r['activos']} | {_f(r['crps'])} | {_f(r['crps_rel'], 3)} | "
+                  f"{_f(r['p01'])} | {_f(r['p99'])} | {_f(r['exc01'], 3)} | {_f(r['exc99'], 3)} | "
+                  f"{r['ku01']}/{r['ku99']} | {r['ch01']}/{r['ch99']} | {_f(r['qlike'])} | {r['gana']} | {r['gana_q']} |")
+        w("")
+        w("Anchura de las bandas predichas sobre esos mismos origenes (en log-rendimiento): mediana de la banda "
+          "10-90 % (`q90 - q10`) y de la banda 1-99 % (`q99 - q01`), mediana del cociente entre ambas (cola; una "
+          "normal da 1,82) y percentil 99 de la banda 1-99 % entre origenes (colas explosivas).")
+        for meta_t, met4, base, run in tt:
+            w("")
+            w(f"| {_etiqueta(meta_t)} h | modelo | banda 10-90 % | banda 1-99 % | cola (1-99 / 10-90) | banda 1-99 % p99 |")
+            w("|---|---|---|---|---|---|")
+            for r in meta_t["_anchos"]:
+                w(f"| {r['h']} | {r['modelo']} | {_f(r['w80'])} | {_f(r['w98'])} | {_f(r['cola'], 3)} | "
+                  f"{_f(r['w98_p99'])} |")
     w("")
     w("## Diseno del walk-forward")
     w("")
@@ -209,6 +297,15 @@ def escribir(runs, repeticion, destino, pilotos=None) -> int:
       "ultimo log-precio. Lote de una serie por llamada: con lotes mayores las salidas cambian en ~1e-6 segun la "
       "composicion del lote (medido), y con lote 1 un subconjunto reproduce bit a bit la corrida completa. "
       "`torch.use_deterministic_algorithms(True)`; dos llamadas iguales dan el mismo resultado (medido).")
+    if tt:
+        w(f"- **toto**: `{modelos.TOTO_ID}` revision `{modelos.TOTO_REV}`, zero-shot, CPU, en un subproceso con el "
+          "venv aparte `E:/quantdesk-lab/venvs/toto` (`scripts/banco_walkforward_lib/toto_trabajador.py`, protocolo "
+          "de lineas JSON; los precios viajan como float64 sin perdida). Mismo contrato que Chronos-2: contexto = "
+          f"log-precio de la ventana (W barras), {modelos.TOTO_MUESTRAS} trayectorias a 20 pasos "
+          "(`TotoForecaster.forecast`, `samples_per_batch` = numero de muestras, `torch.manual_seed(semilla)` antes "
+          "de cada prevision, `use_deterministic_algorithms(True)`, 2 hilos), cuantiles empiricos de "
+          "log P_{t+h} - log P_t. Marcas de tiempo sinteticas a 1 dia por barra. El CPU del subproceso lo mide el "
+          "trabajador y se suma al de Toto. Sin el venv, `--modelos ...,toto` deja Toto SALTADO y la corrida sigue.")
     w("- Cuantiles de los modelos por muestras: `numpy.quantile` (lineal) de las muestras en los 21 niveles.")
     w("")
     w("### Metricas y estimador de vol realizada")
@@ -229,7 +326,7 @@ def escribir(runs, repeticion, destino, pilotos=None) -> int:
     w("")
     w("| componente | licencia | URL | uso |")
     w("|---|---|---|---|")
-    for a, b, c, d in LICENCIAS:
+    for a, b, c, d in (LICENCIAS_TOTO if tt else LICENCIAS):
         w(f"| {a} | {b} | {c} | {d} |")
     w("")
     w("Datos: Binance Vision CC BY-NC-SA 4.0 (solo uso personal no productivo, ver TI-02-DATA); lago de qn, "
@@ -237,7 +334,26 @@ def escribir(runs, repeticion, destino, pilotos=None) -> int:
     w("")
     w("## Toto")
     w("")
-    w(TOTO)
+    if tt:
+        mt = tt[0][0]
+        vt = mt.get("versiones_externas", {}).get("toto", {})
+        pt = mt.get("pesos", {}).get("toto") or {}
+        w("Instalado en la fase 2 por decision del usuario (venv aparte; el `.venv` del laboratorio no se toca).")
+        w("")
+        w("- Ordenes ejecutadas (con `PIP_CACHE_DIR`, `HF_HOME` y `TMPDIR` bajo E:/quantdesk-lab): "
+          "`D:/miniconda312/python.exe -m venv E:/quantdesk-lab/venvs/toto`; "
+          "`E:/quantdesk-lab/venvs/toto/Scripts/python -m pip install --index-url https://download.pytorch.org/whl/cpu "
+          "torch==2.7.0`; `E:/quantdesk-lab/venvs/toto/Scripts/python -m pip install toto-ts==0.2.0 pyarrow` (con "
+          "las dependencias que fija toto-ts 0.2.0, entre ellas numpy 1.26.4, pandas 2.2.3, transformers 4.52.1 y "
+          "gluonts 0.16.2, y herramientas de desarrollo que el paquete declara como dependencias de ejecucion). Pesos "
+          "descargados una vez con `toto_trabajador.py --descargar`; las corridas usan `HF_HUB_OFFLINE=1`.")
+        w("- Versiones del venv de Toto: " + ", ".join(f"{k} {v}" for k, v in vt.items() if k != "ejecutable") + ".")
+        if pt:
+            w(f"- Pesos: `{pt.get('repo')}` revision `{pt.get('revision')}`: "
+              + ", ".join(f"`{k}` sha256 `{h}`" for k, h in pt.get("ficheros", {}).items()
+                          if not k.startswith("figures/")) + ".")
+    else:
+        w(TOTO)
     w("")
     w("## Reproducibilidad")
     w("")
@@ -256,34 +372,32 @@ def escribir(runs, repeticion, destino, pilotos=None) -> int:
       "del HMM usa semilla x 4096 + j; GARCH usa `numpy.random.default_rng(semilla)`. Hilos: BLAS/OpenMP 1, "
       "torch 2 (`--hilos`).")
     w("")
-    w("| dataset | comando exacto | pared (s) | CPU hmm (s, s/origen) | CPU garch | CPU chronos2 | carga de modelos (s CPU) | fallos hmm/garch/chronos2 | HMM sin converger | sha256 predicciones |")
-    w("|---|---|---|---|---|---|---|---|---|---|")
-    for (meta, met), run in cargados:
-        cpu = meta["cpu"]
-
-        def c(m, cpu=cpu):
-            return f"{cpu[m]['total_s']:.0f} ({cpu[m]['por_origen_s']:.3f})" if m in cpu else "—"
-
-        fal = "/".join(str(meta["fallos"].get(m, "—")) for m in ("hmm", "garch", "chronos2"))
+    w("| dataset | comando exacto | pared (s) | CPU por modelo: total s (s/origen) | carga de modelos (s CPU) | "
+      "fallos por modelo | HMM sin converger | sha256 predicciones |")
+    w("|---|---|---|---|---|---|---|---|")
+    metas_corridas = [m for (m, _), _r in cargados] + [x[0] for x in tt]
+    for meta in metas_corridas:
+        fal = ", ".join(f"{m} {n}" for m, n in meta["fallos"].items())
         nc = meta.get("convergencia", {}).get("hmm", {})
-        w(f"| {_etiqueta(meta)} | `{meta['comando']}` | {meta['pared_s']:.0f} | {c('hmm')} | {c('garch')} | "
-          f"{c('chronos2')} | {meta['cpu_carga_modelos_s']:.0f} | {fal} | {nc.get('no_convergido', '—')} de "
+        w(f"| {_etiqueta(meta)} | `{meta['comando']}` | {meta['pared_s']:.0f} | {_cpu_celda(meta)} | "
+          f"{meta['cpu_carga_modelos_s']:.0f} | {fal} | {nc.get('no_convergido', '—')} de "
           f"{nc.get('n', '—')} | `{meta['predicciones_sha256'][:16]}…` |")
     w("")
     w("HMM «sin converger»: Baum-Welch agota las 200 iteraciones por defecto sin bajar de `tol` = 1e-8 en la "
-      "log-verosimilitud; se usa el ajuste igualmente (es el comportamiento del motor con sus opciones por defecto).")
-    if any(m[0]["errores_ejemplo"] for m, _ in cargados):
+      "log-verosimilitud; se usa el ajuste igualmente (es el comportamiento del motor con sus opciones por defecto). "
+      "El CPU de Chronos-2 y de Toto suma sus 2 hilos de torch; el de Toto lo mide su subproceso.")
+    if any(m["errores_ejemplo"] for m in metas_corridas):
         w("")
         w("Ejemplos de fallos:")
-        for (meta, met), run in cargados:
+        for meta in metas_corridas:
             for e in meta["errores_ejemplo"]:
                 w(f"- {_etiqueta(meta)} {e['instrument']} {datos.fecha(int(e['origen_ms']))} {e['modelo']}: {e['error']}")
-    if repeticion:
+    for repeticion in repeticiones or []:
         with open(os.path.join(repeticion, "meta.json"), encoding="utf-8") as f:
             mr = json.load(f)
         cp = mr.get("comparacion", {})
         w("")
-        w("### Repeticion de un subconjunto (aceptacion 3)")
+        w(f"### Repeticion de un subconjunto (aceptacion 3): {', '.join(mr['config']['modelos'])}")
         w("")
         w(f"- Comando: `{mr['comando']}` ({mr['pared_s']:.0f} s de pared mas la carga).")
         w(f"- Resultado: {cp.get('filas')} filas (activo x origen x modelo x h) comparadas con la corrida completa "
@@ -306,15 +420,15 @@ def escribir(runs, repeticion, destino, pilotos=None) -> int:
         w("")
         w("## Presupuesto de CPU (medido antes de las corridas completas)")
         w("")
-        w("| piloto | comando | activos x origenes | CPU s/origen hmm | garch | chronos2 |")
-        w("|---|---|---|---|---|---|")
+        w("| piloto | comando | activos x origenes | pared (s) | CPU s/origen por modelo |")
+        w("|---|---|---|---|---|")
         for p in pilotos:
             with open(os.path.join(p, "meta.json"), encoding="utf-8") as f:
                 mp = json.load(f)
             cpu = mp["cpu"]
-            n = cpu["hmm"]["n"] if "hmm" in cpu else "—"
-            w(f"| {_etiqueta(mp)} | `{mp['comando']}` | {n} | {cpu['hmm']['por_origen_s']:.3f} | "
-              f"{cpu['garch']['por_origen_s']:.3f} | {cpu['chronos2']['por_origen_s']:.3f} |")
+            n = next(iter(cpu.values()))["n"]
+            w(f"| {_etiqueta(mp)} | `{mp['comando']}` | {n} | {mp['pared_s']:.0f} | "
+              + "; ".join(f"{m} {c['por_origen_s']:.3f}" for m, c in cpu.items()) + " |")
         w("")
         w("Con esas medidas (en una maquina compartida, i7-4790K de 4 nucleos): FX con todos los dias habiles "
           "(paso 1) cuesta ~0,57 s por par activo-origen, unas 6 900 x 0,57 s ~ 66 min de CPU: cabe en 2 h sin "
@@ -322,6 +436,35 @@ def escribir(runs, repeticion, destino, pilotos=None) -> int:
           "a un origen cada 3 dias (~3 590 pares, ~68 min), con los 10 activos y la ventana de 1 000 barras. Una "
           "sola corrida pesada a la vez. El CPU y la pared reales de cada corrida estan en la tabla de "
           "reproducibilidad (el CPU de Chronos-2 suma sus 2 hilos de torch).")
+        pil_toto = []
+        for p in pilotos:
+            with open(os.path.join(p, "meta.json"), encoding="utf-8") as f:
+                mp = json.load(f)
+            if list(mp["cpu"]) == ["toto"]:
+                pil_toto.append(mp)
+        for mp in pil_toto:
+            ds = mp["dataset"]["dataset_id"]
+            seg = mp["pared_s"] / mp["cpu"]["toto"]["n"]
+            base = next((m for (m, _), _r in cargados if m["dataset"]["dataset_id"] == ds), None)
+            total = sum(v["evaluados"] for v in base["omitidos"].values()) if base else 0
+            corr = next((x[0] for x in tt if x[0]["dataset"]["dataset_id"] == ds), None)
+            elegido = corr["config"].get("cada", 1) if corr else None
+            real = ""
+            if corr:
+                n_r = corr["cpu"]["toto"]["n"]
+                real = (f" Real: {n_r} pares, {corr['pared_s'] / 3600:.2f} h de pared ({corr['pared_s'] / n_r:.1f} s por "
+                        f"origen) y {corr['cpu']['toto']['por_origen_s']:.1f} s de CPU por origen"
+                        + (": **supera las 2 h de pared**; el CPU por origen apenas cambia frente al piloto, la pared "
+                           "crece porque la maquina compartida estuvo al 100 % de CPU (antivirus, terminal y descargas "
+                           "MT5 de otro proyecto) durante la corrida." if corr["pared_s"] > 7200 else ".")
+                        )
+            w("")
+            w(f"Toto en {_etiqueta(mp)}: {seg:.1f} s de pared y {mp['cpu']['toto']['por_origen_s']:.1f} s de CPU por "
+              f"origen en el piloto; la rejilla completa ({total} pares) costaria ~{total * seg / 3600:.1f} h de "
+              f"pared, mas de 2 h. Se corre uno de cada {elegido} origenes (~{total / max(elegido or 1, 1) * seg / 3600:.1f} h"
+              f" estimadas con la carga del piloto) con todos los activos.{real} Propuesta para otro momento (maquina "
+              f"libre): la rejilla completa con `--modelos toto --cada 1`, en tandas por activo con `--activos` (cada "
+              f"tanda < 2 h) y `--reanudar`.")
     w("")
     w("## Tablas por dataset, activo, horizonte y modelo")
     todas = []
@@ -338,11 +481,28 @@ def escribir(runs, repeticion, destino, pilotos=None) -> int:
               f"{_p(r['kupiec_01_p'])} | {_p(r['christ_01_p'])} | {r['x_99']} | {_p(r['kupiec_99_p'])} | "
               f"{_p(r['christ_99_p'])} | {_f(r['qlike'])} |")
         todas.append(met.assign(dataset=meta["dataset"]["dataset_id"], proxy=meta["dataset"]["proxy"],
-                                dataset_hash=meta["dataset"]["dataset_hash"]))
+                                dataset_hash=meta["dataset"]["dataset_hash"][:23],  # prefijo; completo en el informe
+                                conjunto="rejilla_completa_3_modelos"))
+    for meta, met, base, run in tt:
+        cada = meta["config"].get("cada", 1)
+        w("")
+        w(f"### {_etiqueta(meta)}: 4 modelos sobre la submuestra de Toto (uno de cada {cada} origenes)")
+        w("")
+        w("| activo | h | modelo | n | CRPS | pinball 0,01 | pinball 0,99 | exc. 1 % | exc. 99 % | n_test | x 1 % | "
+          "Kupiec 1 % p | Chr. 1 % p | x 99 % | Kupiec 99 % p | Chr. 99 % p | QLIKE |")
+        w("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+        for _, r in met.iterrows():
+            w(f"| {r['instrument']} | {r['h']} | {r['modelo']} | {r['n']} | {_f(r['crps'])} | {_f(r['pinball_01'])} | "
+              f"{_f(r['pinball_99'])} | {_f(r['exc_01'], 3)} | {_f(r['exc_99'], 3)} | {r['n_test']} | {r['x_01']} | "
+              f"{_p(r['kupiec_01_p'])} | {_p(r['christ_01_p'])} | {r['x_99']} | {_p(r['kupiec_99_p'])} | "
+              f"{_p(r['christ_99_p'])} | {_f(r['qlike'])} |")
+        todas.append(met.assign(dataset=meta["dataset"]["dataset_id"], proxy=meta["dataset"]["proxy"],
+                                dataset_hash=meta["dataset"]["dataset_hash"][:23],
+                                conjunto=f"submuestra_toto_cada_{cada}_4_modelos"))
     os.makedirs(destino, exist_ok=True)
     allm = pd.concat(todas, ignore_index=True)
-    allm = allm[["dataset", "proxy", "dataset_hash"] + [c for c in allm.columns if c not in ("dataset", "proxy",
-                                                                                              "dataset_hash")]]
+    primeras = ["dataset", "proxy", "dataset_hash", "conjunto"]
+    allm = allm[primeras + [c for c in allm.columns if c not in primeras]]
     allm.to_csv(os.path.join(destino, "metricas.csv"), index=False, float_format="%.10g")
     with open(os.path.join(destino, "informe.md"), "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(L) + "\n")
