@@ -527,3 +527,30 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
 - Los cuatro `dataset_hash` no cambian. Sólo se reescribe `procedencia.json`, porque cambia el hash del código.
 - Sin revisión: las dos «dudas» del autor son informativas (registros de `runs/` reescritos y un CR suelto ya corregido)
   y la verificación de la raíz las resuelve (directiva A14, punto 4).
+
+### TS-00-BENCH fase 1 — ACEPTADA (2026-11-09 06:25)
+
+- Autor: Opus 5.5 high, intento BDD 123. Commit `baa4ee6`: `scripts/banco_walkforward.py`, `banco_walkforward_lib/`,
+  `informe.md` y `metricas.csv` en `docs/plans/current/execution/TS-00-BENCH/`.
+- Corridas completas, sin fallos:
+  - FX `lago_cierre_c20261101` (proxy), la tabla de cabecera: 28 activos × 247 orígenes, 41 min;
+  - Binance: 10 activos × 359 orígenes con paso de 3 días, 79 min. Arrancó a las 05:01, después de la franja.
+- Resultados:
+  - FX, h=1: GARCH gana el CRPS en 18 de 28 activos. Chronos-2 tiene las colas demasiado anchas y Kupiec lo rechaza en
+    unos 14.
+  - FX, h=20: Chronos-2 gana en 19 de 28, con un CRPS 0,972 veces el de GARCH. En QLIKE gana sobre todo el HMM.
+  - Binance: los tres casi empatan. A h=5, Chronos-2 queda por debajo del VaR 99 % (Kupiec lo rechaza en 6 de 10).
+- Licencias: los pesos de Chronos-2 y de Toto y el paquete `toto-ts` son Apache-2.0, con revisión y sha256 de los pesos
+  en el informe.
+- Hallazgo: `arch` 8 ignora `random_state` al simular. La semilla entra ahora por `rng`.
+- Verificación de la raíz sobre `git archive baa4ee6` (`E:/quantdesk-lab/tmp/verif-bench.sh`):
+  - el selftest da ok y `run_selftests.py` 11 OK;
+  - el subconjunto del informe (EURUSD y USDJPY, 12 orígenes, `--comparar` contra la corrida completa) da 216 filas
+    con predicciones y métricas idénticas (diferencia máxima 0,0), en 17 s de pared;
+  - `--out` fuera de `runs/TS-00-BENCH/` da salida 2: la guarda de rutas funciona;
+  - `git show --name-only` sólo lista las 11 rutas del autor.
+- Sin revisión: el autor no la pide (directiva A14, punto 4).
+- Toto, pendiente de decisión del usuario (GAP-04). `toto-ts` 0.2.0 fija `torch==2.7.0`, `numpy==1.26.4`,
+  `transformers==4.52.1` y más versiones exactas: instalarlo en el `.venv` lo rompería. El informe propone un venv aparte
+  en `E:/quantdesk-lab/venvs/toto`, llamado desde el banco en un subproceso. Esa sería la fase 2.
+- Intento BDD 123 cerrado como aceptado. TS-00-BENCH sigue abierta hasta que se decida lo de Toto.
