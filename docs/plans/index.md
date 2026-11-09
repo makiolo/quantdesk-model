@@ -35,3 +35,32 @@ Ciclo: planificación → inicio → ejecución → cierre y archivo → freeze 
 | Plan | Ámbito | Estado | Descripción |
 |---|---|---|---|
 | [Backlog del laboratorio](backlog/README.md) | Tareas que se ejecutan aquí (TI-*, TS-00-*, TS-02-DISC, ejecuciones de entrenamiento) y calendario de todo | Repartido en SPRINT-01…04 | Antes en `docs/plans/BACKLOG.md` (ahora puntero). Especificación en los planes de `quantdesk` (sólo lectura) |
+
+## 🧭 Tablero Kanban de Planes
+
+Generado desde `docs/plans`: backlog, próximos sprints, sprint activo con el progreso de cada plan, sprints cerrados e issues abiertas.
+
+<!-- kanban:inicio -->
+<!-- Generado por `sprint_db.py kanban --write` (skill global sprint); no editar a mano: se regenera. -->
+
+```mermaid
+graph LR
+    classDef backlog fill:#eceff1,stroke:#607d8b,stroke-width:2px;
+    classDef next fill:#fff8e1,stroke:#ffa000,stroke-width:2px;
+    classDef current fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
+    classDef completed fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
+    classDef issues fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
+
+    subgraph N["⏳ 1. Próximos (next y future)"]
+        N1["SPRINT-02<br/>Rueda fijada, HMM causal y ampliación de datos y banco · En planificación"]:::next
+        N2["SPRINT-03<br/>Ciclo sintético-real y procedencia en el manifiesto · En planificación"]:::next
+        N3["SPRINT-04<br/>Escalera de entrenamiento, ajuste fino y adaptadores · En planificación"]:::next
+    end
+
+    subgraph C["📦 2. SPRINT-01 activo"]
+        C1["SPRINT-01<br/>Entorno, datos reales y banco de referencia · 5/8 cerradas"]:::current
+    end
+
+    N --> C
+```
+<!-- kanban:fin -->
