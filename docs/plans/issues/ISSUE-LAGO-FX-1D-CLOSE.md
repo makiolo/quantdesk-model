@@ -58,8 +58,11 @@ sigue la ficha del backend ISSUE-FX-1D-CLOSE-YFINANCE. Opciones que el backend p
       a ser la tabla de cabecera. El informe declara esta incidencia sobre la tabla anterior.
 - [ ] 2. Los umbrales de TS-00-OBJ (relativos a GARCH) se revisan con la tabla nueva; si cambia la conclusión, se avisa
       al usuario.
-- [ ] 3. Cuando el backend corrija el origen, un nuevo corte del lago da `open == close` en < 5 % de las filas y el close
-      cuadra con el final del día.
+- [ ] 3. ~~Cuando el backend corrija el origen, un nuevo corte del lago da `open == close` en < 5 % de las filas y el
+      close cuadra con el final del día.~~ **Sustituido (usuario, vía backend, 2026-11-09):** MT5 pasa a ser la fuente
+      por defecto del FX diario (backend `6425e29`): `/api/fxspot` y `/api/modeling` sin `?source=` sirven el 1d de MT5 y
+      el 1h de yfinance. El 1d de yfinance **no se corrige en el lago**. Nuevo criterio: el exportador TI-02-DATA filtra
+      `source=mt5` para el FX diario y un corte nuevo del lago con ese filtro cuadra con `cuadre_mt5.py`.
 
 ## 6. Resolución y verificación
 
