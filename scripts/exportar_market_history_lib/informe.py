@@ -78,10 +78,17 @@ def _detalle_limpieza(t: dict) -> list:
     v = d.get("version_mayor_diferencia")
     if v:
         iv = f"{v['interval_ms'] // 3_600_000} h" if v["interval_ms"] < 86_400_000 else f"{v['interval_ms'] // 86_400_000} d"
-        out.append(f"  - Mayor cambio de `close` entre la primera y la ultima version recibida de una barra del dataset: "
-                   f"{v['instrument']} {iv} {iso_ms(v['ts_ms'])} pasa de {v['close_primera']:.6g} (recibida {iso_ms(v['recv_primera_ms'])}) "
-                   f"a {v['close_ultima']:.6g} (recibida {iso_ms(v['recv_ultima_ms'])}), {v['dif_relativa']:.2%}: el valor que llega "
-                   "despues no es el visible al cierre.")
+        cifra = (f"{v['instrument']} {iv} {iso_ms(v['ts_ms'])} pasa de {v['close_primera']:.6g} (recibida "
+                 f"{iso_ms(v['recv_primera_ms'])}) a {v['close_ultima']:.6g} (recibida {iso_ms(v['recv_ultima_ms'])}), "
+                 f"{v['dif_relativa']:.2%}")
+        if v.get("solo_cerradas", False):
+            out.append(f"  - Mayor cambio de `close` entre la primera y la ultima version recibida con la barra ya cerrada, en una "
+                       f"barra del dataset: {cifra}. Es una revision de un valor ya cerrado: el valor que llega despues no es "
+                       "el visible al cierre.")
+        else:
+            out.append("  - Ninguna barra del dataset cambia de `close` entre versiones recibidas con la barra ya cerrada. La "
+                       f"cifra siguiente incluye versiones recibidas con la barra todavia abierta, asi que mide la evolucion "
+                       f"dentro de la barra y no una revision posterior al cierre: {cifra}.")
     if "date_frente_a_ts" in carga:
         r = carga["date_frente_a_ts"].get("rango_de__ts_por_desfase", {})
         r3600, r0 = r.get("3600"), r.get("0")

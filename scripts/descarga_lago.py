@@ -106,6 +106,12 @@ def sha256_de(ruta: str) -> str:
     return h.hexdigest()
 
 
+def sha256_codigo(ruta: str) -> str:
+    """SHA-256 de un fichero de codigo con CRLF normalizado a LF: el mismo valor en una copia con LF o con CRLF."""
+    with open(ruta, "rb") as f:
+        return hashlib.sha256(f.read().replace(b"\r\n", b"\n")).hexdigest()
+
+
 def utc_ahora() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -273,7 +279,7 @@ def correr(a: argparse.Namespace, base: str, acceso: str, env: str) -> int:
          "ejecuciones_utc": [*(previo or {}).get("ejecuciones_utc", []), utc_ahora()],  # una reanudacion lee un qn posterior
          "base": base, "bases": sorted({base, *(previo or {}).get("bases", [])}), "env": env,
          "desde": desde.isoformat(), "hasta": hasta.isoformat(), "trozo_dias": a.trozo_dias,
-         "script_sha256": sha256_de(os.path.abspath(__file__)), "python": sys.version.split()[0],
+         "script_sha256": sha256_codigo(os.path.abspath(__file__)), "python": sys.version.split()[0],
          "completo": False, "avisos": [], "topics": {}, "peticiones_catalogo": catalogo}
     previos_t = (previo or {}).get("topics", {})
     m["topics"] = dict(previos_t)  # lo ya descargado se conserva aunque esta ejecucion se corte antes de llegar a ello
@@ -494,6 +500,17 @@ def selftest() -> None:
     assert list(ventanas(date(2026, 1, 1), date(2026, 1, 1), 31)) == [(date(2026, 1, 1), date(2026, 1, 1))]
     assert slug((("interval", "1d"), ("symbol", "EUR/USD"))) == "interval=1d,symbol=EUR_USD"
     assert slug(()) == "_sin_etiquetas"
+    # script_sha256 no depende de los finales de linea: el mismo fichero con LF y con CRLF da el hash del blob LF
+    with tempfile.TemporaryDirectory() as t:
+        lf, crlf = os.path.join(t, "lf.py"), os.path.join(t, "crlf.py")
+        with open(os.path.abspath(__file__), "rb") as f:
+            texto = f.read().replace(b"\r\n", b"\n")
+        with open(lf, "wb") as f:
+            f.write(texto)
+        with open(crlf, "wb") as f:
+            f.write(texto.replace(b"\n", b"\r\n"))
+        assert sha256_de(lf) != sha256_de(crlf), "la copia CRLF debe diferir en bytes"
+        assert sha256_codigo(crlf) == sha256_codigo(lf) == sha256_de(lf) == sha256_codigo(os.path.abspath(__file__))
 
     dias = date(2026, 3, 31) - date(2026, 1, 1) + timedelta(days=1)  # 90 filas por instrumento
     n_instr = sum(len(c) for c in CATALOGO_PRUEBA.values())
@@ -509,6 +526,7 @@ def selftest() -> None:
             assert cod == 0, (cod, out, err)
             m = json.load(open(os.path.join(s1, "manifest.json"), encoding="utf-8"))
             assert m["completo"] is True and m["env"] == "main" and m["base"] == url and m["python"], m
+            assert m["script_sha256"] == sha256_codigo(os.path.abspath(__file__)), m["script_sha256"]
             assert (m["desde"], m["hasta"]) == ("2026-01-01", "2026-03-31") and m["fecha_utc"].endswith("Z")
             todos = [f for t in m["topics"].values() for f in t["ficheros"]]
             assert len(todos) == n_instr and all(f["filas"] == dias.days for f in todos), todos

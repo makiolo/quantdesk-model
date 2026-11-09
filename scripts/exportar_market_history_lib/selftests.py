@@ -179,6 +179,61 @@ def prueba_versiones_del_lago() -> None:
     assert out["close"].tolist() == [1.15] and out["available_at_ms"].isna().all() and "version_anterior_descartada" in c["excluidas"]
 
 
+def prueba_mayor_diferencia() -> None:
+    """El ejemplo del informe mide la revision de un valor ya cerrado; solo si ninguno cambia recurre a las versiones abiertas y
+    lo marca (`solo_cerradas` false)."""
+    corte = ms(11, 1)
+    t = ms(10, 27)
+    # A: 1.00 abierta, 1.10 y 1.15 cerradas; B: 1.00 abierta -> 2.00 cerrada (cambio grande, pero dentro de la barra)
+    filas = [("A", t, 1, 1.2, 0.9, 1.00, 5, t + 12 * H, None), ("A", t, 1, 1.2, 0.9, 1.10, 5, t + DIA + 10 * MIN, None),
+             ("A", t, 1, 1.2, 0.9, 1.15, 5, t + 3 * DIA, None),
+             ("B", t, 1, 2.2, 0.9, 1.00, 5, t + 12 * H, None), ("B", t, 1, 2.2, 0.9, 2.00, 5, t + DIA + 10 * MIN, None)]
+    c = L.nuevo_contador(len(filas))
+    L.limpiar_ohlcv(marco(filas), corte, "recepcion", c)
+    v = c["detalle"]["version_mayor_diferencia"]
+    assert (v["instrument"], v["close_primera"], v["close_ultima"], v["solo_cerradas"]) == ("A", 1.10, 1.15, True), v
+    assert v["recv_primera_ms"] == t + DIA + 10 * MIN and abs(v["dif_relativa"] - 0.05 / 1.10) < 1e-12, v
+    # una version recibida justo al cierre ya cuenta como cerrada (el mismo criterio que version_en_curso)
+    v = L.mayor_diferencia(marco([("A", t, 1, 1.2, 0.9, 1.00, 5, t + DIA, None), ("A", t, 1, 1.2, 0.9, 1.10, 5, t + 2 * DIA, None)]))
+    assert v["close_primera"] == 1.00 and v["solo_cerradas"], v
+    # sin cambios entre versiones cerradas: la cifra incluye las abiertas y lo dice
+    solo_abiertas = [("B", t, 1, 2.2, 0.9, 1.00, 5, t + 12 * H, None), ("B", t, 1, 2.2, 0.9, 2.00, 5, t + DIA + 10 * MIN, None),
+                     ("B", t, 1, 2.2, 0.9, 2.00, 5, t + 2 * DIA, None)]
+    c = L.nuevo_contador(len(solo_abiertas))
+    L.limpiar_ohlcv(marco(solo_abiertas), corte, "recepcion", c)
+    v = c["detalle"]["version_mayor_diferencia"]
+    assert (v["close_primera"], v["close_ultima"], v["solo_cerradas"]) == (1.00, 2.00, False), v
+    assert L.mayor_diferencia(marco(solo_abiertas)) is None
+    from . import informe
+
+    texto = "\n".join(informe._detalle_limpieza({"table_id": "x", "limpieza": c, "carga": {}}))
+    assert "Ninguna barra del dataset cambia" in texto and "todavia abierta" in texto, texto
+    c["detalle"]["version_mayor_diferencia"] = {**v, "solo_cerradas": True}
+    texto = "\n".join(informe._detalle_limpieza({"table_id": "x", "limpieza": c, "carga": {}}))
+    assert "con la barra ya cerrada, en una barra" in texto and "todavia abierta" not in texto, texto
+
+
+def prueba_hash_de_codigo(tmp: str) -> None:
+    """`codigo_sha256` no depende de los finales de linea: el mismo arbol con LF y con CRLF da los mismos hashes, que son los
+    del contenido LF."""
+    import exportar_market_history as E
+
+    ref = E.hash_codigo()
+    for eol, nombre in ((b"\n", "arbol_lf"), (b"\r\n", "arbol_crlf")):
+        raiz = os.path.join(tmp, nombre)
+        for rel in ref:
+            destino = os.path.join(raiz, *rel.split("/"))
+            os.makedirs(os.path.dirname(destino), exist_ok=True)
+            with open(os.path.join(HERE, *rel.split("/")), "rb") as f:
+                texto = f.read().replace(b"\r\n", b"\n")
+            with open(destino, "wb") as f:
+                f.write(texto.replace(b"\n", eol))
+        assert E.hash_codigo(raiz) == ref, (nombre, E.hash_codigo(raiz), ref)
+    lf, crlf = (os.path.join(tmp, n, "exportar_market_history.py") for n in ("arbol_lf", "arbol_crlf"))
+    assert sha256_fichero(lf) != sha256_fichero(crlf), "las dos copias deben diferir en bytes"
+    assert F.sha256_codigo(lf) == F.sha256_codigo(crlf) == sha256_fichero(lf) == ref["exportar_market_history.py"]
+
+
 # ---------------------------------------------------------------------------------------------------------------------
 # Volcado sintetico del lago
 # ---------------------------------------------------------------------------------------------------------------------
@@ -500,6 +555,28 @@ def prueba_validacion_detecta_lookahead(tmp: str) -> None:
     assert any("posterior al corte" in p for p in r["problemas"]), r["problemas"]
 
 
+def prueba_guardia_default_lag(tmp: str) -> None:
+    """En un dataset con default_lag_ms (modo cierre) ninguna otra tabla puede traer filas sin available_at_ms: el motor les
+    aplicaria ese lag. Volcado con performance sin `_recv_ts` -> salida 1 y nada escrito; el control, completo -> salida 0."""
+    for caso in ("perf_sin_disp", "control"):
+        datos = datos_lago()
+        if caso == "perf_sin_disp":
+            for _, filas in datos["market.performance"]:
+                for r in filas:
+                    r.pop("_recv_ts", None)
+        dump, raiz = os.path.join(tmp, "guardia_" + caso), os.path.join(tmp, "guardia_salida_" + caso)
+        escribir_volcado(dump, datos)
+        cod, out, err = cli("--lago", dump, "--corte", CORTE, "--disponibilidad-ohlcv", "cierre", "--salida-raiz", raiz,
+                            runs=os.path.join(tmp, "guardia_runs_" + caso))
+        if caso == "perf_sin_disp":
+            assert cod == 1 and "INCONSISTENTES en lago_performance" in err and "default_lag_ms" in err, (cod, out, err)
+            assert not os.path.exists(raiz) or os.listdir(raiz) == [], os.listdir(raiz)
+            assert not os.path.exists(os.path.join(tmp, "guardia_runs_" + caso)), "no se registra ninguna ejecucion"
+        else:
+            assert cod == 0, (cod, out, err)
+            assert os.path.isfile(os.path.join(raiz, "lago_cierre_c20261101", "manifest.json")), os.listdir(raiz)
+
+
 def prueba_integracion_con_descarga(tmp: str) -> None:
     """Los dos pasos encajan: el volcado que escribe descarga_lago.py (contra su qn falso) lo lee el exportador."""
     import descarga_lago as D
@@ -538,9 +615,12 @@ def correr() -> None:
         prueba_hash_contra_el_motor(tmp)
         prueba_limpieza()
         prueba_versiones_del_lago()
+        prueba_mayor_diferencia()
+        prueba_hash_de_codigo(tmp)
         prueba_validacion_detecta_lookahead(tmp)
         prueba_exportar_binance(tmp)
         prueba_exportar_lago(tmp)
+        prueba_guardia_default_lag(tmp)
         prueba_integracion_con_descarga(tmp)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

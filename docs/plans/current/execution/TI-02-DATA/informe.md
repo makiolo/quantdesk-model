@@ -14,8 +14,8 @@
 ## Dataset `binance_c20261101`
 
 - Corte (`--corte`): **2026-11-01** (2026-11-01T00:00:00Z); `dataset_hash` `sha256:d765d56037f700bd2550a9a2ae9d53fbd2406afd7cddb82bbfeaf2a56670b744`.
-- Fecha de la ejecucion (UTC): 2026-11-09T00:36:43Z; duracion 21.4 s; zona del mercado `UTC`.
-- Comando exacto: `.venv/Scripts/python -X utf8 scripts/exportar_market_history.py --binance --corte 2026-11-01 --nombre binance_c20261101`
+- Fecha de la ejecucion (UTC): 2026-11-09T01:03:36Z; duracion 31.0 s; zona del mercado `UTC`.
+- Comando exacto: `.venv/Scripts/python -X utf8 scripts/exportar_market_history.py --binance --corte 2026-11-01 --nombre binance_c20261101 --sobrescribir`
 
 - Fuente `binance__klines_1d` (TI-13-PUB, clase D-11 `real`, licencia CC BY-NC-SA 4.0): sha256 del dataset `586cf9f0e2d8e0a51fa9aeedbb85e1dfc1b8605e8adb468de17f0a9f8b8e5561`, descarga 2026-11-08T10:24:52Z, parquet `adaptadores.train.parquet` `1ff49bfbde6a241f...` (30406 filas).
 - Fuente `binance__klines_1h` (TI-13-PUB, clase D-11 `real`, licencia CC BY-NC-SA 4.0): sha256 del dataset `8ceda17e11e6a442211d33697673820dcb7e394b0ed3d5f2e919a333373776b4`, descarga 2026-11-08T10:45:23Z, parquet `adaptadores.train.parquet` `8abb105833b48e7f...` (389813 filas).
@@ -27,8 +27,8 @@
 
 ### Reproducibilidad
 
-- Segunda exportacion con el mismo origen y corte (2026-11-09T00:37:06Z): `dataset_hash` `sha256:d765d56037f700bd2550a9a2ae9d53fbd2406afd7cddb82bbfeaf2a56670b744` -> **igual**; manifest, parquet y procedencia **byte a byte identicos**.
-- Comando de la repeticion: `.venv/Scripts/python -X utf8 scripts/exportar_market_history.py --binance --corte 2026-11-01 --nombre binance_c20261101 --salida-raiz E:/quantdesk-lab/tmp/TI-02-DATA/repeticion --repeticion`
+- Segunda exportacion con el mismo origen y corte (2026-11-09T01:04:34Z): `dataset_hash` `sha256:d765d56037f700bd2550a9a2ae9d53fbd2406afd7cddb82bbfeaf2a56670b744` -> **igual**; manifest, parquet y procedencia **byte a byte identicos**.
+- Comando de la repeticion: `.venv/Scripts/python -X utf8 scripts/exportar_market_history.py --binance --corte 2026-11-01 --nombre binance_c20261101 --salida-raiz E:/quantdesk-lab/tmp/TI-02-DATA/deuda/repeticion --repeticion`
 
 ### Limpieza
 
@@ -64,8 +64,8 @@
 ## Dataset `lago_c20261101`
 
 - Corte (`--corte`): **2026-11-01** (2026-11-01T00:00:00Z); `dataset_hash` `sha256:cce80ad2bb82374e71a92ba27c4f9a89ad6ad0d7901697b853c15e24b39f70ea`.
-- Fecha de la ejecucion (UTC): 2026-11-09T00:35:54Z; duracion 3.1 s; zona del mercado `UTC`.
-- Comando exacto: `.venv/Scripts/python -X utf8 scripts/exportar_market_history.py --lago E:/quantdesk-lab/data/lago/2026-11-08 --corte 2026-11-01 --nombre lago_c20261101`
+- Fecha de la ejecucion (UTC): 2026-11-09T01:03:41Z; duracion 3.8 s; zona del mercado `UTC`.
+- Comando exacto: `.venv/Scripts/python -X utf8 scripts/exportar_market_history.py --lago E:/quantdesk-lab/data/lago/2026-11-08 --corte 2026-11-01 --nombre lago_c20261101 --sobrescribir`
 
 - Fuente lago de qn: base `http://192.168.1.48:8790/qn`, entorno `main`, rango pedido 2024-10-01 a 2026-11-07, volcado del 2026-11-08T20:02:46Z (223 ficheros), manifest sha256 `74ca1e9181d88dfb9e25180c0b31cf1fcf2a078bc0b1de67ef178b2cb4af4bf6`; `descarga_lago.py` sha256 `1989f121885c0ca3...` (python 3.12.3).
   - Paso 1, en mini con `QN_URLS`, `QN_TOKEN` y `QN_ENV=main` en el entorno: `python3 descarga_lago.py --desde 2024-10-01 --hasta 2026-11-07 --salida <directorio>`; despues se copia a `E:\quantdesk-lab\data\lago\2026-11-08` y el paso 2 es el comando exacto de arriba.
@@ -79,8 +79,8 @@
 
 ### Reproducibilidad
 
-- Segunda exportacion con el mismo origen y corte (2026-11-09T00:35:57Z): `dataset_hash` `sha256:cce80ad2bb82374e71a92ba27c4f9a89ad6ad0d7901697b853c15e24b39f70ea` -> **igual**; manifest, parquet y procedencia **byte a byte identicos**.
-- Comando de la repeticion: `.venv/Scripts/python -X utf8 scripts/exportar_market_history.py --lago E:/quantdesk-lab/data/lago/2026-11-08 --corte 2026-11-01 --nombre lago_c20261101 --salida-raiz E:/quantdesk-lab/tmp/TI-02-DATA/repeticion --repeticion`
+- Segunda exportacion con el mismo origen y corte (2026-11-09T01:04:39Z): `dataset_hash` `sha256:cce80ad2bb82374e71a92ba27c4f9a89ad6ad0d7901697b853c15e24b39f70ea` -> **igual**; manifest, parquet y procedencia **byte a byte identicos**.
+- Comando de la repeticion: `.venv/Scripts/python -X utf8 scripts/exportar_market_history.py --lago E:/quantdesk-lab/data/lago/2026-11-08 --corte 2026-11-01 --nombre lago_c20261101 --salida-raiz E:/quantdesk-lab/tmp/TI-02-DATA/deuda/repeticion --repeticion`
 
 ### Limpieza
 
@@ -99,7 +99,7 @@
   - Todas las barras empiezan en la rejilla UTC de su intervalo.
   - Campo `date` frente a `_ts` (se usa `_ts`): 15893 filas con `date`, 140 cambian de dia UTC; desfase `date - _ts` en segundos (valor: filas) {'0': 12511, '3600': 3382}; ejemplos [{'instrument': 'AUDCAD', '_ts': '2026-10-18T23:00:00Z', 'date': '2026-10-19'}, {'instrument': 'AUDCAD', '_ts': '2026-10-19T23:00:00Z', 'date': '2026-10-20'}, {'instrument': 'AUDCAD', '_ts': '2026-10-20T23:00:00Z', 'date': '2026-10-21'}].
   - `_recv_ts` presente en 15893 de 15893 filas, entre 2026-11-01T03:01:49Z y 2026-11-08T04:00:56Z, anterior a `_ts` en 0; `_ts` con resolucion inferior al ms en 0.
-  - Mayor cambio de `close` entre la primera y la ultima version recibida de una barra del dataset: CADCHF 1 h 2026-10-23T16:00:00Z pasa de 0.58912 (recibida 2026-11-01T03:02:08Z) a 0.58906 (recibida 2026-11-04T05:01:04Z), 0.01%: el valor que llega despues no es el visible al cierre.
+  - Mayor cambio de `close` entre la primera y la ultima version recibida con la barra ya cerrada, en una barra del dataset: CADCHF 1 h 2026-10-23T16:00:00Z pasa de 0.58912 (recibida 2026-11-01T03:02:08Z) a 0.58906 (recibida 2026-11-04T05:01:04Z), 0.01%. Es una revision de un valor ya cerrado: el valor que llega despues no es el visible al cierre.
   - Causa del desfase de 3600 s: aparece solo en `_ts` de 2026-10-18T23:00:00Z a 2026-10-23T21:00:00Z y vale 0 de 2026-10-26T00:00:00Z en adelante; el horario de verano britanico (BST) acabo el 2026-10-25. `date` es la hora local de Londres escrita como si fuera UTC (los cambios de dia son las barras de las 00:00 de Londres, que en BST son las 23:00 UTC del dia anterior) y `_ts` es el instante UTC correcto: se usa `_ts`.
 - `lago_rates_quotes`: 18128 filas de origen = 15363 finales + 2765 excluidas (posterior_al_corte_por_disponibilidad 462, posterior_al_corte_por_fecha 464, version_posterior_descartada 1839).
   - Versiones repetidas de una misma barra o dato (version_posterior_descartada): 1839 descartadas, 507 con valores distintos de la conservada.
@@ -136,8 +136,8 @@
 ## Dataset `lago_cierre_c20261101`
 
 - Corte (`--corte`): **2026-11-01** (2026-11-01T00:00:00Z); `dataset_hash` `sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356`.
-- Fecha de la ejecucion (UTC): 2026-11-09T00:36:04Z; duracion 5.8 s; zona del mercado `UTC`.
-- Comando exacto: `.venv/Scripts/python -X utf8 scripts/exportar_market_history.py --lago E:/quantdesk-lab/data/lago/2026-11-08 --corte 2026-11-01 --disponibilidad-ohlcv cierre --nombre lago_cierre_c20261101`
+- Fecha de la ejecucion (UTC): 2026-11-09T01:03:50Z; duracion 7.8 s; zona del mercado `UTC`.
+- Comando exacto: `.venv/Scripts/python -X utf8 scripts/exportar_market_history.py --lago E:/quantdesk-lab/data/lago/2026-11-08 --corte 2026-11-01 --disponibilidad-ohlcv cierre --nombre lago_cierre_c20261101 --sobrescribir`
 
 - Fuente lago de qn: base `http://192.168.1.48:8790/qn`, entorno `main`, rango pedido 2024-10-01 a 2026-11-07, volcado del 2026-11-08T20:02:46Z (223 ficheros), manifest sha256 `74ca1e9181d88dfb9e25180c0b31cf1fcf2a078bc0b1de67ef178b2cb4af4bf6`; `descarga_lago.py` sha256 `1989f121885c0ca3...` (python 3.12.3).
   - Paso 1, en mini con `QN_URLS`, `QN_TOKEN` y `QN_ENV=main` en el entorno: `python3 descarga_lago.py --desde 2024-10-01 --hasta 2026-11-07 --salida <directorio>`; despues se copia a `E:\quantdesk-lab\data\lago\2026-11-08` y el paso 2 es el comando exacto de arriba.
@@ -151,8 +151,8 @@
 
 ### Reproducibilidad
 
-- Segunda exportacion con el mismo origen y corte (2026-11-09T00:36:09Z): `dataset_hash` `sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356` -> **igual**; manifest, parquet y procedencia **byte a byte identicos**.
-- Comando de la repeticion: `.venv/Scripts/python -X utf8 scripts/exportar_market_history.py --lago E:/quantdesk-lab/data/lago/2026-11-08 --corte 2026-11-01 --disponibilidad-ohlcv cierre --nombre lago_cierre_c20261101 --salida-raiz E:/quantdesk-lab/tmp/TI-02-DATA/repeticion --repeticion`
+- Segunda exportacion con el mismo origen y corte (2026-11-09T01:04:46Z): `dataset_hash` `sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356` -> **igual**; manifest, parquet y procedencia **byte a byte identicos**.
+- Comando de la repeticion: `.venv/Scripts/python -X utf8 scripts/exportar_market_history.py --lago E:/quantdesk-lab/data/lago/2026-11-08 --corte 2026-11-01 --disponibilidad-ohlcv cierre --nombre lago_cierre_c20261101 --salida-raiz E:/quantdesk-lab/tmp/TI-02-DATA/deuda/repeticion --repeticion`
 
 ### Limpieza
 
@@ -172,7 +172,7 @@
   - Todas las barras empiezan en la rejilla UTC de su intervalo.
   - Campo `date` frente a `_ts` (se usa `_ts`): 15893 filas con `date`, 140 cambian de dia UTC; desfase `date - _ts` en segundos (valor: filas) {'0': 12511, '3600': 3382}; ejemplos [{'instrument': 'AUDCAD', '_ts': '2026-10-18T23:00:00Z', 'date': '2026-10-19'}, {'instrument': 'AUDCAD', '_ts': '2026-10-19T23:00:00Z', 'date': '2026-10-20'}, {'instrument': 'AUDCAD', '_ts': '2026-10-20T23:00:00Z', 'date': '2026-10-21'}].
   - `_recv_ts` presente en 15893 de 15893 filas, entre 2026-11-01T03:01:49Z y 2026-11-08T04:00:56Z, anterior a `_ts` en 0; `_ts` con resolucion inferior al ms en 0.
-  - Mayor cambio de `close` entre la primera y la ultima version recibida de una barra del dataset: CADCHF 1 h 2026-10-23T16:00:00Z pasa de 0.58912 (recibida 2026-11-01T03:02:08Z) a 0.58906 (recibida 2026-11-04T05:01:04Z), 0.01%: el valor que llega despues no es el visible al cierre.
+  - Mayor cambio de `close` entre la primera y la ultima version recibida con la barra ya cerrada, en una barra del dataset: CADCHF 1 h 2026-10-23T16:00:00Z pasa de 0.58912 (recibida 2026-11-01T03:02:08Z) a 0.58906 (recibida 2026-11-04T05:01:04Z), 0.01%. Es una revision de un valor ya cerrado: el valor que llega despues no es el visible al cierre.
   - Causa del desfase de 3600 s: aparece solo en `_ts` de 2026-10-18T23:00:00Z a 2026-10-23T21:00:00Z y vale 0 de 2026-10-26T00:00:00Z en adelante; el horario de verano britanico (BST) acabo el 2026-10-25. `date` es la hora local de Londres escrita como si fuera UTC (los cambios de dia son las barras de las 00:00 de Londres, que en BST son las 23:00 UTC del dia anterior) y `_ts` es el instante UTC correcto: se usa `_ts`.
 - `lago_rates_quotes`: 18128 filas de origen = 15363 finales + 2765 excluidas (posterior_al_corte_por_disponibilidad 462, posterior_al_corte_por_fecha 464, version_posterior_descartada 1839).
   - Versiones repetidas de una misma barra o dato (version_posterior_descartada): 1839 descartadas, 507 con valores distintos de la conservada.
@@ -210,8 +210,8 @@
 ## Dataset `lago_c20261107`
 
 - Corte (`--corte`): **2026-11-07** (2026-11-07T00:00:00Z); `dataset_hash` `sha256:853d8e8a111005d87836732266d800bb52a44f200eaba3599440d91b555c1495`.
-- Fecha de la ejecucion (UTC): 2026-11-09T00:36:14Z; duracion 4.1 s; zona del mercado `UTC`.
-- Comando exacto: `.venv/Scripts/python -X utf8 scripts/exportar_market_history.py --lago E:/quantdesk-lab/data/lago/2026-11-08 --corte 2026-11-07 --nombre lago_c20261107`
+- Fecha de la ejecucion (UTC): 2026-11-09T01:03:56Z; duracion 5.0 s; zona del mercado `UTC`.
+- Comando exacto: `.venv/Scripts/python -X utf8 scripts/exportar_market_history.py --lago E:/quantdesk-lab/data/lago/2026-11-08 --corte 2026-11-07 --nombre lago_c20261107 --sobrescribir`
 
 - Fuente lago de qn: base `http://192.168.1.48:8790/qn`, entorno `main`, rango pedido 2024-10-01 a 2026-11-07, volcado del 2026-11-08T20:02:46Z (223 ficheros), manifest sha256 `74ca1e9181d88dfb9e25180c0b31cf1fcf2a078bc0b1de67ef178b2cb4af4bf6`; `descarga_lago.py` sha256 `1989f121885c0ca3...` (python 3.12.3).
   - Paso 1, en mini con `QN_URLS`, `QN_TOKEN` y `QN_ENV=main` en el entorno: `python3 descarga_lago.py --desde 2024-10-01 --hasta 2026-11-07 --salida <directorio>`; despues se copia a `E:\quantdesk-lab\data\lago\2026-11-08` y el paso 2 es el comando exacto de arriba.
@@ -225,8 +225,8 @@
 
 ### Reproducibilidad
 
-- Segunda exportacion con el mismo origen y corte (2026-11-09T00:36:21Z): `dataset_hash` `sha256:853d8e8a111005d87836732266d800bb52a44f200eaba3599440d91b555c1495` -> **igual**; manifest, parquet y procedencia **byte a byte identicos**.
-- Comando de la repeticion: `.venv/Scripts/python -X utf8 scripts/exportar_market_history.py --lago E:/quantdesk-lab/data/lago/2026-11-08 --corte 2026-11-07 --nombre lago_c20261107 --salida-raiz E:/quantdesk-lab/tmp/TI-02-DATA/repeticion --repeticion`
+- Segunda exportacion con el mismo origen y corte (2026-11-09T01:04:52Z): `dataset_hash` `sha256:853d8e8a111005d87836732266d800bb52a44f200eaba3599440d91b555c1495` -> **igual**; manifest, parquet y procedencia **byte a byte identicos**.
+- Comando de la repeticion: `.venv/Scripts/python -X utf8 scripts/exportar_market_history.py --lago E:/quantdesk-lab/data/lago/2026-11-08 --corte 2026-11-07 --nombre lago_c20261107 --salida-raiz E:/quantdesk-lab/tmp/TI-02-DATA/deuda/repeticion --repeticion`
 
 ### Limpieza
 
@@ -238,7 +238,7 @@
   - Campo `date` frente a `_ts` (se usa `_ts`): 14769 filas con `date`, 0 cambian de dia UTC; desfase `date - _ts` en segundos (valor: filas) {'0': 14769}; ejemplos [].
   - `_recv_ts` presente en 14769 de 14769 filas, entre 2026-11-01T23:02:23Z y 2026-11-07T23:01:15Z, anterior a `_ts` en 2; `_ts` con resolucion inferior al ms en 0.
   - Barras con open o close fuera de [low, high] (se conservan, no se corrigen): 607; desvio relativo al cierre, mediana 9.7e-05 y maximo 0.00469.
-  - Mayor cambio de `close` entre la primera y la ultima version recibida de una barra del dataset: AUDCHF 1 d 2026-11-02T00:00:00Z pasa de 0.57289 (recibida 2026-11-02T23:04:41Z) a 0.579681 (recibida 2026-11-03T23:01:26Z), 1.19%: el valor que llega despues no es el visible al cierre.
+  - Ninguna barra del dataset cambia de `close` entre versiones recibidas con la barra ya cerrada. La cifra siguiente incluye versiones recibidas con la barra todavia abierta, asi que mide la evolucion dentro de la barra y no una revision posterior al cierre: AUDCHF 1 d 2026-11-02T00:00:00Z pasa de 0.57289 (recibida 2026-11-02T23:04:41Z) a 0.579681 (recibida 2026-11-03T23:01:26Z), 1.19%.
 - `lago_ohlcv_1h`: 15893 filas de origen = 9978 finales + 5915 excluidas (version_en_curso 2340, version_posterior_descartada 3575).
   - Versiones repetidas de una misma barra o dato (version_posterior_descartada): 3575 descartadas, 255 con valores distintos de la conservada, diferencia relativa maxima de `close` 0.00112.
   - Ejemplos de filas excluidas: version_en_curso: [{'instrument': 'AUDCAD', 'ts_ms': 1793577600000}, {'instrument': 'AUDCAD', 'ts_ms': 1793581200000}]; version_posterior_descartada: [{'instrument': 'USDJPY', 'ts_ms': 1792414800000}, {'instrument': 'USDJPY', 'ts_ms': 1792656000000}].
@@ -247,7 +247,7 @@
   - Todas las barras empiezan en la rejilla UTC de su intervalo.
   - Campo `date` frente a `_ts` (se usa `_ts`): 15893 filas con `date`, 140 cambian de dia UTC; desfase `date - _ts` en segundos (valor: filas) {'0': 12511, '3600': 3382}; ejemplos [{'instrument': 'AUDCAD', '_ts': '2026-10-18T23:00:00Z', 'date': '2026-10-19'}, {'instrument': 'AUDCAD', '_ts': '2026-10-19T23:00:00Z', 'date': '2026-10-20'}, {'instrument': 'AUDCAD', '_ts': '2026-10-20T23:00:00Z', 'date': '2026-10-21'}].
   - `_recv_ts` presente en 15893 de 15893 filas, entre 2026-11-01T03:01:49Z y 2026-11-08T04:00:56Z, anterior a `_ts` en 0; `_ts` con resolucion inferior al ms en 0.
-  - Mayor cambio de `close` entre la primera y la ultima version recibida de una barra del dataset: AUDJPY 1 h 2026-11-05T14:00:00Z pasa de 110.961 (recibida 2026-11-05T14:00:59Z) a 110.334 (recibida 2026-11-05T15:01:36Z), 0.57%: el valor que llega despues no es el visible al cierre.
+  - Mayor cambio de `close` entre la primera y la ultima version recibida con la barra ya cerrada, en una barra del dataset: AUDJPY 1 h 2026-11-05T23:00:00Z pasa de 109.022 (recibida 2026-11-06T00:01:41Z) a 109.144 (recibida 2026-11-06T05:01:28Z), 0.11%. Es una revision de un valor ya cerrado: el valor que llega despues no es el visible al cierre.
   - Causa del desfase de 3600 s: aparece solo en `_ts` de 2026-10-18T23:00:00Z a 2026-10-23T21:00:00Z y vale 0 de 2026-10-26T00:00:00Z en adelante; el horario de verano britanico (BST) acabo el 2026-10-25. `date` es la hora local de Londres escrita como si fuera UTC (los cambios de dia son las barras de las 00:00 de Londres, que en BST son las 23:00 UTC del dia anterior) y `_ts` es el instante UTC correcto: se usa `_ts`.
 - `lago_rates_quotes`: 18128 filas de origen = 16289 finales + 1839 excluidas (version_posterior_descartada 1839).
   - Versiones repetidas de una misma barra o dato (version_posterior_descartada): 1839 descartadas, 507 con valores distintos de la conservada.

@@ -77,12 +77,12 @@ def corte_a_ms(corte: str) -> int:
     return (d - date(1970, 1, 1)).days * 86_400_000
 
 
-def hash_codigo() -> dict:
+def hash_codigo(raiz: str = HERE) -> dict:
     """SHA-256 del exportador y de los modulos que deciden el contenido del dataset (no los selftests, el informe ni la
-    validacion): la procedencia del codigo que lo produjo."""
-    lib = os.path.join(HERE, "exportar_market_history_lib")
-    ficheros = [os.path.join(HERE, "exportar_market_history.py")] + [os.path.join(lib, n) for n in ("formato.py", "fuentes.py", "limpieza.py")]
-    return {os.path.relpath(f, HERE).replace(os.sep, "/"): F.sha256_fichero(f) for f in ficheros}
+    validacion): la procedencia del codigo que lo produjo. Con CRLF normalizado a LF, para que no dependa del checkout."""
+    lib = os.path.join(raiz, "exportar_market_history_lib")
+    ficheros = [os.path.join(raiz, "exportar_market_history.py")] + [os.path.join(lib, n) for n in ("formato.py", "fuentes.py", "limpieza.py")]
+    return {os.path.relpath(f, raiz).replace(os.sep, "/"): F.sha256_codigo(f) for f in ficheros}
 
 
 def versiones() -> dict:

@@ -139,6 +139,13 @@ def sha256_fichero(ruta: str) -> str:
     return h.hexdigest()
 
 
+def sha256_codigo(ruta: str) -> str:
+    """SHA-256 de un fichero de codigo con CRLF normalizado a LF: el mismo valor en un checkout con LF o con CRLF (el del blob
+    LF de git)."""
+    with open(ruta, "rb") as f:
+        return hashlib.sha256(f.read().replace(b"\r\n", b"\n")).hexdigest()
+
+
 def escribir_json(ruta: str, doc: dict) -> None:
     with open(ruta, "w", encoding="utf-8", newline="\n") as f:
         f.write(json.dumps(doc, ensure_ascii=False, indent=2) + "\n")

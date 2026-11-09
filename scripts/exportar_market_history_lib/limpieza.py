@@ -72,10 +72,15 @@ def elegir_version(df: pd.DataFrame, clave: list, orden_por: list, conservar: st
     return quitar(df, descarta, motivo, c)
 
 
-def mayor_diferencia(df: pd.DataFrame) -> dict | None:
-    """La barra cuyo `close` mas cambia entre su primera y su ultima version recibida (con todas las versiones, tambien las
-    abiertas): ejemplo de que el valor que llega despues no es el visible al cierre. None si ninguna barra cambia."""
-    s = df.dropna(subset=["recv_ms"]).sort_values(["recv_ms", "orden"], kind="mergesort")
+def mayor_diferencia(df: pd.DataFrame, solo_cerradas: bool = True) -> dict | None:
+    """La barra cuyo `close` mas cambia entre su primera y su ultima version recibida. Con `solo_cerradas` (por defecto) solo
+    cuentan las versiones recibidas con la barra ya cerrada (el mismo criterio que `version_en_curso`): es la revision de un
+    valor cerrado, lo que el proxy de disponibilidad al cierre no ve. Sin el, tambien las abiertas (incluye la evolucion de la
+    barra antes de cerrar). None si ninguna barra cambia."""
+    s = df.dropna(subset=["recv_ms"])
+    if solo_cerradas:
+        s = s[como_mascara(s["recv_ms"] >= s["ts_ms"] + s["interval_ms"])]
+    s = s.sort_values(["recv_ms", "orden"], kind="mergesort")
     g = s.groupby(CLAVE_OHLCV, sort=True)
     a, b = g[["close", "recv_ms"]].first(), g[["close", "recv_ms"]].last()
     rel = (b["close"] - a["close"]).abs() / a["close"]
@@ -84,7 +89,7 @@ def mayor_diferencia(df: pd.DataFrame) -> dict | None:
     k = rel.idxmax()
     return {"instrument": k[0], "interval_ms": int(k[1]), "ts_ms": int(k[2]), "close_primera": float(a.loc[k, "close"]),
             "recv_primera_ms": int(a.loc[k, "recv_ms"]), "close_ultima": float(b.loc[k, "close"]),
-            "recv_ultima_ms": int(b.loc[k, "recv_ms"]), "dif_relativa": float(rel.max())}
+            "recv_ultima_ms": int(b.loc[k, "recv_ms"]), "dif_relativa": float(rel.max()), "solo_cerradas": solo_cerradas}
 
 
 def limpiar_ohlcv(df: pd.DataFrame, corte_ms: int, duplicados: str, c: dict, calendario: str | None = None,
@@ -114,7 +119,9 @@ def limpiar_ohlcv(df: pd.DataFrame, corte_ms: int, duplicados: str, c: dict, cal
     cierre = df["ts_ms"] + df["interval_ms"]
     valores = list(NUMERICAS)
     if duplicados == "recepcion" and df["recv_ms"].notna().any():
-        c["detalle"]["version_mayor_diferencia"] = mayor_diferencia(df[(df["ts_ms"] + df["interval_ms"]) <= corte_ms])  # barras del dataset
+        del_dataset = df[(df["ts_ms"] + df["interval_ms"]) <= corte_ms]  # barras que pueden entrar en el dataset
+        # entre versiones ya cerradas; si ninguna cambia, con las abiertas y marcado (`solo_cerradas` false) para el informe
+        c["detalle"]["version_mayor_diferencia"] = mayor_diferencia(del_dataset) or mayor_diferencia(del_dataset, False)
         df = quitar(df, df["recv_ms"].isna(), "sin_marca_de_recepcion", c)
         df = quitar(df, df["recv_ms"] < cierre.loc[df.index], "version_en_curso", c)
         df = elegir_version(df, CLAVE_OHLCV, ["recv_ms", "orden"], "primera", valores, c, "version_posterior_descartada")
