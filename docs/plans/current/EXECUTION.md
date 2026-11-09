@@ -485,6 +485,8 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
 - La raíz avisó a las 02:48 a los dos autores (TS-00-BENCH y TI-12-MT5 fase B): en la franja se escribe código,
   documentación y análisis, pero no se ejecuta nada pesado.
 - La corrida de FX del banco que ya estaba en marcha puede terminar; la de Binance pasa a después de las 05:30.
+- `quantdesk-ab` cerró la franja antes, a las 04:59. A las 05:00 la raíz avisó a los dos autores de que retomaran:
+  pruebas del publicador y corrida de Binance.
 
 ### TI-02-DATA-DEUDA — CERRADA (2026-11-09)
 
