@@ -757,3 +757,20 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
   - El 1d local de los 193 continuos se está descargando en `E:/quantdesk-lab/data/mt5/continuo_1d_20261109`.
   - El autor prepara los grupos con nombre, el mapeo del S&P 500, las reglas de sesión por clase y la estimación de
     volumen.
+- **Fase C: descarga local 1d del universo continuo**, lanzada por la raíz con `--descargar --periodos d1 --desde
+  1990-01-01 --hasta 2026-11-09 --sin-credenciales`. Resultado: rc 0, 193 series, 547 226 filas y 40,5 MiB en
+  `E:/quantdesk-lab/data/mt5/continuo_1d_20261109`, con hash `sha256:a503bb75…`.
+
+  | Clase | Series | Filas | Primera vela (mediana) | Primera vela (mín.) |
+  |---|---|---|---|---|
+  | Forex | 60 | 338 639 | 2007-08 | 1989-12 |
+  | Metales y energía | 16 | 43 263 | 2016-08 | 1998-04 |
+  | Índices | 23 | 73 525 | 2012-08 | 2007-01 |
+  | Crypto | 94 | 91 799 | 2024-12 | 2011-03 |
+
+- **Backend:** su Bento sólo copia a ClickHouse los símbolos de 6 letras. Al laboratorio le basta con el lago; si los
+  paneles necesitan las otras clases, lo decide el usuario.
+- **Límite del backend:** unos 180 000 objetos por sondeo de 5 minutos. Se ha pedido al autor una opción de ritmo en el
+  publicador.
+- **TS-00-BENCH:** Toto sobre FX terminado (28 pares, 1400 orígenes, 0 fallos, 15 178 s de pared). Toto sobre
+  Binance, en curso.
