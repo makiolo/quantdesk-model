@@ -612,3 +612,17 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
   implementa en el mismo intento 128.
 - Pregunta a network: qué devuelve `latest` cuando el filtro de tags no tiene datos. Hoy el publicador trata un 404 como
   «sin datos».
+- Commit `9ed66d4`, la opción (b):
+  - en 1d, `ts` es las 00:00 UTC de la sesión D (la fecha de Nueva York del cierre real) y `date` es D;
+  - la barra sólo se publica pasado el cierre real;
+  - las pruebas cubren los dos horarios de EE. UU., el cambio de marzo, el momento antes y después del cierre, y que
+    cada barra tenga `ts` a las 00:00 de su `date`, de lunes a viernes.
+  - Verificación de la raíz sobre `git archive 9ed66d4`: los dos selftests ok, la suite 11 OK y ninguna función de
+    órdenes. Intento BDD 128 aceptado.
+- El código del publicador queda completo. Falta, por fuera:
+  1. que el usuario decida el nombre del topic nuevo y el plan de corte;
+  2. que network despliegue el esquema y el backend su parte;
+  3. que el usuario abra el terminal, para el inventario y `--simular`;
+  4. el token;
+  5. la primera ejecución real;
+  6. que el usuario registre la tarea, sustituyendo antes `TOPIC_POR_DECIDIR`.
