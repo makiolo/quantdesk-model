@@ -103,6 +103,16 @@ def inicio_s(cfg: Config, intervalo: str, ahora_s: int, desde: dt.date | None) -
     return D.a_s(dt.date.fromisoformat(v))
 
 
+def cota_inicial_s(cfg: Config, intervalo: str, ahora_s: int, desde: dt.date | None) -> int:
+    """Limite inferior de la comprobacion de la cola: la fecha inicial configurada. Con una ventana relativa (dias) la
+    fecha inicial avanza con el reloj; se le resta un dia de margen para no perder el principio de una carga inicial
+    hecha el dia anterior (a lo sumo se publica un dia mas de historia, nunca un duplicado)."""
+    cota = inicio_s(cfg, intervalo, ahora_s, desde)
+    if desde is None and isinstance(cfg.inicio[intervalo], int):
+        cota -= 86400
+    return cota
+
+
 def barras_cerradas(term, simbolo: str, info: dict, intervalo: str, regla: HR.Regla, desde_s: int, ahora_s: int) -> dict:
     """Velas cerradas de MT5 con apertura UTC en [desde_s, ...) y cierre <= ahora_s, en orden. Arrays numpy."""
     periodo, paso = INTERVALOS[intervalo], PASO_S[intervalo]
@@ -123,8 +133,15 @@ def barras_cerradas(term, simbolo: str, info: dict, intervalo: str, regla: HR.Re
 
 def objeto(cfg: Config, simbolo_tag: str, intervalo: str, b: dict, i: int) -> tuple[dict, dict, int]:
     ts_ms = int(b["ts_utc_ms"][i])
-    instante = dt.datetime.fromtimestamp(ts_ms / 1000, tz=dt.timezone.utc)
-    fecha = instante.strftime("%Y-%m-%d") if intervalo == "1d" else instante.strftime("%Y-%m-%dT%H:%M:%SZ")
+    if intervalo == "1d":
+        # Fecha de la SESION (decision de la raiz): la del cierre de Nueva York de la vela. La sesion que abre el domingo a
+        # las 21:00/22:00 UTC cierra el lunes a las 17:00 NY y lleva la fecha del lunes. `ts` sigue siendo la apertura
+        # real en UTC; la disponibilidad (ts + 1 d) es el cierre real.
+        cierre = ts_ms // 1000 + PASO_S["1d"]
+        ny = cierre + int(HR.NUEVA_YORK.desfase(np.array([cierre]))[0])
+        fecha = dt.datetime.fromtimestamp(ny, tz=dt.timezone.utc).strftime("%Y-%m-%d")
+    else:
+        fecha = dt.datetime.fromtimestamp(ts_ms / 1000, tz=dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     obj = {"open": float(b["open"][i]), "high": float(b["high"][i]), "low": float(b["low"][i]),
            "close": float(b["close"][i]), "volume": float(b["tick_volume"][i]), "date": fecha}
     if cfg.fuente_en_objeto:
@@ -164,11 +181,10 @@ def serie(cfg: Config, cliente: Q.ClienteQn | None, term, simbolo: str, simbolo_
             en_qn = {}
             for f in filas:
                 en_qn.setdefault(Q.ts_ns_de(f["ts"]) // 1_000_000, f)
-            # Hueco = vela de MT5 que falta en qn ENTRE velas que qn si tiene. Lo anterior a la primera de la cola que qn
-            # tiene es historia que nunca se pidio (fecha inicial), no un hueco. La cola tiene `ventana` + 1 velas: la
-            # ultima de la ventana anterior a la que fallo siempre esta en qn y sirve de ancla.
-            primera = min(en_qn) if en_qn else ultimo
-            huecos = [i for i in cola if primera < int(ts[i]) and int(ts[i]) not in en_qn]
+            # Hueco = vela de MT5 de la cola que falta en qn y no es anterior a la fecha inicial configurada (lo anterior
+            # nunca se pidio). Cubre tambien una primera ventana de carga inicial que fallo por el principio.
+            cota_ms = cota_inicial_s(cfg, intervalo, ahora_s, desde) * 1000
+            huecos = [i for i in cola if int(ts[i]) >= cota_ms and int(ts[i]) not in en_qn]
             r["huecos_cola_rellenados"] = len(huecos)
             r["revisiones_detectadas"] = sum(
                 1 for i in cola if int(ts[i]) in en_qn and not _igual(en_qn[int(ts[i])], objeto(cfg, simbolo_tag, intervalo, b, i)[1]))

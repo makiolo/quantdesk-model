@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import collections
 import contextlib
+import datetime as dt
 import glob
 import io
 import json
@@ -108,12 +109,18 @@ def prueba_codificacion() -> None:
             raise AssertionError(malo)
     assert Q.ts_ns_de(1_793_000_000_123_456_789) == 1_793_000_000_123_456_789
     assert Q.ts_ns_de("2026-11-04T10:00:00.000123Z") == utc(2026, 11, 4, 10) * 10 ** 9 + 123_000
-    # Fechas en UTC de verdad: 1d como fecha y el resto con Z.
+    # 1d: `date` es la fecha de la sesion (cierre de Nueva York); el resto, la apertura en UTC con Z.
     cfg = N.Config(urls=[])
-    b = {"ts_utc_ms": np.array([utc(2026, 11, 3, 22) * 1000]), "open": np.array([1.0]), "high": np.array([1.0]),
-         "low": np.array([1.0]), "close": np.array([1.0]), "tick_volume": np.array([7])}
-    assert N.objeto(cfg, "EURUSD", "1d", b, 0)[1]["date"] == "2026-11-03"
-    assert N.objeto(cfg, "EURUSD", "1h", b, 0)[1]["date"] == "2026-11-03T22:00:00Z"
+    abre = [utc(2026, 10, 25, 21), utc(2026, 11, 1, 22), utc(2026, 11, 3, 22), utc(2026, 3, 5, 22), utc(2026, 3, 8, 21)]
+    b = {"ts_utc_ms": np.array(abre) * 1000, "open": np.ones(5), "high": np.ones(5), "low": np.ones(5),
+         "close": np.ones(5), "tick_volume": np.full(5, 7)}
+    fechas = [N.objeto(cfg, "EURUSD", "1d", b, i)[1]["date"] for i in range(5)]
+    # Domingo 21:00 UTC (verano de EE. UU.) -> lunes; domingo 22:00 UTC (invierno) -> lunes; martes 22:00 -> miercoles;
+    # cambio de marzo: la sesion del viernes 6 abre el jueves a las 22:00 UTC (invierno) y la del lunes 9 el domingo a
+    # las 21:00 UTC (ya en verano).
+    assert fechas == ["2026-10-26", "2026-11-02", "2026-11-04", "2026-03-06", "2026-03-09"], fechas
+    assert N.objeto(cfg, "EURUSD", "1d", b, 0)[2] == utc(2026, 10, 25, 21) * 10 ** 9  # ts: apertura real en UTC
+    assert N.objeto(cfg, "EURUSD", "1h", b, 2)[1]["date"] == "2026-11-03T22:00:00Z"
     assert N.objeto(cfg, "EURUSD", "1h", b, 0)[0] == {"symbol": "EURUSD", "interval": "1h", "source": "mt5"}
 
 
@@ -196,6 +203,10 @@ def prueba_extremo_a_extremo(ejecutar, raiz: str) -> dict:
         for (sim, iv), tss in q.items():
             assert tss[-1] // 10 ** 9 + N.PASO_S[iv] <= ahora1, (sim, iv)  # la vela en curso no se publica
         assert max(q[("EURUSD", "1h")]) == utc(2026, 11, 4, 11) * 10 ** 9
+        for o in alm.objetos:  # 1d: fecha de la sesion, siempre de lunes a viernes y posterior al dia UTC de la apertura
+            if o["tags"]["interval"] == "1d":
+                d = dt.date.fromisoformat(o["obj"]["date"])
+                assert d.weekday() < 5 and d == dt.datetime.fromtimestamp(o["ts"] // 10 ** 9, tz=dt.timezone.utc).date() + dt.timedelta(days=1), o
         reg = b.ultimo()
         assert reg["qn"].get("fallos_red", 0) > 0 and reg["qn"].get("http_503") == 3, reg["qn"]  # replica caida y 503
         ids1 = {(o["tags"]["symbol"], o["tags"]["interval"], o["ts"]): o["batch_id"] for o in alm.objetos}
@@ -236,6 +247,24 @@ def prueba_extremo_a_extremo(ejecutar, raiz: str) -> dict:
             flota2.parar()
         ids2 = {(o["tags"]["symbol"], o["tags"]["interval"], o["ts"]): o["batch_id"] for o in alm2.objetos}
         assert ids2 == ids1
+        # 5b. Falla la primera ventana de una carga inicial por el principio: la siguiente ejecucion rellena esos huecos
+        # (la cola se acota por la fecha inicial configurada, no por la primera vela publicada).
+        alm3 = QF.Almacen(TOKEN)
+        flota3 = QF.Flota(alm3, vivas=1, caida=False)
+        try:
+            primeras = esperado(ahora1)[("USDJPY", "5m")][:2]
+            alm3.fallar_ts.update(primeras)
+            c, out = b(flota3, ahora1)
+            q3 = en_qn(alm3)[("USDJPY", "5m")]
+            assert c == 1 and not set(primeras) & set(q3) and len(q3) == 14, (c, len(q3))
+            alm3.fallar_ts.clear()
+            c, out = b(flota3, ahora1)
+            s = next(x for x in b.ultimo()["series"] if x["simbolo"] == "USDJPY" and x["intervalo"] == "5m")
+            assert c == 0 and s["huecos_cola_rellenados"] == 2, s
+            assert en_qn(alm3) == esperado(ahora1)
+            sin_duplicados(alm3)
+        finally:
+            flota3.parar()
         # 6. Revision: si qn tiene una vela de la cola con otro valor, se cuenta y no se republica.
         with alm.cerrojo:
             o = max((x for x in alm.objetos if x["tags"]["symbol"] == "EURUSD" and x["tags"]["interval"] == "1d"),

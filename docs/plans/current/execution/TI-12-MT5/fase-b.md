@@ -49,20 +49,23 @@ Cambios de esta fase en el extractor:
 - Última vela de la serie: `GET {base}/api/v1/topics/market.ohlcv/latest?env=main&symbol=…&interval=…&source=mt5`.
 - Cola: `GET {base}/api/v1/objects/market.ohlcv?env=main&<tags>&from=<ns>&to=<ns>&limit=…`. Respuesta JSON
   `{columns, rows}`, con `ts` en ns o en RFC 3339; se aceptan los dos.
+- **A confirmar por network** (lo traslada la raíz): el formato de la respuesta de `/objects` (`ts` y las columnas del
+  objeto dentro de `rows`) y que `latest` y `schema` acepten `env` como parámetro. Están tomados del README de
+  qn-server, no de un servidor real.
 
 **Marcas de tiempo.**
-- `ts` en ns es la apertura de la vela en UTC, ya convertida desde la hora del servidor.
-- `date` en UTC de verdad: `YYYY-MM-DD` en 1d y `YYYY-MM-DDTHH:MM:SSZ` en el resto. No se copia la hora de Londres con
-  Z falsa del backend.
+- `ts` en ns es la apertura real de la vela en UTC, ya convertida desde la hora del servidor.
+- `date` en 1h, 5m y 1m: la apertura en UTC, `YYYY-MM-DDTHH:MM:SSZ`. No se copia la hora de Londres con Z falsa del
+  backend.
+- `date` en 1d: la **fecha de la sesión** (decisión de la raíz), `YYYY-MM-DD`.
+  - La vela diaria del bróker es la sesión de Nueva York: la del día D abre el D-1 a las 21:00 o 22:00 UTC y cierra el D
+    a las 17:00 NY.
+  - `date` es la fecha en Nueva York de ese cierre. Por ejemplo, la sesión que abre el domingo a las 21:00 UTC lleva la
+    fecha del lunes.
+  - Así coincide con cómo se nombra la sesión diaria de FX y con la etiqueta de yfinance.
+  - `ts` sigue siendo la apertura real y la disponibilidad (`ts` + 1 d) es el cierre real: no hay look-ahead.
+  - Que los cubos `@1d` de qn agrupen por el día UTC de `ts` lo lleva la raíz a network junto con el cambio de esquema.
 - `volume` es el `tick_volume` de MT5, porque el FX no tiene volumen real.
-
-**Choque con el esquema en 1d** (está en las dudas).
-- La vela diaria del bróker es la sesión de Nueva York: la del día D del servidor abre el D-1 a las 21:00 o 22:00 UTC.
-- Con `ts` en esa apertura y `date` en UTC, la vela de la sesión D sale con `date` = D-1, y los cubos `@1d` de qn
-  (00:00-00:00 UTC) la meten en el día D-1.
-- Alternativas que tiene que elegir la raíz:
-  - `date` = fecha de la sesión, que no es «UTC de verdad»;
-  - construir velas 1d alineadas a UTC agregando las de 1h; habría una vela mínima el domingo.
 
 **Seguro mientras no cambie el esquema.**
 - Antes de publicar, el publicador lee `GET …/topics/market.ohlcv/schema`. Si el topic no declara los tres tags, sale
@@ -85,7 +88,10 @@ Cambios de esta fase en el extractor:
    - **Velas de MT5.** Sólo las CERRADAS (apertura + intervalo <= ahora). La vela en curso, que el terminal sí
      devuelve, no se publica nunca.
    - **Cola.** De las `ventana`+1 velas de MT5 con ts <= `L`, se pregunta a qn cuáles tiene.
-     - Las que faltan **entre** velas que qn sí tiene son huecos de una ejecución anterior cortada y se publican.
+     - Las que faltan y no son anteriores a la fecha inicial configurada son huecos de una ejecución anterior cortada y
+       se publican. Lo anterior a la fecha inicial nunca se pidió.
+     - Con una ventana relativa (5m y 1m, «últimos 30 días»), la fecha inicial avanza con el reloj. Por eso la cota
+       lleva un día de margen: a lo sumo se publica un día más de historia, nunca un duplicado.
      - Las que tienen otro contenido se cuentan como revisiones.
    - **Publicación.** En orden de `ts`, por ventanas de 64 velas, cada ventana con 8 hilos. La siguiente ventana no
      empieza si la anterior no entró entera: si algo falla, la serie se para.
@@ -93,7 +99,9 @@ Cambios de esta fase en el extractor:
 **Por qué no quedan huecos.**
 - Una ejecución cortada sólo puede dejar huecos dentro de su última ventana, y `L` cae en esa ventana.
 - La siguiente ejecución mira las `ventana`+1 velas anteriores a `L` y los rellena.
-- La vela anterior a la ventana fallida siempre está en qn y sirve de ancla. No hay registro local de progreso: manda qn.
+- Esto vale también si falla la primera ventana de una carga inicial por su principio: esas velas no son anteriores a
+  la fecha inicial, así que cuentan como huecos.
+- No hay registro local de progreso: manda qn.
 
 **Por qué no hay duplicados.**
 - Nunca se reenvía una vela que qn ya tiene, ni las de la cola ni las de antes de `L`.
@@ -211,6 +219,12 @@ ni terminal. Comprueba:
   El fin de semana se informa como hueco de mercado.
 - Fallo a mitad de una ventana (503 persistente en una vela): el hueco queda por detrás de `L`. La siguiente ejecución lo
   rellena (`huecos_cola_rellenados` = 1), con igualdad exacta y sin duplicados.
+- Primera ventana de una carga inicial que falla por el principio (las dos primeras velas de 5m): la siguiente ejecución
+  las rellena (`huecos_cola_rellenados` = 2), con igualdad exacta y sin duplicados.
+- `date` de 1d es la fecha de la sesión:
+  - la que abre el domingo a las 21:00 UTC lleva la del lunes;
+  - también alrededor de los cambios de hora de marzo y noviembre;
+  - todas las publicadas caen de lunes a viernes.
 - Un qn nuevo recibe los mismos `batch_id` para las mismas velas.
 - Una revisión se detecta y no se republica.
 - Candado vivo: sale con 0 sin peticiones. Candado caducado: se recupera.
