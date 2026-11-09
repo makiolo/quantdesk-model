@@ -323,3 +323,28 @@ dd43fa94, HANDOFF relevo 1 (`674344b`). Ningún hijo vivo; ningún WIP sin commi
   sólo en esas cuatro líneas. Pasa al revisor.
 - Revisión 2: Codex está al 100 % semanal (reinicio el 2026-11-11), así que revisa el mismo Opus 5.5 de la revisión 1,
   retomado con su contexto. Intento BDD 122; salida en `E:/quantdesk-lab/tmp/TI-02-DATA/revision2/revision.md`.
+- **Revisión 2 (Opus, BDD 122): ACEPTAR.** Los 6 hallazgos están resueltos y comprobados sobre los datos publicados.
+  - El revisor reexportó los tres datasets del lago y Binance con `906f73e`: salen byte a byte iguales.
+  - Su recálculo independiente desde el crudo cuadra fila a fila: 0 faltan, 0 sobran, 0 distintas.
+  - Probó a mano la guardia de `default_lag_ms`: un volcado en modo `cierre` con filas de otra tabla sin
+    disponibilidad sale con código 1 y no escribe nada.
+- Deuda BAJA aceptada por la raíz; no bloquea porque no incumple la ficha ni toca datos. Pasa a backlog §TI-02-DATA:
+  1. la guardia de `default_lag_ms` (`exportar_market_history.py:204-212`) no tiene prueba en el selftest;
+  2. `codigo_sha256` y `script_sha256` dependen de los finales de línea: hay que normalizar CRLF a LF antes de hashear;
+  3. la línea «Mayor cambio de close» del informe incluye versiones recibidas con la barra aún abierta y exagera las
+     revisiones;
+  4. observación sin cambio: con el redondeo hacia arriba, una versión recibida menos de 1 ms antes del cierre cuenta
+     como cerrada.
+- Incidente menor del revisor: usó un heredoc de Bash en su directorio `revision2/`. No tocó el repo ni los datasets.
+
+### Cierre de TI-02-DATA (2026-11-09)
+
+- **CERRADA** con el commit `906f73e`. Intentos BDD:
+  - autor: 119 rechazado, 121 aceptado;
+  - revisión: 120 RECHAZAR, 122 ACEPTAR.
+- Aceptación de la ficha:
+  - cada dataset congelado carga en `quant-data` (`data_py describe` verifica los hashes) sin violaciones de look-ahead;
+  - dos exportaciones con el mismo corte dan los mismos bytes;
+  - universos con sesgo de supervivencia declarado (D-07).
+- TS-00-BENCH queda desbloqueada en cuanto a datos. Falta que el usuario elija entre los precios proxy del lago y
+  sólo los estrictos (pregunta abierta).

@@ -35,11 +35,9 @@ Recuperación en frío (RECOVERY-20261108-133223): la raíz anterior murió haci
 - TI-12-MT5 espera la puerta 2; TI-09-ARCH, las cifras de TI-01-INV (puerta 1).
 
 ## En vuelo
-- TI-02-DATA, revisión 2 por Opus 5.5 (agente ad2a961ca0dcf22c3 de la sesión dd43fa94; intento BDD 122) sobre
-  `906f73e` (intento 2 del autor, BDD 121, verificado por la raíz). Salida en
-  `E:/quantdesk-lab/tmp/TI-02-DATA/revision2/revision.md`. Si esta sesión muere, relanzar la revisión desde EXECUTION,
-  «TI-02-DATA — intento 2». La revisión 1 rechazó (BDD 120); token 34 revocado.
-- Pregunta al usuario pendiente: qué precios del lago usa TS-00-BENCH, el proxy `cierre` (recomendado) o sólo el estricto.
+- Nada. TI-02-DATA está CERRADA (`906f73e`, revisión 2 ACEPTAR, EXECUTION «Cierre de TI-02-DATA»).
+- Pregunta al usuario pendiente: qué precios del lago usa TS-00-BENCH, el proxy `cierre` (recomendado) o sólo el
+  estricto. TS-00-BENCH no se lanza hasta que conteste.
 
 ## Decisiones
 - Raíz (A12): los 4 hallazgos de la revisión 2 de TI-13-PUB se corrigen en un intento 3 (los dos ALTA son requisitos
