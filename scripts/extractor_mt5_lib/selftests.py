@@ -22,6 +22,7 @@ import pyarrow.parquet as pq
 from . import descarga as D
 from . import falso as FA
 from . import hora as HR
+from . import inventario as INV
 from . import lectura as LT
 from . import simbolos as SB
 
@@ -281,14 +282,15 @@ def prueba_enganche() -> None:
         assert falso.llamadas["initialize"] == 0  # no se intenta arrancar el terminal
     else:
         raise AssertionError("se engancho sin terminal")
-    ti, ai = LT.enganchar(env, cred)  # con credenciales: initialize(path) y login
+    ti, ai = LT.enganchar(env, cred, en_ejecucion=lambda: False)  # con credenciales: initialize(path) y login
     assert ti.connected and ai is not None and falso.llamadas["login"] == 1
     malo = LT.Credenciales(CRED["path"], CRED["login"], "otra-clave-9", CRED["server"])
     env, falso = envoltura(ahora_utc_s=utc(2026, 11, 4, 15), abierto=False)
     try:
-        LT.enganchar(env, malo)
-    except LT.TerminalNoDisponible as e:
-        assert all(v not in str(e) for v in malo.valores()) and not falso.iniciado
+        LT.enganchar(env, malo, en_ejecucion=lambda: False)
+    except LT.TerminalNoDisponible as e:  # -6 de una clave mala: se reintenta acotado y se rinde con el mismo error
+        assert all(v not in str(e) for v in malo.valores()) and not falso.iniciado and "-6" in str(e)
+        assert falso.llamadas["login"] == len(LT.REINTENTO["esperas_s"]) + 1
     else:
         raise AssertionError("login con clave mala")
     env, _ = envoltura(ahora_utc_s=utc(2026, 11, 4, 15), abierto=True)
@@ -312,6 +314,120 @@ def prueba_enganche() -> None:
         pass
 
 
+def prueba_arranque_robusto(esperas: list) -> None:
+    """Entrega 6: terminal ya abierto con la misma cuenta (sin login), con otra cuenta (login sin initialize(path)),
+    fallos -6 / -10005 transitorios al arrancar, espera a `connected` y rendicion acotada."""
+    cred = LT.Credenciales(**CRED)
+    # a) Abierto y conectado con la misma cuenta: initialize() sin ruta y nada mas.
+    env, falso = envoltura(ahora_utc_s=utc(2026, 11, 4, 15), abierto=True)
+    ti, ai = LT.enganchar(env, cred, en_ejecucion=lambda: True)
+    assert ti.connected and falso.llamadas["login"] == 0 and falso.llamadas["initialize con ruta"] == 0
+    # a2) Recien abierto con la misma cuenta y aun sin conexion: sin login, solo la espera acotada a `connected`.
+    del esperas[:]
+    env, falso = envoltura(ahora_utc_s=utc(2026, 11, 4, 15), abierto=True, retraso_conexion=2)
+    ti, ai = LT.enganchar(env, cred, en_ejecucion=lambda: True)
+    assert ti.connected and falso.llamadas["login"] == 0 and esperas == [1.0, 1.0], (dict(falso.llamadas), esperas)
+    # b) Abierto con otra cuenta: login sobre esa sesion, sin initialize(path).
+    env, falso = envoltura(ahora_utc_s=utc(2026, 11, 4, 15), abierto=True,
+                           cuenta_abierta={"login": 55500011, "server": "Otro-Servidor"})
+    ti, ai = LT.enganchar(env, cred, en_ejecucion=lambda: True)
+    assert falso.llamadas["login"] == 1 and falso.llamadas["initialize con ruta"] == 0 and LT.misma_cuenta(ai, cred)
+    # c) Cerrado y ocupado: initialize(path) da -6 y luego -10005, y la conexion tarda dos sondeos.
+    del esperas[:]
+    env, falso = envoltura(ahora_utc_s=utc(2026, 11, 4, 15), abierto=False, fallos_arranque=(-6, -10005),
+                           retraso_conexion=2)
+    ti, ai = LT.enganchar(env, cred, en_ejecucion=lambda: False)
+    assert ti.connected and falso.llamadas["initialize con ruta"] == 3 and falso.llamadas["login"] == 1
+    assert esperas == [1.0, 2.0, 1.0, 1.0], esperas  # 2 del initialize y 2 de esperar la conexion
+    # c2) Abierto con otra cuenta y el login da -10005 una vez: se reintenta el login.
+    del esperas[:]
+    env, falso = envoltura(ahora_utc_s=utc(2026, 11, 4, 15), abierto=True, fallos_arranque=(-10005,),
+                           cuenta_abierta={"login": 55500011, "server": "Otro-Servidor"})
+    ti, ai = LT.enganchar(env, cred, en_ejecucion=lambda: True)
+    assert falso.llamadas["login"] == 2 and esperas == [1.0] and LT.misma_cuenta(ai, cred), (dict(falso.llamadas), esperas)
+    # d) -6 persistente: 5 intentos y el mismo error de siempre, sin secretos en el mensaje.
+    env, falso = envoltura(ahora_utc_s=utc(2026, 11, 4, 15), abierto=False, fallos_arranque=(-6,) * 20)
+    try:
+        LT.enganchar(env, cred, en_ejecucion=lambda: False)
+    except LT.TerminalNoDisponible as e:
+        assert "Authorization failed" in str(e) and falso.llamadas["initialize con ruta"] == 5 and not falso.iniciado
+        assert all(v not in str(e) for v in cred.valores())
+    else:
+        raise AssertionError("-6 persistente")
+    # e) Nunca conecta: espera acotada y BLOQUEADO.
+    env, falso = envoltura(ahora_utc_s=utc(2026, 11, 4, 15), abierto=False, retraso_conexion=10_000)
+    try:
+        LT.enganchar(env, cred, en_ejecucion=lambda: False)
+    except LT.TerminalNoDisponible as e:
+        assert "sin conexion" in str(e)
+    else:
+        raise AssertionError("sin conexion")
+    # f) Un error no transitorio (ruta mala) no se reintenta.
+    env, falso = envoltura(ahora_utc_s=utc(2026, 11, 4, 15), abierto=False)
+    try:
+        LT.enganchar(env, LT.Credenciales("C:/otra/ruta.exe", CRED["login"], CRED["password"], CRED["server"]),
+                     en_ejecucion=lambda: False)
+    except LT.TerminalNoDisponible:
+        assert falso.llamadas["initialize con ruta"] == 1
+    else:
+        raise AssertionError("ruta mala")
+
+
+def prueba_reintentos_de_datos(esperas: list) -> None:
+    """Entrega 6: -1 'Call failed' mientras el terminal sincroniza se reintenta (5 intentos, esperas 1-8 s); agotados,
+    el mismo ErrorTerminal de siempre; un None con RES_S_OK es "sin datos"; la biseccion no se confunde."""
+    env, falso = envoltura(ahora_utc_s=utc(2026, 11, 6, 15), fallos_call_failed=2)
+    env.initialize()
+    del esperas[:]
+    v = D.consultar(env, "copy_rates_range", "USDJPY", env.TIMEFRAME_H1, utc(2026, 11, 2), utc(2026, 11, 3))
+    assert len(v) == 25 and esperas == [1.0, 2.0] and falso.llamadas["call failed"] == 2, (len(v), esperas)
+    env, falso = envoltura(ahora_utc_s=utc(2026, 11, 6, 15), fallos_call_failed=50)
+    env.initialize()
+    del esperas[:]
+    try:
+        D.consultar(env, "copy_rates_range", "USDJPY", env.TIMEFRAME_H1, utc(2026, 11, 2), utc(2026, 11, 3))
+    except D.ErrorTerminal as e:
+        assert "Call failed" in str(e) and esperas == [1.0, 2.0, 4.0, 8.0] and falso.llamadas["copy_rates_range"] == 5
+    else:
+        raise AssertionError("agotado")
+
+    class Stub:  # error no transitorio y None con RES_S_OK
+        RES_S_OK = 1
+
+        def __init__(self, err):
+            self.err, self.n = err, 0
+
+        def copy_rates_range(self, *a):
+            self.n += 1
+            return None
+
+        def last_error(self):
+            return self.err
+
+    s = Stub((-2, "Terminal: Invalid params"))
+    del esperas[:]
+    try:
+        D.consultar(s, "copy_rates_range", "X")
+    except D.ErrorTerminal:
+        assert s.n == 1 and esperas == []
+    else:
+        raise AssertionError("no transitorio")
+    s = Stub((1, "Success"))
+    assert D.consultar(s, "copy_rates_range", "X") is None and s.n == 1
+    # Biseccion de la profundidad con el terminal sincronizando: el mismo resultado que sin fallos.
+    limpio, _ = envoltura(ahora_utc_s=utc(2026, 11, 6, 15))
+    limpio.initialize()
+    sucio, falso = envoltura(ahora_utc_s=utc(2026, 11, 6, 15), fallos_call_failed=3)
+    sucio.initialize()
+    regla = HR.regla_desde_texto("ny+7")
+    for per in ("m1", "d1"):
+        a = INV.profundidad(limpio, "USDJPY", per, 5_000_000, regla)
+        b = INV.profundidad(sucio, "USDJPY", per, 5_000_000, regla)
+        assert a == b and a["velas"] > 1, (per, a, b)
+    assert falso.llamadas["call failed"] == 6  # 3 por periodo
+    assert INV._una(limpio, "USDJPY", limpio.TIMEFRAME_D1, 10 ** 6) is None  # fuera de la historia: vacio = no hay
+
+
 # ---------------------------------------------------------------------------------------------------------------------
 # Extremo a extremo con el CLI
 # ---------------------------------------------------------------------------------------------------------------------
@@ -323,15 +439,18 @@ class Banco:
         self.ejecutar, self.raiz, self.salidas, self.falsos = ejecutar, raiz, [], []
 
     def __call__(self, argv: list[str], datos: str = "data", ahora=utc(2026, 11, 6, 15), **kw_falso) -> tuple[int, str]:
+        abierto = kw_falso.pop("abierto", False)  # terminal ya abierto por el usuario (y lo que ve la lista de procesos)
+
         def fabrica():
-            falso = FA.MT5Falso(ahora_utc_s=ahora, trampas=PROHIBIDAS, cuenta=dict(CRED), abierto=False, **kw_falso)
+            falso = FA.MT5Falso(ahora_utc_s=ahora, trampas=PROHIBIDAS, cuenta=dict(CRED), abierto=abierto, **kw_falso)
             self.falsos.append(falso)
             return LT.TerminalSoloLectura(falso)
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             codigo = self.ejecutar(argv, fabrica=fabrica, cargar_cred=lambda a: LT.Credenciales(**CRED),
                                    reloj=lambda: float(ahora), data=os.path.join(self.raiz, datos),
-                                   runs=os.path.join(self.raiz, "runs"), guarda=lambda: None)
+                                   runs=os.path.join(self.raiz, "runs"), guarda=lambda: None,
+                                   en_ejecucion=lambda: abierto)
         self.salidas.append(buf.getvalue())
         return codigo, buf.getvalue()
 
@@ -448,6 +567,21 @@ def prueba_extremo_a_extremo(ejecutar, raiz: str) -> dict:
     c, out = b(["--descargar", "--simbolos", "USDJPY", "--periodos", "d1", "--desde", "2026-07-01", "--hasta", "2026-07-03",
                 "--salida", os.path.join(data, "X")], ahora=utc(2026, 7, 15, 15), regla="fija:+2")
     assert c == 2 and "--regla" in out, out
+    # Entrega 6, terminal real: arranque con -6 y -10005 y datos con 'Call failed' mientras sincroniza. Misma descarga
+    # (mismo hash que A) y mismo inventario que sin fallos.
+    c, out = b(args + ["--salida", os.path.join(raiz, "data3", "F")], datos="data3", fallos_call_failed=2,
+               fallos_arranque=(-6, -10005))
+    f = b.falsos[-1]
+    assert c == 0 and f.llamadas["call failed"] > 0 and f.llamadas["initialize con ruta"] == 3, (out, dict(f.llamadas))
+    assert _manifest(os.path.join(raiz, "data3", "F"))["hash_conjunto"] == ma["hash_conjunto"]
+    c, out = b(["--inventario"], datos="data4", fallos_call_failed=2, fallos_arranque=(-10005,))
+    assert c == 0 and b.falsos[-1].llamadas["call failed"] > 0, out
+    with open(glob.glob(os.path.join(raiz, "data4", "inventario", "inventario_*.json"))[0], encoding="utf-8") as fi:
+        assert json.load(fi)["simbolos"] == inv["simbolos"]
+    # Terminal ya abierto y conectado con la cuenta del fichero: se engancha sin login.
+    c, out = b(["--inventario"], datos="data5", abierto=True)
+    f = b.falsos[-1]
+    assert c == 0 and f.llamadas["login"] == 0 and f.llamadas["initialize con ruta"] == 0, (out, dict(f.llamadas))
     # Terminal cerrado y sin credenciales: BLOQUEADO sin arrancarlo.
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
@@ -473,19 +607,24 @@ def prueba_extremo_a_extremo(ejecutar, raiz: str) -> dict:
 
 
 def correr(ejecutar) -> int:
+    esperas: list = []  # los reintentos no duermen en el selftest: se apuntan las esperas pedidas
+    previa = LT.configurar_reintentos(esperas_s=(1.0, 2.0, 4.0, 8.0), dormir=esperas.append, espera_conexion_s=5)
     pruebas = [prueba_lista_negra_estatica, prueba_lista_blanca_dinamica, prueba_api_falso_igual_al_real,
                prueba_hora_cambios_de_marzo_y_noviembre, prueba_hora_contra_zoneinfo, prueba_deteccion_del_desfase,
-               prueba_sufijos_y_nombres, prueba_enganche]
+               prueba_sufijos_y_nombres, prueba_enganche, lambda: prueba_arranque_robusto(esperas),
+               lambda: prueba_reintentos_de_datos(esperas)]
+    nombres = [getattr(p, "__name__", "") for p in pruebas[:-2]] + ["prueba_arranque_robusto", "prueba_reintentos_de_datos"]
     raiz = os.path.join(TMP, f"selftest_{os.getpid()}")
     os.makedirs(raiz, exist_ok=True)
     try:
-        for p in pruebas:
+        for p, nombre in zip(pruebas, nombres):
             r = p()
-            print(f"ok  {p.__name__}" + (f" ({r} nombres rechazados)" if isinstance(r, int) else ""))
+            print(f"ok  {nombre}" + (f" ({r} nombres rechazados)" if isinstance(r, int) else ""))
         r = prueba_extremo_a_extremo(ejecutar, raiz)
         print(f"ok  prueba_extremo_a_extremo ({r['trozos']} trozos; {r['ficheros_revisados']} ficheros sin secretos; "
               f"hash {r['hash'][:23]}...)")
     finally:
+        LT.configurar_reintentos(**previa)
         shutil.rmtree(raiz, ignore_errors=True)
         shutil.rmtree(os.path.join(TMP, "selftest_cred"), ignore_errors=True)
     print("selftest ok")

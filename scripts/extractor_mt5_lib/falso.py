@@ -85,7 +85,18 @@ class MT5Falso:
     """Se usa como modulo: `TerminalSoloLectura(MT5Falso(...))`."""
 
     def __init__(self, ahora_utc_s: int, regla: str = "ny+7", fallar_tras: int | None = None, abierto: bool = True,
-                 cuenta: dict | None = None, trampas: tuple = (), maxbars: int = 5_000_000, simbolos=None) -> None:
+                 cuenta: dict | None = None, trampas: tuple = (), maxbars: int = 5_000_000, simbolos=None,
+                 fallos_call_failed: int = 0, fallos_arranque: tuple = (), retraso_conexion: int = 0,
+                 cuenta_abierta: dict | None = None) -> None:
+        """Fallos del terminal real que reproduce (entrega 6):
+        - `fallos_call_failed` = N: las N primeras consultas de datos de cada (funcion, simbolo, periodo) devuelven None con
+          (-1, 'Terminal: Call failed'), como un terminal que aun sincroniza esa historia.
+        - `fallos_arranque`: codigos (-6 'Authorization failed', -10005 'IPC timeout') que devuelven, por orden, las
+          llamadas a initialize(path=...) y login() de un terminal ocupado.
+        - `retraso_conexion` = N: tras el login (o al engancharse a un terminal ya abierto), las N primeras
+          terminal_info() dicen connected=False.
+        - `cuenta_abierta`: la cuenta con la que esta abierto un terminal que ya estaba en marcha (por defecto, la del
+          fichero de credenciales)."""
         self.__version__ = VERSION
         for n, v in globals().items():
             if n.isupper() and isinstance(v, int):
@@ -94,6 +105,11 @@ class MT5Falso:
         self.ahora_utc_s, self.regla = int(ahora_utc_s), HR.regla_desde_texto(regla)
         self.fallar_tras, self.abierto, self.maxbars = fallar_tras, abierto, maxbars
         self.cuenta = cuenta or {"login": 11223344, "password": "pw-falsa", "server": "Falso-Demo", "path": "C:/Falso/terminal64.exe"}
+        self.cuenta_abierta = dict(cuenta_abierta) if cuenta_abierta else {k: self.cuenta[k] for k in ("login", "server")}
+        self._cuenta_activa = dict(self.cuenta_abierta)
+        self.fallos_call_failed, self._call_failed = int(fallos_call_failed), collections.Counter()
+        self.fallos_arranque = list(fallos_arranque)
+        self.retraso_conexion, self._pendiente_conexion = int(retraso_conexion), 0
         self.simbolos = dict(SIMBOLOS if simbolos is None else simbolos)
         self.iniciado = self.sesion = False
         self.consultas_datos = 0
@@ -115,20 +131,40 @@ class MT5Falso:
         self.llamadas["initialize"] += 1
         if login is not None or password is not None or server is not None:
             self.llamadas_prohibidas.append("initialize con credenciales")
+        if path is not None:
+            self.llamadas["initialize con ruta"] += 1
         if path is not None and path != self.cuenta["path"]:
             self._error = (RES_E_FAIL, "Terminal: path not found")
+            return False
+        if path is not None and self._fallo_arranque():
             return False
         if not self.abierto and path is None:
             self._error = (-10003, "IPC initialize failed, MetaTrader 5 x64 not found")
             return False
         self.iniciado = True
         self.sesion = self.abierto  # un terminal ya abierto por el usuario tiene sesion
+        if self.abierto:  # recien abierto: puede tardar en conectar con el servidor
+            self._pendiente_conexion = self.retraso_conexion
+        self._cuenta_activa = dict(self.cuenta_abierta)
+        self._error = (RES_S_OK, "Success")
+        return True
+
+    def _fallo_arranque(self) -> bool:
+        if not self.fallos_arranque:
+            return False
+        codigo = self.fallos_arranque.pop(0)
+        self._error = (codigo, {-6: "Terminal: Authorization failed", -10005: "IPC timeout"}.get(codigo, "Terminal: error"))
         return True
 
     def login(self, login, password=None, server=None, timeout=60000):
         self.llamadas["login"] += 1
+        if self._fallo_arranque():
+            return False
         ok = self.iniciado and login == self.cuenta["login"] and password == self.cuenta["password"] and server == self.cuenta["server"]
         self.sesion = ok
+        if ok:
+            self._cuenta_activa = {k: self.cuenta[k] for k in ("login", "server")}
+            self._pendiente_conexion = self.retraso_conexion
         self._error = (RES_S_OK, "Success") if ok else (RES_E_AUTH_FAILED, "Authorization failed")
         return ok
 
@@ -145,8 +181,11 @@ class MT5Falso:
     def terminal_info(self):
         if not self.iniciado:
             return None
+        conectado = self.sesion and self._pendiente_conexion == 0
+        if self._pendiente_conexion > 0:
+            self._pendiente_conexion -= 1
         v = dict.fromkeys(CAMPOS["TerminalInfo"], 0)
-        v.update(connected=self.sesion, build=5000, maxbars=self.maxbars, company="Broker Falso Ltd.", name="Broker Falso MT5",
+        v.update(connected=conectado, build=5000, maxbars=self.maxbars, company="Broker Falso Ltd.", name="Broker Falso MT5",
                  language="Spanish", path="C:/Falso", data_path="C:/Users/falso/AppData", commondata_path="C:/Users/falso/Common",
                  mqid=False, trade_allowed=True)
         return TerminalInfo(**v)
@@ -155,7 +194,7 @@ class MT5Falso:
         if not self.sesion:
             return None
         v = dict.fromkeys(CAMPOS["AccountInfo"], 0)
-        v.update(login=self.cuenta["login"], trade_mode=ACCOUNT_TRADE_MODE_DEMO, server=self.cuenta["server"],
+        v.update(login=self._cuenta_activa["login"], trade_mode=ACCOUNT_TRADE_MODE_DEMO, server=self._cuenta_activa["server"],
                  company="Broker Falso Ltd.", name="Titular Falso", currency="EUR", balance=10000.0)
         return AccountInfo(**v)
 
@@ -193,7 +232,17 @@ class MT5Falso:
         if self.fallar_tras is not None and self.consultas_datos > self.fallar_tras:
             self._error = (-10005, "IPC timeout")
             return False
+        self._error = (RES_S_OK, "Success")
         return True
+
+    def _sincronizando(self, *clave) -> bool:
+        """Las N primeras consultas de cada clave fallan con -1 'Call failed', como un terminal que baja esa historia."""
+        if self._call_failed[clave] < self.fallos_call_failed:
+            self._call_failed[clave] += 1
+            self.llamadas["call failed"] += 1
+            self._error = (RES_E_FAIL, "Terminal: Call failed")
+            return True
+        return False
 
     def _reales(self, s):
         """Horas de servidor que existen en el reloj del broker (fuera la hora que se salta al pasar al verano)."""
@@ -251,25 +300,31 @@ class MT5Falso:
         self.llamadas["copy_rates_range"] += 1
         if not self.sesion or symbol not in self.simbolos or not self._contar():
             return None
+        if self._sincronizando("copy_rates_range", symbol, timeframe):
+            return None
         return self._velas(symbol, timeframe, self._seg(date_from), self._seg(date_to))
 
     def copy_rates_from_pos(self, symbol, timeframe, start_pos, count):
         self.llamadas["copy_rates_from_pos"] += 1
         if not self.sesion or symbol not in self.simbolos:
             return None
+        if self._sincronizando("copy_rates_from_pos", symbol, timeframe):
+            return None
         clave = (symbol, timeframe)
         if clave not in self._cache_pos:
             self._cache_pos[clave] = self._velas(symbol, timeframe, self.regla.utc_a_servidor(HISTORIA[timeframe]),
                                                  self.regla.utc_a_servidor(self.ahora_utc_s))
         todas = self._cache_pos[clave][::-1][: self.maxbars]
-        if start_pos >= len(todas):
-            self._error = (RES_E_FAIL, "Terminal: Call failed")
-            return None
+        self._error = (RES_S_OK, "Success")
+        if start_pos >= len(todas):  # fuera de la historia: vacio (a confirmar con el terminal real, ver fase-b.md)
+            return np.zeros(0, dtype=DTYPE_VELAS)
         return todas[start_pos:start_pos + count][::-1].copy()
 
     def copy_ticks_range(self, symbol, date_from, date_to, flags):
         self.llamadas["copy_ticks_range"] += 1
         if not self.sesion or symbol not in self.simbolos or not self._contar():
+            return None
+        if self._sincronizando("copy_ticks_range", symbol):
             return None
         if not self.simbolos[symbol][6]:
             return np.zeros(0, dtype=DTYPE_TICKS)

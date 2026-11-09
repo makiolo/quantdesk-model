@@ -18,10 +18,12 @@ Dos formas de engancharse (`enganchar`):
 """
 from __future__ import annotations
 
+import collections
 import json
 import os
 import re
 import subprocess
+import time
 from types import MappingProxyType
 
 # Lista blanca: solo funciones que consultan, mas `login` para abrir la sesion de lectura con las credenciales del usuario.
@@ -193,26 +195,120 @@ def terminal_en_ejecucion() -> bool:
     return "terminal64.exe" in r.stdout.lower()
 
 
+# --- Reintentos frente al terminal real (entrega 6) ------------------------------------------------------------------
+# Datos: la primera consulta de un par y periodo que el terminal aun no tiene sincronizado devuelve None con
+# (-1, 'Terminal: Call failed') mientras baja la historia; un terminal ocupado puede dar (-10005, 'IPC timeout').
+# Arranque: volver a hacer initialize(path) + login con el terminal ya abierto y ocupado da (-6, 'Authorization failed')
+# o (-10005, 'IPC timeout') de forma transitoria. En ambos casos se reintenta con esperas crecientes (por defecto 1, 2,
+# 4 y 8 s: 5 intentos); agotados, el error es el mismo que sin reintentos. Esperas configurables con la variable de
+# entorno QDL_MT5_ESPERAS ("1,2,4,8") o con `configurar_reintentos` (los selftests inyectan un dormir que no duerme).
+TRANSITORIOS_DATOS = (-1, -10005)
+TRANSITORIOS_ARRANQUE = (-6, -10005)
+
+
+def _esperas_de_entorno() -> tuple:
+    txt = os.environ.get("QDL_MT5_ESPERAS", "")
+    try:
+        vals = tuple(float(x) for x in txt.split(",") if x.strip())
+    except ValueError:
+        vals = ()
+    return vals if vals and all(v >= 0 for v in vals) else (1.0, 2.0, 4.0, 8.0)
+
+
+REINTENTO = {"esperas_s": _esperas_de_entorno(), "dormir": time.sleep, "espera_conexion_s": 60.0,
+             "contador": collections.Counter()}
+
+
+def configurar_reintentos(esperas_s=None, dormir=None, espera_conexion_s=None) -> dict:
+    """Cambia la politica de reintentos; devuelve la anterior (para restaurarla)."""
+    previa = {k: REINTENTO[k] for k in ("esperas_s", "dormir", "espera_conexion_s")}
+    if esperas_s is not None:
+        REINTENTO["esperas_s"] = tuple(float(x) for x in esperas_s)
+    if dormir is not None:
+        REINTENTO["dormir"] = dormir
+    if espera_conexion_s is not None:
+        REINTENTO["espera_conexion_s"] = float(espera_conexion_s)
+    return previa
+
+
+def es_transitorio(err, codigos) -> bool:
+    return bool(err) and err[0] in codigos
+
+
+def con_reintentos(term, accion, nombre: str, codigos, cred=None, al_fallar=None):
+    """Ejecuta `accion()` (devuelve un valor o algo falso) reintentando los errores transitorios `codigos`. Devuelve el
+    valor; agotados los intentos, o ante un error no transitorio, lanza TerminalNoDisponible con el ultimo error."""
+    esperas = REINTENTO["esperas_s"]
+    for k in range(len(esperas) + 1):
+        r = accion()
+        if r:
+            return r
+        err = term.last_error()
+        if not es_transitorio(err, codigos) or k == len(esperas):
+            if al_fallar is not None:
+                al_fallar()
+            raise TerminalNoDisponible(f"{nombre} fallo {censurar(str(err), cred)}")
+        REINTENTO["contador"][nombre] += 1
+        REINTENTO["dormir"](esperas[k])
+    raise AssertionError("inalcanzable")
+
+
+def misma_cuenta(ai, cred: Credenciales) -> bool:
+    """La cuenta abierta en el terminal es la del fichero. Se compara sin imprimir ni registrar ningun valor."""
+    try:
+        return int(ai.login) == cred.login and str(ai.server) == cred.server
+    except (TypeError, ValueError, AttributeError):
+        return False
+
+
+def esperar_conexion(term):
+    """Espera acotada (REINTENTO['espera_conexion_s'], sondeo cada 1 s) a que el terminal este conectado y con cuenta."""
+    esperado = 0.0
+    while True:
+        ti, ai = term.terminal_info(), term.account_info()
+        if ti is not None and ai is not None and getattr(ti, "connected", False):
+            return ti, ai
+        if esperado >= REINTENTO["espera_conexion_s"]:
+            return None
+        REINTENTO["dormir"](1.0)
+        esperado += 1.0
+
+
 def enganchar(term: TerminalSoloLectura, cred: Credenciales | None = None, en_ejecucion=terminal_en_ejecucion):
-    """Abre la sesion de lectura. Devuelve (terminal_info, account_info). Errores con mensajes censurados."""
+    """Abre la sesion de lectura. Devuelve (terminal_info, account_info). Errores con mensajes censurados.
+
+    Sin credenciales: el terminal tiene que estar ya abierto; `initialize()` sin argumentos.
+    Con credenciales (la tarea programada):
+    1. Si ya hay un terminal64.exe abierto, se prueba `initialize()` sin ruta. Si tiene abierta la MISMA cuenta que el
+       fichero (comparada sin imprimirla), se usa tal cual: ni initialize(path) ni login; solo la espera acotada a que
+       este conectado (un terminal recien abierto tarda en conectar).
+    2. Si no, `initialize(path)` (solo si el enganche sin ruta no fue posible) y `login`, los dos con reintentos
+       acotados ante -6 / -10005 transitorios, y una espera acotada a `terminal_info().connected`.
+    """
     if cred is None:
         if not en_ejecucion():
             raise TerminalNoDisponible(
                 "MetaTrader 5 no esta abierto (no hay terminal64.exe en ejecucion) y no hay credenciales: abrelo e inicia "
                 f"sesion, o deja el fichero de credenciales en {RUTA_SECRETOS} (o en la ruta de {VAR_SECRETOS}).")
-        if not term.initialize():
-            raise TerminalNoDisponible(f"initialize() fallo {term.last_error()}: autenticate en el terminal y reintenta")
+        con_reintentos(term, lambda: term.initialize(), "initialize()", TRANSITORIOS_ARRANQUE)
     else:
-        if not term.initialize(path=cred.path):
-            err = censurar(str(term.last_error()), cred)
-            term.shutdown()
-            raise TerminalNoDisponible(f"initialize(path=<del fichero de credenciales>) fallo {err}")
-        if not term.login(cred.login, password=cred.password, server=cred.server):
-            err = censurar(str(term.last_error()), cred)
-            term.shutdown()
-            raise TerminalNoDisponible(f"login() fallo {err}: revisa el fichero de credenciales (no se muestra)")
-    ti, ai = term.terminal_info(), term.account_info()
-    if ti is None or ai is None or not getattr(ti, "connected", False):
+        enganchado = misma = False
+        if en_ejecucion() and term.initialize():
+            enganchado = True
+            ai = term.account_info()
+            misma = ai is not None and misma_cuenta(ai, cred)
+        if misma:
+            REINTENTO["contador"]["enganche sin login"] += 1
+        else:
+            if not enganchado:
+                con_reintentos(term, lambda: term.initialize(path=cred.path),
+                               "initialize(path=<del fichero de credenciales>)", TRANSITORIOS_ARRANQUE, cred,
+                               al_fallar=term.shutdown)
+            con_reintentos(term, lambda: term.login(cred.login, password=cred.password, server=cred.server),
+                           "login() (revisa el fichero de credenciales, no se muestra)", TRANSITORIOS_ARRANQUE, cred,
+                           al_fallar=term.shutdown)
+    r = esperar_conexion(term)
+    if r is None:
         term.shutdown()
         raise TerminalNoDisponible("el terminal esta abierto pero sin conexion al servidor o sin cuenta con sesion iniciada")
-    return ti, ai
+    return r

@@ -268,6 +268,56 @@ Register-ScheduledTask -TaskName "quantdesk\publicador_mt5" -Xml (Get-Content -R
 - Las credenciales de MT5 en `E:\quantdesk-lab\secrets\mt5.json`.
 - El selftest comprueba la tarea leyendo el XML (intervalo, disparadores, políticas y privilegios). No la registra.
 
+## Robustez frente al terminal real (entrega 6)
+
+**Qué se vio en el terminal real** (build 6230, 9.421 símbolos):
+- `copy_rates_from_pos` dio `(-1, 'Terminal: Call failed')` en la primera consulta, mientras el terminal sincronizaba
+  la historia del símbolo. La misma consulta, poco después, funciona.
+- `initialize(path)` dio `-6 'Authorization failed'` con el terminal ya abierto.
+- `login` dio `-10005 'IPC timeout'`.
+
+**Reintento acotado de las consultas de datos** (`descarga.consultar`, que usan la descarga, el inventario y el
+publicador):
+- Sólo se reintentan -1 «Call failed» y -10005 «IPC timeout». Cualquier otro código falla a la primera, como antes.
+- Son 5 intentos con esperas de 1, 2, 4 y 8 s (15 s en total como mucho).
+  - Se configuran con `QDL_MT5_ESPERAS` (por ejemplo `1,2,4,8`) o con `lectura.configurar_reintentos`.
+  - El `dormir` es inyectable: los selftests no duermen y apuntan las esperas pedidas.
+- Agotados los intentos, sale el mismo `ErrorTerminal` de siempre: la serie se para y la siguiente ejecución retoma.
+- Un `None` sólo cuenta como «sin datos» si `last_error()` es `RES_S_OK`.
+- La bisección de profundidad del inventario (`_una`) pasa por el mismo reintento: un -1 transitorio nunca se toma por
+  el final de la historia.
+- Riesgo a confirmar en la prueba real: el falso responde fuera de la historia con un array vacío y `RES_S_OK`. Si el
+  terminal real respondiera ahí con -1, la bisección acabaría en `ErrorTerminal` tras los reintentos en lugar de dar una
+  profundidad mal calculada. Falla de forma visible, no silenciosa.
+
+**Arranque robusto** (`lectura.enganchar`):
+1. Si el terminal ya está en marcha, primero se prueba `initialize()` sin ruta.
+   - Si tiene abierta la misma cuenta que `secrets/mt5.json`, se engancha y no se vuelve a hacer login. Si aún no está
+     conectado (recién abierto), sólo se espera a que conecte (paso 4).
+   - La comparación de cuenta y servidor se hace en memoria y no se imprime.
+   - Si la cuenta es otra, se hace login sobre esa sesión.
+2. Si no estaba en marcha (o `initialize()` sin ruta no engancha), se hace `initialize(path)` y luego `login`.
+3. -6 y -10005 en `initialize(path)` y en `login` (y en `initialize()` sin credenciales) se reintentan con las mismas
+   esperas. Agotados, el error es el de siempre, sin secretos en el mensaje, y la salida es BLOQUEADO. Un error no
+   transitorio (ruta mala, contraseña mala con otro código) no se reintenta.
+4. Tras enganchar, se espera de forma acotada a que `terminal_info().connected` sea cierto y haya cuenta.
+   - Se sondea cada segundo, hasta 60 s.
+   - Si no llega, se cierra el terminal propio y se sale BLOQUEADO («sin conexion al servidor»).
+
+**Falso de MT5.** Reproduce los dos fallos:
+- `fallos_call_failed=N`: las N primeras consultas de datos de cada (función, símbolo, periodo) dan `None` con
+  -1 «Terminal: Call failed».
+- `fallos_arranque=(-6, -10005, ...)`: códigos que devuelven, por orden, `initialize(path)` y `login`.
+- `retraso_conexion=N`: tras el login, o al engancharse a un terminal ya abierto, `connected` es falso durante N
+  sondeos.
+
+El selftest del extractor prueba el arranque (misma cuenta conectada y recién abierta, otra cuenta, -6/-10005 en
+`initialize(path)` y en `login`, -6 persistente, sin conexión nunca, ruta mala sin reintento), el reintento de datos
+(esperas pedidas, agotamiento, código no transitorio, `None` con `RES_S_OK`, bisección igual con y sin fallos) y, de punta
+a punta, una descarga con fallos de arranque y «Call failed» con el mismo hash que sin fallos, un inventario igual al
+limpio y el enganche sin login.
+- `cuenta_abierta`: la cuenta con la que está abierto un terminal que ya estaba en marcha.
+
 ## Puesta en marcha (usuario y raíz)
 
 1. **El usuario** abre el terminal MT5 y se autentica él mismo.
@@ -289,7 +339,8 @@ Register-ScheduledTask -TaskName "quantdesk\publicador_mt5" -Xml (Get-Content -R
    .venv/Scripts/python -X utf8 scripts/publicador_mt5.py --ejecutar --topic market.ohlcv.v2 --sin-credenciales
    ```
 6. **El usuario** registra la tarea con la orden de arriba; el XML ya lleva `--topic market.ohlcv.v2`. Desde ese
-   momento, el publicador hace `initialize(path)` y `login` con `secrets/mt5.json` en su propia sesión.
+   momento, el publicador usa `secrets/mt5.json` en su propia sesión. Si el terminal ya está abierto con esa cuenta, se
+   engancha sin login. Si no, hace `initialize(path)` y `login` (ver «Robustez frente al terminal real»).
 
 **Cómo comprobar la continuidad en qn después.**
 - `ultimo.json` y el `jsonl` del día: `sin_publicar` = 0, `error` nulo y `huecos_cola_rellenados` tras un corte.
@@ -334,6 +385,9 @@ ni terminal. Comprueba:
   - Una sesión sólo se publica tras su cierre real. Antes del cierre (20:30 UTC en verano, 21:30 UTC en invierno) no
     está. Después del cierre (21:30 UTC en verano, 22:30 UTC en invierno) sí está, antes de `ts` + 1 d.
 - Un qn nuevo recibe los mismos `batch_id` para las mismas velas.
+- Terminal real (entrega 6), de punta a punta contra un qn nuevo:
+  - con -10005 y -6 al arrancar y dos «Call failed» por serie: 3 `initialize(path)`, salida 0 e igualdad exacta con MT5;
+  - con el terminal ya abierto y la misma cuenta: 0 login, 0 `initialize(path)` e igualdad exacta tras el apagado.
 - Una revisión se detecta y no se republica.
 - Candado vivo: sale con 0 sin peticiones. Candado caducado: se recupera.
 - Token malo: BLOQUEADO.

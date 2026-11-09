@@ -42,9 +42,13 @@ class Banco:
         self.ejecutar, self.raiz, self.salidas, self.falsos = ejecutar, raiz, [], []
 
     def __call__(self, flota: QF.Flota | None, ahora: int, extra=(), token=TOKEN, modo="--ejecutar", topic=QF.TOPIC,
-                 **kw) -> tuple[int, str]:
+                 falso: dict | None = None, **kw) -> tuple[int, str]:
+        kw_falso = dict(falso or {})  # fallos del terminal real que reproduce el falso (entrega 6)
+        abierto = kw_falso.pop("abierto", False)
+        kw.setdefault("en_ejecucion", lambda: abierto)
+
         def fabrica():
-            f = FA.MT5Falso(ahora_utc_s=ahora, trampas=PROHIBIDAS, cuenta=dict(CRED), abierto=False)
+            f = FA.MT5Falso(ahora_utc_s=ahora, trampas=PROHIBIDAS, cuenta=dict(CRED), abierto=abierto, **kw_falso)
             self.falsos.append(f)
             return LT.TerminalSoloLectura(f)
 
@@ -386,6 +390,22 @@ def prueba_extremo_a_extremo(ejecutar, raiz: str) -> dict:
             sin_duplicados(alm4)
         finally:
             flota4.parar()
+        # 5d. Terminal real (entrega 6): arranque con -10005 y -6 y 'Call failed' mientras sincroniza la historia; la
+        #     serie queda igual a MT5. Luego, con el terminal ya abierto y la misma cuenta, se engancha sin login.
+        alm5 = QF.Almacen(TOKEN)
+        flota5 = QF.Flota(alm5, vivas=1, caida=False)
+        try:
+            c, out = b(flota5, ahora1, falso={"fallos_call_failed": 2, "fallos_arranque": (-10005, -6)})
+            f = b.falsos[-1]
+            assert c == 0 and f.llamadas["call failed"] > 0 and f.llamadas["initialize con ruta"] == 3, (out, dict(f.llamadas))
+            assert en_qn(alm5) == esperado(ahora1)
+            c, out = b(flota5, ahora2, falso={"abierto": True})
+            f = b.falsos[-1]
+            assert c == 0 and f.llamadas["login"] == 0 and f.llamadas["initialize con ruta"] == 0, (out, dict(f.llamadas))
+            assert en_qn(alm5) == esperado(ahora2)
+            sin_duplicados(alm5)
+        finally:
+            flota5.parar()
         # 6. Revision: si qn tiene una vela de la cola con otro valor, se cuenta y no se republica.
         with alm.cerrojo:
             o = max((x for x in alm.objetos if x["tags"]["symbol"] == "EURUSD" and x["tags"]["interval"] == "1d"),
@@ -474,6 +494,7 @@ def prueba_tarea_xml() -> None:
 def correr(ejecutar) -> int:
     raiz = os.path.join(TMP, f"selftest_pub_{os.getpid()}")
     os.makedirs(raiz, exist_ok=True)
+    previa = LT.configurar_reintentos(esperas_s=(1.0, 2.0, 4.0, 8.0), dormir=lambda s: None, espera_conexion_s=5)
     try:
         for p in (prueba_codificacion, prueba_contrato_v2, prueba_cliente_reintentos_y_errores, prueba_tarea_xml):
             p()
@@ -486,6 +507,7 @@ def correr(ejecutar) -> int:
         print("ok  prueba_ritmo (qn falso local, cota superior): "
               + ", ".join(f"{h} hilo{'s' if h > 1 else ''} {v:.0f} POST/s" for h, v in ritmo.items()))
     finally:
+        LT.configurar_reintentos(**previa)
         shutil.rmtree(raiz, ignore_errors=True)
     print("selftest ok")
     return 0

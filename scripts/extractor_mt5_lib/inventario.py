@@ -4,7 +4,8 @@ periodo (1 m, 5 m, 1 h, 1 d) y si hay ticks. Solo consultas de la lista blanca.
 Profundidad: biseccion sobre `copy_rates_from_pos(simbolo, periodo, pos, 1)` (la posicion 0 es la vela actual) hasta la
 ultima posicion con datos; ~log2(maxbars) consultas de una vela. El terminal solo sirve las velas que caben en "Max. bars
 in chart" (`terminal_info().maxbars`): si la profundidad toca ese tope se marca `limitada_por_maxbars` y la historia real
-del broker puede ser mayor. Ticks: se cuentan los de una ventana de `dias_ticks` dias que acaba en la ultima vela de 1 m.
+del broker puede ser mayor. Todas las consultas pasan por `descarga.consultar` (reintentos ante -1 'Call failed' y
+-10005 'IPC timeout'); fuera de la historia solo cuenta como "no hay" un resultado vacio o un None con RES_S_OK. Ticks: se cuentan los de una ventana de `dias_ticks` dias que acaba en la ultima vela de 1 m.
 """
 from __future__ import annotations
 
@@ -22,7 +23,10 @@ LIQUIDOS = ("EURUSD", "USDJPY", "GBPUSD")
 
 
 def _una(term, sim, tf, pos):
-    r = term.copy_rates_from_pos(sim, tf, pos, 1)  # fuera de la historia el terminal devuelve None o vacio: "no hay"
+    """Una vela en la posicion `pos`, o None si no hay. Solo cuentan como "no hay" un resultado vacio o un None con
+    RES_S_OK; un None con error transitorio (-1 mientras el terminal sincroniza) se reintenta con `D.consultar` y, si
+    persiste, es ErrorTerminal: nunca se toma por el final de la historia (la biseccion acabaria mal)."""
+    r = D.consultar(term, "copy_rates_from_pos", sim, tf, pos, 1)
     return None if r is None or len(r) == 0 else r
 
 
@@ -54,9 +58,7 @@ def info_simbolo(term, s) -> dict:
 
 
 def simbolos_disponibles(term, grupo: str | None) -> dict:
-    lista = term.symbols_get(group=grupo) if grupo else term.symbols_get()
-    if lista is None:
-        raise D.ErrorTerminal(f"symbols_get fallo: {term.last_error()}")
+    lista = D.consultar(term, "symbols_get", group=grupo) if grupo else D.consultar(term, "symbols_get")
     infos = [info_simbolo(term, s) for s in (lista or ())]
     SB.marcar_bases_compartidas(infos)
     return {d["simbolo"]: d for d in sorted(infos, key=lambda d: d["simbolo"])}
@@ -72,7 +74,7 @@ def inventario(term, regla: HR.Regla, ahora_utc_s: int, procedencia: dict, maxba
         if con_profundidad:
             d["profundidad"] = {p: profundidad(term, sim, p, maxbars, regla) for p in PERIODOS_INV}
             ref = d["profundidad"]["m1"].get("ultima_servidor_s") or regla.utc_a_servidor(ahora_utc_s)
-            tk = term.copy_ticks_range(sim, ref - dias_ticks * 86400, ref + 60, term.COPY_TICKS_ALL)
+            tk = D.consultar(term, "copy_ticks_range", sim, ref - dias_ticks * 86400, ref + 60, term.COPY_TICKS_ALL)
             n = 0 if tk is None else len(tk)
             d["ticks"] = {"hay": n > 0, "ventana_dias": dias_ticks, "ticks_en_ventana": n}
         filas.append(d)

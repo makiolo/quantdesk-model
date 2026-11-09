@@ -37,6 +37,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from . import hora as HR
+from . import lectura as LT
 
 FORMATO = "quantdesk-lab.mt5-crudo/v1"
 PERIODOS = {
@@ -99,15 +100,25 @@ def trozos(desde: dt.date, hasta: dt.date, tipo: str) -> list[tuple[dt.date, dt.
     return out
 
 
-def consultar(term, funcion: str, *args):
-    """Llama a una consulta de la envoltura. None con last_error OK = sin datos; None con error = ErrorTerminal."""
-    r = getattr(term, funcion)(*args)
-    if r is None:
+def consultar(term, funcion: str, *args, **kwargs):
+    """Llama a una consulta de la envoltura. None con last_error OK = sin datos (devuelve None). None con un error
+    transitorio (-1 'Call failed' mientras el terminal sincroniza la historia, -10005 'IPC timeout') se reintenta con la
+    politica de `lectura.REINTENTO` (por defecto 5 intentos, esperas de 1 a 8 s). Agotados, o con otro error:
+    ErrorTerminal, igual que sin reintentos."""
+    esperas = LT.REINTENTO["esperas_s"]
+    for k in range(len(esperas) + 1):
+        r = getattr(term, funcion)(*args, **kwargs)
+        if r is not None:
+            return r
         err = term.last_error()
         if err and err[0] == term.RES_S_OK:
             return None
-        raise ErrorTerminal(f"{funcion}({args[0]!r}, ...) fallo: {err}")
-    return r
+        if not LT.es_transitorio(err, LT.TRANSITORIOS_DATOS) or k == len(esperas):
+            primero = repr(args[0]) if args else ""
+            raise ErrorTerminal(f"{funcion}({primero}, ...) fallo: {err}")
+        LT.REINTENTO["contador"][funcion] += 1
+        LT.REINTENTO["dormir"](esperas[k])
+    raise AssertionError("inalcanzable")
 
 
 def _comprobar_campos(arr, esperados: tuple) -> None:
