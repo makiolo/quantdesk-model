@@ -653,3 +653,43 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
   - `UnknownTopic` es fatal y se sale con 0 POSTs;
   - `ts` se lee en nanosegundos;
   - se añade un test de contrato del objeto.
+- **Registro en producción.** Network registra `market.ohlcv.v2` en `env=main`, versión 1, y lo comprueba en mini,
+  silver y macold. Su plan de corte está en `quantdesk-network` `0cfd1f4`
+  (`docs/plans/backlog/PLAN_OHLCV_V2_CORTE.md`). El token admin del registro ya está revocado.
+  - El backend avisa de que su Bento sigue leyendo `market.ohlcv` (v1), así que lo que MT5 publique en v2 no llega a
+    ClickHouse ni pisa a yfinance. MT5 puede publicar sin esperar a su despliegue.
+  - El backend cambia a v2 cuando el usuario lo priorice.
+- **Entrega 5 (`1ed4dfd`).**
+  - La tarea pasa `--topic market.ohlcv.v2`; la guarda de `TOPIC_POR_DECIDIR` sigue en el código.
+  - En `latest`, un 200 con `items:[]` significa «sin datos».
+  - `unknown_topic` es fatal (rc 2, 0 POSTs), venga de `schema`, de `latest` o de `publish`.
+  - `ts` se lee en ns en `latest` y `_ts` en RFC 3339 en `/objects`.
+  - Un test de contrato comprueba las seis propiedades, con `source` sólo como tag.
+  - Verificación de la raíz sobre `git archive 1ed4dfd`: los dos selftests ok, la suite 11 OK y ninguna función de
+    órdenes. Intento BDD 129 aceptado.
+- **Token del publicador MT5** (autorización A17, reconfirmada por el usuario el 2026-11-09 para v2):
+
+  | Campo | Valor |
+  |---|---|
+  | Nombre | `ti12mt5-publicacion-20261109` |
+  | Id | 36 |
+  | Entornos | `--envs main` |
+  | Concesiones | `pub:market.ohlcv.v2` y `sub:market.ohlcv.v2` |
+  | Emisión | en mini, 2026-11-09T09:40:40Z |
+
+  - El fichero se generó con `--out` (600, 47 bytes), se copió por `scp` a `E:/quantdesk-lab/secrets/qn-mt5.token` y
+    se borró en mini con `shred`.
+  - En Windows, la ACL del fichero deja sólo al usuario, con control total y sin herencia.
+  - El secreto no ha pasado por la conversación, los logs ni Git.
+  - Prueba de humo de sólo lectura (`E:/quantdesk-lab/tmp/humo_token_mt5.py`) en las tres réplicas: `schema` ok
+    (tags `[symbol, interval, source]` y las seis propiedades) y `latest` con `items=0` para `mt5` y
+    `market_scraper`.
+  - Es un token de larga vida: lo rota o revoca la raíz de quantdesk-model, o network, a petición del usuario, siguiendo
+    la skill `qn-token` §4.
+  - Se revisa al cerrar SPRINT-01 y se revoca en el acto si se filtra.
+  - El HTTP de qn en la LAN no tiene TLS, así que el token viaja en claro por la red local. El usuario lo acepta en A17.
+- **Falta para la primera publicación real:**
+  1. Que el usuario abra MT5 e inicie sesión. Después, la raíz hace el inventario y `--simular`.
+  2. La variable de usuario `QN_URLS` (hoy no existe).
+  3. La primera ejecución real.
+  4. Que el usuario registre la tarea programada.
