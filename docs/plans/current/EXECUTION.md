@@ -626,3 +626,30 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
   4. el token;
   5. la primera ejecución real;
   6. que el usuario registre la tarea, sustituyendo antes `TOPIC_POR_DECIDIR`.
+
+### Topic decidido: `market.ohlcv.v2` (2026-11-09 10:10)
+
+- **Network** comunica que el usuario ha elegido `market.ohlcv.v2`. Lo define en `d61b65b`, fichero
+  `deploy/qn-topics/market.ohlcv.v2.json`.
+  - Tags: `symbol`, `interval` y `source`.
+  - Objeto: `open`, `high`, `low`, `close` y `volume` como number, y `date` como string. Las seis son obligatorias,
+    con `additionalProperties: false`.
+  - Todavía no está registrado en producción: falta que el usuario autorice el token admin del registro.
+- **`latest`**, según network:
+  - Topic registrado y sin datos para el filtro: responde 200 con `items:[]`.
+  - Topic no registrado: responde `UnknownTopic`.
+  - Su `ts` va en nanosegundos y sale de la memoria de la réplica, no del lago.
+- **Plan de corte** propuesto por network, pendiente de que lo confirme el usuario:
+  1. Registrar v2.
+  2. El backend publica yfinance en v2 con `source=market_scraper`; la republicación de 730 días rellena el histórico.
+  3. Bento, ClickHouse, `/api/fxspot` y Grafana pasan a leer v2.
+  4. `market.ohlcv` queda congelado.
+- **Backend** lo apunta en su raíl H (`103f46c`) y encaja sin más cambios. Durante el corte, las filas de v1 y las de v2
+  tienen la misma clave en ClickHouse, así que se sustituyen y no se duplican. El backend empieza cuando v2 esté
+  registrado y el usuario confirme el corte y la prioridad en su sprint.
+- **Publicador MT5.** El objeto ya coincide con el esquema de v2. El autor recibe la entrega 5 (intento BDD 129):
+  - el XML pasa a `--topic market.ohlcv.v2`;
+  - `items:[]` se trata como «sin datos»;
+  - `UnknownTopic` es fatal y se sale con 0 POSTs;
+  - `ts` se lee en nanosegundos;
+  - se añade un test de contrato del objeto.
