@@ -35,7 +35,14 @@ Recuperación en frío (RECOVERY-20261108-133223): la raíz anterior murió haci
 - TI-12-MT5 espera la puerta 2; TI-09-ARCH, las cifras de TI-01-INV (puerta 1).
 
 ## En vuelo
-- Nada. TI-02-DATA está CERRADA (`906f73e`, revisión 2 ACEPTAR, EXECUTION «Cierre de TI-02-DATA»).
+- TI-02-DATA está CERRADA (`906f73e`, revisión 2 ACEPTAR, EXECUTION «Cierre de TI-02-DATA»).
+- Directiva del usuario «todo con Claude», vigente hasta el 2026-11-10 01:00 CET (EXECUTION, A14). Tres autores
+  Opus 5.5 high, agentes en segundo plano de la sesión dd43fa94, base `82d7f4f`, fichas en
+  `.git/sprint-runtime/s01/<ID>/ficha.md`:
+  - TS-00-BENCH, intento BDD 123;
+  - TI-12-MT5, fase A (sin terminal real), BDD 124;
+  - TI-02-DATA-DEUDA, BDD 125.
+  Si esta sesión muere, relanzarlos desde su ficha y su último commit.
 - Pregunta al usuario pendiente: qué precios del lago usa TS-00-BENCH, el proxy `cierre` (recomendado) o sólo el
   estricto. TS-00-BENCH no se lanza hasta que conteste.
 

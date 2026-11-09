@@ -348,3 +348,33 @@ dd43fa94, HANDOFF relevo 1 (`674344b`). Ningún hijo vivo; ningún WIP sin commi
   - universos con sesgo de supervivencia declarado (D-07).
 - TS-00-BENCH queda desbloqueada en cuanto a datos. Falta que el usuario elija entre los precios proxy del lago y
   sólo los estrictos (pregunta abierta).
+
+## Directiva del usuario: «todo con Claude» (2026-11-09, vigente hasta el 2026-11-10 01:00 CET)
+
+La retransmite la sesión de quantdesk `quantdesk-72` el 2026-11-09 hacia las 01:50, para los cuatro proyectos.
+Mientras esté vigente sustituye a LAUNCH §2 en lo que contradiga; a esa hora se vuelve a la política normal.
+1. Codex está agotado hasta el martes a las 01:00: no se lanza nada con Codex.
+2. Desactivados agy/Antigravity (Gemini) y la IA local (Qwen).
+3. Desactivadas las arenas L9 y L10.
+4. Las revisiones sólo se hacen cuando el propio autor las pide porque tiene dudas. Se permiten dentro de la familia:
+   Claude revisa a Claude. La verificación de la raíz sobre un commit fijo se mantiene.
+5. Más Opus en general.
+6. Objetivo: avanzar las tareas todo lo posible y acercar la cuota de Claude al 100 % antes del martes a las 01:00, sin
+   derrochar. La cuota se comparte con los otros tres proyectos.
+7. Ampliación del 2026-11-09 hacia las 01:55, con la misma vigencia:
+   - Haiku no se usa;
+   - por defecto, Opus 5.5 con esfuerzo high, y xhigh para lo muy difícil;
+   - Sonnet 5.5, siempre con esfuerzo xhigh.
+
+Decisiones de la raíz (A14) para llenar las tres plazas:
+- **TS-00-BENCH** arranca ya, autor Opus 5.5 high. El banco toma el dataset como parámetro y corre sobre
+  `binance_c20261101` y `lago_cierre_c20261101`, cada uno etiquetado con su tipo de disponibilidad. La respuesta del
+  usuario a la pregunta abierta sólo decide qué tabla es la de cabecera, no si se ejecuta: el estricto del lago no tiene
+  ohlcv, así que no hay nada que banquear con él. Toto no está en el `.venv`: no se instala sin decisión; el autor
+  documenta paquete, versión y licencia y sigue con lo demás (GAP-04).
+- **TI-12-MT5, fase A** (código), autor Opus 5.5 high: extractor y selftest con un `MetaTrader5` falso. No se conecta al
+  terminal real ni lo arranca; la puerta 2 sigue cerrada. La fase B (descarga real, exportación y cuadre contra el
+  diario del lago) espera a que el usuario abra y autentique el terminal.
+- **TI-02-DATA-DEUDA**, autor Opus 5.5 high: los tres arreglos BAJA de la revisión 2 de TI-02-DATA, en la plaza que
+  queda libre.
+- Cuota al lanzar: Claude 56 % con el 86,1 % de la ventana (reinicio el 2026-11-10 a las 00:00 UTC); Codex 100 %.
