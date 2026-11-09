@@ -875,3 +875,34 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
   el FX diario del lago.
 - **Noche 1 de la carga 1d en qn:** programada a las 02:03 CET, con el OK de network y backend y a 40 000 objetos cada
   5 min. La noche 2, la de las acciones, espera a network.
+
+### Cierre de TI-12-MT5 (2026-11-09) — CERRADA
+
+- **Cuadre de 1 m contra diario (`fdfa3a7`) — ACEPTADO.** Era el último criterio de aceptación.
+  - **m1 de fx28** (del 2026-08-06 al 2026-11-07): 2 691 949 velas. Dos descargas independientes, una de ellas con
+    `--refrescar`, dan el mismo `hash_conjunto`, `sha256:8a6fa0dc…`.
+  - **Contra el D1 de MT5:** los 1507 días completos son exactos, con tolerancia 0. De los incompletos, que se separan
+    por el horario del bróker, 341 de 369 cuadran; los otros 28 son el 2026-08-06, cortado por `--desde`.
+  - **Contra el lago:** el 98,6 % cuadra con el precio de MT5 a las 00:00 UTC (tolerancia de 0,1 veces el rango diario
+    mediano). Sólo el 13,8 % cuadra con el cierre de sesión. Esto destapa ISSUE-LAGO-FX-1D-CLOSE, confirmada por el
+    backend (ISSUE-FX-1D-CLOSE-YFINANCE, `c68547d`). Mientras tanto, el backend pide usar MT5 para el FX diario.
+  - Script `scripts/cuadre_mt5.py`, con selftest, ya en la suite. Informe en `execution/TI-12-MT5/cuadre.md`.
+  - **Verificación de la raíz** sobre `git archive fdfa3a7`: los dos selftests ok, `cuadre_mt5 --selftest` ok, la
+    suite 12 OK y ninguna función de órdenes. Intento BDD 133 aceptado.
+- **Criterios de TI-12-MT5 cumplidos:**
+  - inventario publicado (fase A);
+  - mismo hash en dos descargas: en m1 en esta entrega, y antes en d1;
+  - el 1 m agregado a diario cuadra con otra fuente diaria: exacto con el D1 de MT5 y dentro de tolerancia con el lago
+    al corte real del lago;
+  - nunca envía órdenes: comprobado en cada entrega;
+  - credenciales fuera del repo.
+
+  Además: publicador 1d en qn con tarea programada, universos y descargas locales 1d.
+- **Hereda SPRINT-02 o fuera de sprint:**
+  - noche 1 de la carga 1d en qn, programada para hoy a las 02:03;
+  - noche 2, la de las acciones, a la espera de network y del usuario;
+  - ISSUE-TI12-MT5-INTRADIA-LOCAL: descarga local de m1 y m5 de `@continuo` lanzada a las 17:45 CET hacia
+    `E:/quantdesk-lab/data/mt5/continuo_m1m5_20261109`, con tope a las 01:15;
+  - ISSUE-LAGO-FX-1D-CLOSE: repetir la tabla FX del banco sobre el 1d de MT5.
+- **Pedido del usuario:** FinCast como modelo de comparación y profesor candidato. Va en SPRINT-02, fila 2b
+  (`84dafed`), y en D-08 de PLAN_TSFM_FINANZAS (`c5f2be51`).
