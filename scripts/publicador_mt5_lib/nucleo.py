@@ -126,24 +126,34 @@ def barras_cerradas(term, simbolo: str, info: dict, intervalo: str, regla: HR.Re
               for a, b in D.trozos(ini, fin, D.PERIODOS[periodo]["trozo"])]
     cols = ("ts_utc_ms", "open", "high", "low", "close", "tick_volume")
     out = {c: np.concatenate([p.column(c).to_numpy() for p in partes]) if partes else np.zeros(0) for c in cols}
-    ts = out["ts_utc_ms"].astype(np.int64)
-    ok = (ts >= desde_s * 1000) & (ts + paso * 1000 <= ahora_s * 1000)  # nunca una vela abierta
+    apertura = out.pop("ts_utc_ms").astype(np.int64)
+    ts = ts_publicado(intervalo, apertura)
+    # Se publica solo la vela CERRADA de verdad: apertura real + intervalo <= ahora (en 1d, el cierre real de Nueva York,
+    # no `ts` + 1 d). El rango inicial se aplica sobre el `ts` publicado (en 1d, la fecha de la sesion).
+    ok = (ts >= desde_s * 1000) & (apertura + paso * 1000 <= ahora_s * 1000)
     out = {c: v[ok] for c, v in out.items()}
-    out["ts_utc_ms"] = out["ts_utc_ms"].astype(np.int64)
+    out["ts_utc_ms"], out["apertura_utc_ms"] = ts[ok], apertura[ok]
     if out["ts_utc_ms"].size > 1 and not np.all(np.diff(out["ts_utc_ms"]) > 0):
         raise D.ErrorFormato(f"{simbolo} {intervalo}: velas fuera de orden o repetidas")
     return out
 
 
+def ts_publicado(intervalo: str, apertura_ms) -> np.ndarray:
+    """`ts` que se publica (ms). Intradia: la apertura real en UTC. 1d (decision de la raiz, opcion b): las 00:00 UTC del
+    dia de la SESION D, la fecha en Nueva York del cierre real (17:00 NY). La sesion que abre el domingo a las 21:00 o
+    22:00 UTC cierra el lunes y lleva `ts` = lunes 00:00 UTC, como yfinance y como la particion por dia UTC del lago."""
+    apertura_ms = np.asarray(apertura_ms, dtype=np.int64)
+    if intervalo != "1d":
+        return apertura_ms
+    cierre = apertura_ms // 1000 + PASO_S["1d"]
+    ny = cierre + HR.NUEVA_YORK.desfase(cierre)
+    return (ny // 86400) * 86400 * 1000
+
+
 def objeto(cfg: Config, simbolo_tag: str, intervalo: str, b: dict, i: int) -> tuple[dict, dict, int]:
-    ts_ms = int(b["ts_utc_ms"][i])
+    ts_ms = int(b["ts_utc_ms"][i])  # ya es el `ts` publicado (ver ts_publicado)
     if intervalo == "1d":
-        # Fecha de la SESION (decision de la raiz): la del cierre de Nueva York de la vela. La sesion que abre el domingo a
-        # las 21:00/22:00 UTC cierra el lunes a las 17:00 NY y lleva la fecha del lunes. `ts` sigue siendo la apertura
-        # real en UTC; la disponibilidad (ts + 1 d) es el cierre real.
-        cierre = ts_ms // 1000 + PASO_S["1d"]
-        ny = cierre + int(HR.NUEVA_YORK.desfase(np.array([cierre]))[0])
-        fecha = dt.datetime.fromtimestamp(ny, tz=dt.timezone.utc).strftime("%Y-%m-%d")
+        fecha = dt.datetime.fromtimestamp(ts_ms / 1000, tz=dt.timezone.utc).strftime("%Y-%m-%d")  # la sesion D
     else:
         fecha = dt.datetime.fromtimestamp(ts_ms / 1000, tz=dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     obj = {"open": float(b["open"][i]), "high": float(b["high"][i]), "low": float(b["low"][i]),

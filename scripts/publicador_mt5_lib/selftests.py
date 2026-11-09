@@ -110,20 +110,26 @@ def prueba_codificacion() -> None:
             raise AssertionError(malo)
     assert Q.ts_ns_de(1_793_000_000_123_456_789) == 1_793_000_000_123_456_789
     assert Q.ts_ns_de("2026-11-04T10:00:00.000123Z") == utc(2026, 11, 4, 10) * 10 ** 9 + 123_000
-    # 1d: `date` es la fecha de la sesion (cierre de Nueva York); el resto, la apertura en UTC con Z.
+    # 1d (opcion b, decision de la raiz): `ts` = 00:00 UTC del dia de la sesion D y `date` = D, donde D es la fecha en
+    # Nueva York del cierre real. Intradia: `ts` = apertura real y `date` = esa apertura en UTC con Z.
     cfg = N.Config(urls=[])
-    abre = [utc(2026, 10, 25, 21), utc(2026, 11, 1, 22), utc(2026, 11, 3, 22), utc(2026, 3, 5, 22), utc(2026, 3, 8, 21)]
-    b = {"ts_utc_ms": np.array(abre) * 1000, "open": np.ones(5), "high": np.ones(5), "low": np.ones(5),
+    abre = np.array([utc(2026, 10, 25, 21), utc(2026, 11, 1, 22), utc(2026, 11, 3, 22), utc(2026, 3, 5, 22),
+                     utc(2026, 3, 8, 21)]) * 1000
+    # Domingo 21:00 UTC (verano de EE. UU.) -> lunes 26; domingo 22:00 UTC (invierno) -> lunes 2; martes 22:00 ->
+    # miercoles 4; cambio de marzo: la sesion del viernes 6 abre el jueves a las 22:00 UTC (aun invierno) y la del lunes 9
+    # el domingo 8 a las 21:00 UTC (ya verano).
+    fechas = ["2026-10-26", "2026-11-02", "2026-11-04", "2026-03-06", "2026-03-09"]
+    b = {"ts_utc_ms": N.ts_publicado("1d", abre), "open": np.ones(5), "high": np.ones(5), "low": np.ones(5),
          "close": np.ones(5), "tick_volume": np.full(5, 7)}
-    fechas = [N.objeto(cfg, "EURUSD", "1d", b, i)[1]["date"] for i in range(5)]
-    # Domingo 21:00 UTC (verano de EE. UU.) -> lunes; domingo 22:00 UTC (invierno) -> lunes; martes 22:00 -> miercoles;
-    # cambio de marzo: la sesion del viernes 6 abre el jueves a las 22:00 UTC (invierno) y la del lunes 9 el domingo a
-    # las 21:00 UTC (ya en verano).
-    assert fechas == ["2026-10-26", "2026-11-02", "2026-11-04", "2026-03-06", "2026-03-09"], fechas
-    assert N.objeto(cfg, "EURUSD", "1d", b, 0)[2] == utc(2026, 10, 25, 21) * 10 ** 9  # ts: apertura real en UTC
-    assert N.objeto(cfg, "EURUSD", "1h", b, 2)[1]["date"] == "2026-11-03T22:00:00Z"
-    assert N.objeto(cfg, "EURUSD", "1h", b, 0)[0] == {"symbol": "EURUSD", "interval": "1h", "source": "mt5"}
-    assert "source" not in N.objeto(cfg, "EURUSD", "1h", b, 0)[1] and cfg.topic is None  # sin topic por defecto
+    for i, f in enumerate(fechas):
+        tags, obj, ts_ns = N.objeto(cfg, "EURUSD", "1d", b, i)
+        assert obj["date"] == f and ts_ns == int(dt.datetime.fromisoformat(f + "T00:00:00+00:00").timestamp()) * 10 ** 9, (i, obj)
+    assert np.array_equal(N.ts_publicado("1h", abre), abre)
+    bh = {**b, "ts_utc_ms": abre}
+    assert N.objeto(cfg, "EURUSD", "1h", bh, 2)[1]["date"] == "2026-11-03T22:00:00Z"
+    assert N.objeto(cfg, "EURUSD", "1h", bh, 2)[2] == utc(2026, 11, 3, 22) * 10 ** 9
+    assert N.objeto(cfg, "EURUSD", "1h", bh, 0)[0] == {"symbol": "EURUSD", "interval": "1h", "source": "mt5"}
+    assert "source" not in N.objeto(cfg, "EURUSD", "1h", bh, 0)[1] and cfg.topic is None  # sin topic por defecto
 
 
 def prueba_cliente_reintentos_y_errores() -> None:
@@ -246,10 +252,12 @@ def prueba_extremo_a_extremo(ejecutar, raiz: str) -> dict:
         for (sim, iv), tss in q.items():
             assert tss[-1] // 10 ** 9 + N.PASO_S[iv] <= ahora1, (sim, iv)  # la vela en curso no se publica
         assert max(q[("EURUSD", "1h")]) == utc(2026, 11, 4, 11) * 10 ** 9
-        for o in alm.objetos:  # 1d: fecha de la sesion, siempre de lunes a viernes y posterior al dia UTC de la apertura
+        for o in alm.objetos:  # 1d: sesion de lunes a viernes y `ts` exactamente a las 00:00 UTC de su `date`
             if o["tags"]["interval"] == "1d":
                 d = dt.date.fromisoformat(o["obj"]["date"])
-                assert d.weekday() < 5 and d == dt.datetime.fromtimestamp(o["ts"] // 10 ** 9, tz=dt.timezone.utc).date() + dt.timedelta(days=1), o
+                assert d.weekday() < 5 and o["ts"] == utc(d.year, d.month, d.day) * 10 ** 9, o
+        d1 = q[("EURUSD", "1d")]  # desde la sesion del 26-oct (abre el 25 a las 21:00 UTC) hasta la del 3-nov, cerrada
+        assert (d1[0], d1[-1]) == (utc(2026, 10, 26) * 10 ** 9, utc(2026, 11, 3) * 10 ** 9), (d1[0], d1[-1])
         reg = b.ultimo()
         assert reg["qn"].get("fallos_red", 0) > 0 and reg["qn"].get("http_503") == 3, reg["qn"]  # replica caida y 503
         ids1 = {(o["tags"]["symbol"], o["tags"]["interval"], o["ts"]): o["batch_id"] for o in alm.objetos}
@@ -312,6 +320,20 @@ def prueba_extremo_a_extremo(ejecutar, raiz: str) -> dict:
             sin_duplicados(alm3)
         finally:
             flota3.parar()
+        # 5c. 1d solo se publica con la sesion cerrada de verdad (17:00 NY), no al llegar a `ts` + 1 d: en verano cierra a
+        #     las 21:00 UTC y en invierno a las 22:00 UTC; en ambos casos antes de `ts` + 1 d (00:00 UTC del dia siguiente).
+        alm4 = QF.Almacen(TOKEN)
+        flota4 = QF.Flota(alm4, vivas=1, caida=False)
+        try:
+            for ahora, ultima in ((utc(2026, 10, 27, 20, 30), utc(2026, 10, 26)), (utc(2026, 10, 27, 21, 30), utc(2026, 10, 27)),
+                                  (utc(2026, 11, 3, 21, 30), utc(2026, 11, 2)), (utc(2026, 11, 3, 22, 30), utc(2026, 11, 3))):
+                c, out = b(flota4, ahora, extra=["--intervalos", "1d"])
+                assert c == 0 and max(en_qn(alm4)[("EURUSD", "1d")]) == ultima * 10 ** 9, (ahora, out)
+                if ultima // 86400 == ahora // 86400:  # la sesion de hoy, publicada antes de `ts` + 1 d
+                    assert ahora < ultima + 86400
+            sin_duplicados(alm4)
+        finally:
+            flota4.parar()
         # 6. Revision: si qn tiene una vela de la cola con otro valor, se cuenta y no se republica.
         with alm.cerrojo:
             o = max((x for x in alm.objetos if x["tags"]["symbol"] == "EURUSD" and x["tags"]["interval"] == "1d"),

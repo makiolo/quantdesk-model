@@ -57,7 +57,8 @@ Cambios de esta fase en el extractor:
   - Devuelve `{tags, ts, recv_ts, batch_id, schema_version, obj}`. Network no sabe si como objeto suelto o en
     `{"items":[...]}`, así que el lector acepta las dos formas (y una lista).
   - `ts` puede venir en ns o en RFC 3339. Gana el mayor `(ts, recv_ts, batch_id)`.
-  - Un 404 en `latest` se toma como «sin datos», porque el topic ya se comprobó con `schema`.
+  - Un 404 en `latest` se toma como «sin datos», porque el topic ya se comprobó con `schema`. **A confirmar por
+    network**: qué devuelve `latest` cuando un conjunto de tags no tiene datos. Lo pregunta la raíz.
 - Cola: `GET {base}/api/v1/objects/<topic>?env=main&<tags>&from=<ns>&to=<ns>&limit=…`. Formato JSON confirmado:
   - `{"head_cycle","lake_cycle","columns":[{"name","type"}],"rows":[{...}]}`, cada fila un objeto por nombre de columna;
   - columnas fijas `_ts`, `_recv_ts`, `_batch_id` y `_schema_version`, y después los tags y los campos;
@@ -68,16 +69,13 @@ Cambios de esta fase en el extractor:
 - El qn falso del selftest responde con este formato: `/objects` confirmado y `latest` en sus dos formas.
 
 **Marcas de tiempo.**
-- `ts` en ns es la apertura real de la vela en UTC, ya convertida desde la hora del servidor.
-- `date` en 1h, 5m y 1m: la apertura en UTC, `YYYY-MM-DDTHH:MM:SSZ`. No se copia la hora de Londres con Z falsa del
-  backend.
-- `date` en 1d: la **fecha de la sesión** (decisión de la raíz), `YYYY-MM-DD`.
-  - La vela diaria del bróker es la sesión de Nueva York: la del día D abre el D-1 a las 21:00 o 22:00 UTC y cierra el D
-    a las 17:00 NY.
-  - `date` es la fecha en Nueva York de ese cierre. Por ejemplo, la sesión que abre el domingo a las 21:00 UTC lleva la
-    fecha del lunes.
-  - Así coincide con cómo se nombra la sesión diaria de FX y con la etiqueta de yfinance.
-  - El `ts` de 1d está pendiente de decisión: ver «Convención de `ts` en 1d».
+- 1h, 5m y 1m:
+  - `ts` en ns es la apertura real de la vela en UTC, ya convertida desde la hora del servidor;
+  - `date` es esa apertura en UTC, `YYYY-MM-DDTHH:MM:SSZ`. No se copia la hora de Londres con Z falsa del backend.
+- 1d (opción (b), decidida por la raíz; ver «Convención de `ts` en 1d»):
+  - `ts` = 00:00 UTC del día de la sesión D y `date` = D (`YYYY-MM-DD`);
+  - D es la fecha en Nueva York del cierre real (17:00 NY). Por ejemplo, la sesión que abre el domingo a las 21:00 UTC
+    lleva `ts` = lunes 00:00 UTC y `date` = lunes.
 - `volume` es el `tick_volume` de MT5, porque el FX no tiene volumen real.
 
 **Seguro mientras no exista el topic.**
@@ -88,7 +86,37 @@ Cambios de esta fase en el extractor:
   - `source` es a la vez tag y campo del objeto.
 - Así el publicador queda **desactivado contra qn real** hasta que exista el topic nuevo.
 
-## Convención de `ts` en 1d (para decidir)
+## Convención de `ts` en 1d: decidida la opción (b)
+
+**Decisión de la raíz** (intento 128): opción (b). `ts` = 00:00 UTC del día de la sesión D y `date` = D, igual que
+yfinance y que la partición del lago. Está implementada en `nucleo.ts_publicado`.
+
+**Por qué (b).**
+- La sesión D cae en la partición D del lago y en una consulta `from`/`to` del día D.
+- Empareja con yfinance por `(symbol, interval, ts)`.
+- No hay look-ahead.
+
+**Cuándo se publica.**
+- Una vela 1d sólo se publica cuando la sesión ya cerró de verdad: apertura real + 1 d <= ahora, es decir, el cierre de
+  Nueva York a las 21:00 UTC en verano y a las 22:00 UTC en invierno.
+- Ese cierre llega de 2 a 3 h **antes** que `ts` + 1 d; no se espera a `ts` + 1 d.
+- Las comparaciones con qn (`latest`, cola, huecos) usan el `ts` publicado; la condición de vela cerrada usa la apertura
+  real.
+
+**Disponibilidad.**
+- La disponibilidad real de cada vela la da `_recv_ts`, la hora a la que qn la recibió, que siempre es posterior al
+  cierre real. Ni `ts` ni `ts` + 1 d la sustituyen.
+- Con `ts` + 1 d como disponibilidad, un consumidor sería conservador: vería la vela 2-3 h más tarde de lo posible,
+  nunca antes.
+
+**Apertura real.**
+- La hora de apertura no está en `ts`. Se reconstruye con la regla de la sesión: la vela de D abre a las 17:00 NY del
+  día de mercado anterior.
+- En UTC son las 21:00 si en ese instante rige el verano de EE. UU. y las 22:00 en invierno. El domingo es la apertura
+  del lunes.
+- Es la inversa de `ts_publicado`.
+
+Abajo queda el análisis con el que se decidió.
 
 **Lo que publica hoy yfinance.** Lo leí en quantdesk-backend, sólo lectura.
 - `market_scrapper/engine/fx_spot_scraper.py:run_daily` descarga `yf.download(…, interval="1d")`. El índice diario de
@@ -110,14 +138,13 @@ Cambios de esta fase en el extractor:
 | Consultas `from`/`to` | Pedir el día D (00:00-24:00 UTC) devuelve la sesión D+1, que abre esa tarde, y no la D. Hay que desplazar la ventana a mano. | Pedir el día D devuelve la sesión D, como con yfinance. |
 | Choque con yfinance en el topic nuevo | No pisan nada, porque `source` es tag. Pero la misma sesión tiene `ts` distintos según la fuente (D-1 a las 21:00/22:00 frente a D a las 00:00): un cruce por `(symbol, interval, ts)` no las empareja y el cuadre necesita una regla aparte. | Mismo `ts` y misma `date` que yfinance para la misma sesión: un cruce por `(symbol, interval, ts)` empareja directamente. El contenido sigue siendo de ventanas distintas (sesión de NY frente al día de yfinance), y eso es lo que el cuadre debe medir. |
 | Información perdida | Ninguna. | La hora real de apertura deja de estar en `ts`. Se reconstruye con la regla de sesión (cierre a las 17:00 NY) o se añade un campo al esquema del topic nuevo si se quiere explícita. |
-| Cambio de código | Ninguno. | Pequeño y local en `nucleo.objeto` para 1d: `ts` = 00:00 UTC de la fecha de la sesión, que ya se calcula. Más una prueba: la sesión que abre el domingo a las 21:00 UTC lleva `ts` = lunes 00:00 UTC. Comprobación de cola y `latest` no cambian, porque comparan `ts` con lo que el propio publicador genera. |
+| Cambio de código | Ninguno. | Pequeño y local (`nucleo.ts_publicado`), con pruebas. |
 
-**Recomendación: (b).**
+**Recomendación que se dio: (b).**
 - Alinea la partición del lago, las consultas por día UTC y el cruce con yfinance, sin look-ahead.
-- El coste son 2-3 h de disponibilidad conservadora en 1d y perder la hora de apertura en `ts`, que es derivable.
+- El coste es perder la hora de apertura en `ts`, que es derivable.
 - (a) es más «verdad» en el instante, pero obliga a cada consumidor del lago a recordar que la sesión D vive en la
   partición D-1.
-- El código de 1d no cambia hasta que decida la raíz.
 
 ## Una ejecución
 
@@ -279,10 +306,12 @@ ni terminal. Comprueba:
   rellena (`huecos_cola_rellenados` = 1), con igualdad exacta y sin duplicados.
 - Primera ventana de una carga inicial que falla por el principio (las dos primeras velas de 5m): la siguiente ejecución
   las rellena (`huecos_cola_rellenados` = 2), con igualdad exacta y sin duplicados.
-- `date` de 1d es la fecha de la sesión:
-  - la que abre el domingo a las 21:00 UTC lleva la del lunes;
-  - también alrededor de los cambios de hora de marzo y noviembre;
-  - todas las publicadas caen de lunes a viernes.
+- 1d con la opción (b): `ts` = 00:00 UTC de la sesión y `date` = la sesión.
+  - Con los dos horarios de EE. UU.: domingo 21:00 UTC → lunes 26 de octubre; domingo 22:00 UTC → lunes 2 de noviembre.
+  - En el cambio de marzo: jueves 22:00 UTC → viernes 6; domingo 21:00 UTC → lunes 9.
+  - Cada vela 1d publicada tiene `ts` a las 00:00 UTC de su `date` y cae de lunes a viernes.
+  - Una sesión sólo se publica tras su cierre real. Antes del cierre (20:30 UTC en verano, 21:30 UTC en invierno) no
+    está. Después del cierre (21:30 UTC en verano, 22:30 UTC en invierno) sí está, antes de `ts` + 1 d.
 - Un qn nuevo recibe los mismos `batch_id` para las mismas velas.
 - Una revisión se detecta y no se republica.
 - Candado vivo: sale con 0 sin peticiones. Candado caducado: se recupera.
