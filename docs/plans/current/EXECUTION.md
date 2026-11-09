@@ -566,3 +566,12 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
   `quantdesk-backend-01`. A network: `source` como tag en `market.ohlcv`, más las confirmaciones de `/objects`, de
   `env` en `latest` y `schema`, y del bucket @1d. A backend: el scraper publica con el tag; Bento qn2clickhouse,
   ClickHouse `fx_spot`, `/api/fxspot` y Grafana distinguen la fuente. El laboratorio no toca esos repos.
+- Respuesta del backend (raíz 328753bd, 06:40): lo mete en el raíl H de su SPRINT-02 (`72751bb`). La fecha depende de
+  la prioridad que le dé el usuario.
+  - qn_sink publica `source=market_scraper`.
+  - Bento deduplica por `symbol|interval|ts|source`, y una barra sin tag cuenta como `market_scraper`.
+  - ClickHouse añade la columna `source` con un ALTER.
+  - `/api/fxspot` sirve `market_scraper` por defecto y acepta `?source=mt5`.
+  - Grafana y las alertas agrupan por fuente.
+  - Orden: primero el esquema de network, luego el despliegue del backend y luego MT5. La raíz aceptó la propuesta y
+    avisará al backend cuando network confirme el tag. El publicador MT5 no publica hasta entonces.
