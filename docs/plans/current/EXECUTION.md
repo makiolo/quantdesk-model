@@ -378,3 +378,17 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
 - **TI-02-DATA-DEUDA**, autor Opus 5.5 high: los tres arreglos BAJA de la revisión 2 de TI-02-DATA, en la plaza que
   queda libre.
 - Cuota al lanzar: Claude 56 % con el 86,1 % de la ventana (reinicio el 2026-11-10 a las 00:00 UTC); Codex 100 %.
+
+### Decisiones del usuario (2026-11-09, A15)
+
+- **Precios de TS-00-BENCH:** «Precios FX diarios iría al lago. Alguien tiene que proveer al lago, y luego usamos qn
+  para cogerlos». La tabla de cabecera del banco es `lago_cierre_c20261101`, que mantiene su etiqueta de proxy, y
+  Binance queda como segunda tabla. El camino del FX diario es proveedor → lago → qn → laboratorio. Queda abierto quién
+  publica la historia en el lago (pregunta al usuario).
+- **Puerta 2 (TI-12-MT5), abierta:** el usuario da sus credenciales de MT5 (`D:/dev/deeplearning_dev/config_pro.py`) y
+  un ejemplo de uso (`step_01_correlation.py`).
+  - La raíz copió sólo las cuatro claves de MT5 (path, login, password y server) a `E:/quantdesk-lab/secrets/mt5.json`,
+    fuera del árbol de Git y legible sólo por el usuario de Windows. No mostró ningún valor.
+  - Se avisa al autor de TI-12-MT5: al terminar la fase A puede leer del terminal real (inventario y descarga cruda,
+    nunca órdenes).
+  - La exportación y el cuadre contra el diario esperan a la pregunta sobre el lago.

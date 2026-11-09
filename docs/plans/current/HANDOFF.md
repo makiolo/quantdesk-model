@@ -43,8 +43,10 @@ Recuperación en frío (RECOVERY-20261108-133223): la raíz anterior murió haci
   - TI-12-MT5, fase A (sin terminal real), BDD 124;
   - TI-02-DATA-DEUDA, BDD 125.
   Si esta sesión muere, relanzarlos desde su ficha y su último commit.
-- Pregunta al usuario pendiente: qué precios del lago usa TS-00-BENCH, el proxy `cierre` (recomendado) o sólo el
-  estricto. TS-00-BENCH no se lanza hasta que conteste.
+- Respondidas el 2026-11-09 (EXECUTION, A15): la cabecera del banco es el FX diario del lago; la puerta 2 está abierta
+  y las credenciales de MT5 están en `E:/quantdesk-lab/secrets/mt5.json`, fuera de Git.
+- Pregunta abierta: quién publica en el lago la historia de FX, por ejemplo la que sale de MT5. El laboratorio no
+  escribe en backend ni en network.
 
 ## Decisiones
 - Raíz (A12): los 4 hallazgos de la revisión 2 de TI-13-PUB se corrigen en un intento 3 (los dos ALTA son requisitos
