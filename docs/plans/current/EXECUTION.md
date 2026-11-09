@@ -812,3 +812,18 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
     órdenes.
   - Intento BDD 132 aceptado.
   - Las 13 se bajan a una `--salida` aparte cuando termine la descarga de las 484.
+- **Descarga local 1d de acciones US (raíz, `--sin-credenciales`, desde 1990-01-01 hasta 2026-11-09).**
+  - **Sesión normal (484 símbolos):** rc 0, 1 380 220 filas, 85,7 MiB en `E:/quantdesk-lab/data/mt5/us_grandes_1d_20261109`,
+    hash `sha256:6d9e0528…`.
+    - Hay 483 series con datos; `DPZ.NAS` no tiene historia en el broker. `BF/B.NYSE` se guarda como `BF_B.NYSE~…`.
+    - Primera vela: mediana 2017-10. 40 series empiezan en 1990 y 208 en 2017, que es el arranque de la historia del
+      broker para la mayoría; 31 empiezan en 2026.
+    - 51 series tienen menos de 1000 velas.
+    - Ninguna vela con fecha de servidor en sábado o domingo.
+  - **Versión `-24` (13 símbolos):** rc 0, 876 filas en `E:/quantdesk-lab/data/mt5/us_grandes24_1d_20261109`, hash
+    `sha256:1e58cb0a…`.
+    - Sólo 11 tienen datos, y únicamente desde finales de junio o julio de 2026: entre 72 y 93 velas.
+    - `FERG.NYSE-24` y `SKYD.NYSE-24` no tienen historia.
+    - Ninguna vela en fin de semana, así que la duda de `acciones_us_24` queda resuelta.
+    - Para calibrar sirven poco: la historia larga de META, BDX, SHW y las demás tiene que venir de otra fuente (Yahoo,
+      vía TI-13-PUB o el lago).
