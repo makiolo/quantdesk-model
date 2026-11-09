@@ -107,9 +107,11 @@ def validar(dir_dataset: str, vendor_root: str, dataset_id: str, tablas: list, c
         resumen["ejemplos_de_violacion"] = rep["violations"][:3]
         resumen["revisiones_conservadas"] = len(ar["revisions"]["kept"])
         resumen["revisiones_descartadas"] = len(ar["revisions"]["dropped"])
-        # None = tabla vacia (nada que consumir ni que declarar); False = hay filas sin disponibilidad declarada o con violaciones
-        resumen["consumible_causal"] = (None if rep["rows"] == 0 else
-                                        bool(rep["declared"] == rep["rows"] and not rep["violations"]))
+        # estado: vacia (nada que consumir), estricta (todas las filas con available_at_ms propio), proxy_default_lag (el motor las
+        # cuenta `defaulted`: cierre + default_lag_ms, sin campo que lo respalde) o no_declarada (hay filas `undeclared`)
+        resumen["estado"] = ("vacia" if rep["rows"] == 0 else "no_declarada" if rep["undeclared"] or rep["violations"] else
+                             "proxy_default_lag" if rep["defaulted"] else "estricta")
+        resumen["consumible_causal"] = None if resumen["estado"] == "vacia" else resumen["estado"] == "estricta"
         out["disponibilidad"][t["table_id"]] = resumen
         if rep["violations"]:
             problemas.append(f"{t['table_id']}: {len(rep['violations'])} violaciones DPOL-AVL-002")
@@ -124,11 +126,22 @@ def validar(dir_dataset: str, vendor_root: str, dataset_id: str, tablas: list, c
                                         "detail": v["detail"][:200]} for v in pol["violations"]]}
     sin_disp = [k for k, v in out["disponibilidad"].items() if v["consumible_causal"] is False]
     out["tablas_no_consumibles_causalmente"] = sin_disp
-    out["tablas_vacias"] = [k for k, v in out["disponibilidad"].items() if v["consumible_causal"] is None]
+    out["tablas_vacias"] = [k for k, v in out["disponibilidad"].items() if v["estado"] == "vacia"]
+    out["tablas_proxy"] = [k for k, v in out["disponibilidad"].items() if v["estado"] == "proxy_default_lag"]
     codigos = {v["code"] for v in out["politica"]["violaciones"] if v["severity"] == "error"}
     inesperados = codigos - ({"DPOL-AVL-001"} if sin_disp else set())
     if inesperados:
         problemas.append(f"la politica de datos da errores {sorted(inesperados)}")
+    with open(os.path.join(dir_dataset, "manifest.json"), encoding="utf-8") as f:
+        lag = json.load(f)["default_lag_ms"]
+    out["default_lag_ms"] = lag
+    if lag is not None:  # el proxy es un lag declarado: con un tope que lo admita la politica no debe dar errores
+        req2 = {**req, "policy": {**POLITICA, "availability": {"require_available_at": True, "max_default_lag_ms": lag}}}
+        pol2 = _llamar(data_py.verify_policy_json, json.dumps(req2))["report"]
+        out["politica_con_lag_admitido"] = {"max_default_lag_ms": lag, "ok": pol2["ok"], "violaciones": [
+            {"code": v["code"], "severity": v["severity"], "detail": v["detail"][:200]} for v in pol2["violations"]]}
+        if not pol2["ok"]:
+            problemas.append(f"la politica con max_default_lag_ms = {lag} da errores")
     out["lookahead"] = {
         "violaciones": [v for v in out["politica"]["violaciones"] if v["code"] in ("DPOL-AVL-002", "DPOL-AVL-003")],
         "violaciones_por_fila": sum(v["violaciones_dpol_avl_002"] for v in out["disponibilidad"].values())}

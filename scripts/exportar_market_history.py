@@ -16,8 +16,10 @@ Reglas (el detalle y las cifras de cada exportacion quedan en `procedencia.json`
   propio instante en tablas de eventos) y su `available_at_ms` son <= corte; el resto se cuenta y no entra.
 - Disponibilidad: por fila y nunca inventada. Binance: el cierre de la vela. Lago: `_recv_ts` (ohlcv y performance) o
   `scraped_at_ms` (rates); si el lago no trae la marca, la tabla queda sin declarar y se dice que no es consumible causalmente.
-  Con `--disponibilidad-ohlcv cierre` las barras del lago llevan como disponibilidad su cierre: es un proxy declarado como tal,
-  no un campo del lago. `default_lag_ms` queda siempre en null.
+  Con `--disponibilidad-ohlcv cierre` las barras del lago llevan `available_at_ms` nulo y el manifest `default_lag_ms` = 0
+  (disponibles al cierre): es un proxy sin campo que lo respalde, el motor las cuenta como `defaulted` y sus valores son la
+  version que qn recibio despues del corte. Ese dataset debe llevar `_cierre` en el nombre. En cualquier otro caso
+  `default_lag_ms` queda en null.
 - Limpieza contada, sin rellenar huecos ni aproximar: nulos, no finitos, precios <= 0, volumen < 0, high < low (se excluyen),
   open/close fuera de [low, high] (se conservan y se cuentan), versiones repetidas de una barra (se queda la primera ya
   cerrada segun la recepcion en qn), filas posteriores al corte.
@@ -98,17 +100,29 @@ def hash_dataset(tablas: list[dict]) -> str:
     return "sha256:" + hashlib.sha256("".join(lineas).encode()).hexdigest()
 
 
-def describir(origenes: list, corte: str, tablas: list, vistas: list) -> str:
+def describir(origenes: list, corte: str, tablas: list, vistas: list, default_lag_ms: int | None) -> str:
     """Descripcion del manifest: solo depende de lo que entra en el dataset (no de filas posteriores al corte)."""
-    partes = [f"Exportacion TI-02-DATA ({MOTOR}) con corte {corte}T00:00:00Z: ninguna fila tiene cierre ni disponibilidad "
-              "posteriores al corte."]
+    proxies = [t for t in tablas if t["disponibilidad"]["tipo"] == "proxy por default_lag_ms"]
+    if proxies:
+        recibidas = [t["carga"][k] for t in proxies for k in ("recv_ts_primero", "recv_ts_ultimo")]
+        partes = [f"Exportacion TI-02-DATA ({MOTOR}) con corte {corte}T00:00:00Z. ATENCION, DISPONIBILIDAD PROXY: ninguna fila tiene "
+                  "su cierre posterior al corte, pero las tablas ohlcv del lago llevan available_at_ms nulo y default_lag_ms = 0 "
+                  "(disponibles al cierre, sin ningun campo que lo respalde) y sus valores son la version de cada barra que qn "
+                  f"recibio DESPUES del corte (entre {min(recibidas)} y {max(recibidas)}), no la visible al cierre. No es causal "
+                  "en sentido estricto; el dataset estricto es el que usa _recv_ts."]
+    else:
+        partes = [f"Exportacion TI-02-DATA ({MOTOR}) con corte {corte}T00:00:00Z: ninguna fila tiene su cierre ni su "
+                  "available_at_ms declarado posteriores al corte."]
     for o in origenes:
         partes.append(f"Fuente {o['nombre']}, licencia: {o['licencia']}. Universo: {o['universo']['texto']}")
     for t, v in zip(tablas, vistas):
         d = t["disponibilidad"]
-        partes.append(f"{t['table_id']}: {v['instrument'].nunique()} instrumentos con datos hasta el corte; disponibilidad {d['declarada']}"
-                      + (f" desde {d['campo']}." if d["campo"] else ", sin campo que la respalde: no consumible causalmente."))
-    partes.append("default_lag_ms nulo: ninguna disponibilidad se inventa. Huecos y datos descartados contados en procedencia.json.")
+        partes.append(f"{t['table_id']}: {v['instrument'].nunique()} instrumentos con datos hasta el corte; disponibilidad "
+                      f"{d['declarada']}; campo: {d['campo'] or 'ninguno'}"
+                      + (", no consumible causalmente." if d["tipo"] == "no declarada" else "."))
+    partes.append("default_lag_ms nulo: ninguna disponibilidad se inventa." if default_lag_ms is None else
+                  f"default_lag_ms = {default_lag_ms} solo por el proxy declarado arriba.")
+    partes.append("Huecos y datos descartados contados en procedencia.json.")
     return " ".join(partes)
 
 
@@ -136,14 +150,33 @@ def exportar(a: argparse.Namespace) -> int:
     if not (a.binance or a.lago):
         print("exportar: indica al menos una fuente (--binance y/o --lago DIR)", file=sys.stderr)
         return 2
-    nombre = a.nombre or "_".join(n for n, on in (("binance", a.binance), ("lago", a.lago)) if on) + "_c" + a.corte.replace("-", "")
+    if a.disponibilidad_ohlcv == "cierre" and not a.lago:
+        print("exportar: --disponibilidad-ohlcv cierre solo aplica a --lago", file=sys.stderr)
+        return 2
+    modo = ("cierre" if a.disponibilidad_ohlcv == "cierre" else "recepcion") if a.lago else "no aplica"
+    nombre = (a.nombre or "_".join(n for n, on in (("binance", a.binance), ("lago", a.lago)) if on)
+              + ("_cierre" if modo == "cierre" else "") + "_c" + a.corte.replace("-", ""))
     if not NOMBRE_VALIDO.match(nombre):
         print(f"exportar: nombre de dataset no valido: {nombre!r}", file=sys.stderr)
+        return 2
+    if ("_cierre" in nombre) != (modo == "cierre"):  # el proxy y el estricto nunca comparten nombre
+        print(f"exportar: el nombre {nombre!r} y --disponibilidad-ohlcv {a.disponibilidad_ohlcv} no casan: un dataset con la "
+              "disponibilidad proxy lleva `_cierre` en el nombre y uno estricto no", file=sys.stderr)
         return 2
     destino = os.path.join(a.salida_raiz, nombre)
     if os.path.exists(destino) and not a.sobrescribir:
         print(f"exportar: {destino} ya existe (usa --sobrescribir para rehacerlo)", file=sys.stderr)
         return 2
+    if os.path.exists(destino):  # --sobrescribir solo rehace un dataset del mismo modo de disponibilidad
+        try:
+            with open(os.path.join(destino, "procedencia.json"), encoding="utf-8") as f:
+                previo = json.load(f).get("modo_disponibilidad_ohlcv")
+        except (OSError, ValueError):
+            previo = None
+        if previo != modo:
+            print(f"exportar: {destino} es de otro modo de disponibilidad ({previo!r}, ahora {modo!r}) o no tiene procedencia.json; "
+                  "no se sobrescribe", file=sys.stderr)
+            return 2
     try:
         origenes = ([S.cargar_binance(a.ti13)] if a.binance else []) + ([S.cargar_lago(a.lago, a.disponibilidad_ohlcv == "cierre")] if a.lago else [])
     except (ValueError, OSError, KeyError) as e:
@@ -166,17 +199,27 @@ def exportar(a: argparse.Namespace) -> int:
             vistas.append(final)
             print(f"  {t['table_id']}: {c['filas_origen']} filas de origen -> {len(final)} "
                   f"({sum(c['excluidas'].values())} excluidas: {c['excluidas'] or 'ninguna'})")
+    # default_lag_ms solo se escribe para un proxy declarado; vale para TODAS las filas sin available_at_ms del dataset, asi que
+    # ninguna otra tabla puede tenerlas
+    default_lag = 0 if any(t.get("disp_cierre") for t in tablas) else None
+    if default_lag is not None:
+        for t, f in zip(tablas, vistas):
+            if not t.get("disp_cierre") and f["available_at_ms"].isna().any():
+                print(f"exportar: DATOS INCONSISTENTES en {t['table_id']}: filas sin available_at_ms en un dataset con "
+                      "default_lag_ms: se les aplicaria un lag que nadie ha declarado para ellas", file=sys.stderr)
+                return 1
     construccion = os.path.join(a.salida_raiz, ".construyendo")
     dir_ds = os.path.join(construccion, nombre)
     shutil.rmtree(dir_ds, ignore_errors=True)
     entradas = F.escribir_dataset(
-        dir_ds, nombre, describir(origenes, a.corte, tablas, vistas), a.zona,
-        [{"table_id": t["table_id"], "schema": t["schema"], "frame": f} for t, f in zip(tablas, vistas)])["tables"]
+        dir_ds, nombre, describir(origenes, a.corte, tablas, vistas, default_lag), a.zona,
+        [{"table_id": t["table_id"], "schema": t["schema"], "frame": f} for t, f in zip(tablas, vistas)], default_lag)["tables"]
     ds_hash = hash_dataset(entradas)
     proc = {
         "esquema": "ti-02-data.procedencia/v1", "dataset_id": nombre, "dataset_hash": ds_hash, "corte": a.corte,
-        "corte_utc": a.corte + "T00:00:00Z", "corte_ms": corte_ms,
-        "semantica_del_corte": "entra una fila si su cierre (ts_ms + interval_ms; ts_ms en eventos) y su available_at_ms son <= corte",
+        "corte_utc": a.corte + "T00:00:00Z", "corte_ms": corte_ms, "modo_disponibilidad_ohlcv": modo,
+        "default_lag_ms": default_lag,
+        "semantica_del_corte": "entra una fila si su cierre (ts_ms + interval_ms; ts_ms en eventos) y su available_at_ms, si lo tiene, son <= corte",
         "zona_horaria_del_mercado": a.zona, "versiones": versiones(), "codigo_sha256": hash_codigo(),
         "origenes": [{"nombre": o["nombre"], "licencia": o["licencia"], "fuente": o["fuente"], "universo": o["universo"]}
                      for o in origenes],
@@ -220,7 +263,8 @@ def imprimir_resumen(destino: str, proc: dict, val: dict, registro: dict) -> Non
               f"{t['primera']} -> {t['ultima']}  {t['logical_hash']}")
     print(f"  data_py describe: ok con hashes verificados; politica de look-ahead ok={val['politica']['ok']}; "
           f"violaciones por fila={val['lookahead']['violaciones_por_fila']}; "
-          f"no consumibles causalmente: {val['tablas_no_consumibles_causalmente'] or 'ninguna'}; "
+          f"no consumibles causalmente en sentido estricto: {val['tablas_no_consumibles_causalmente'] or 'ninguna'} "
+          f"(de ellas, proxy por default_lag_ms: {val['tablas_proxy'] or 'ninguna'}); "
           f"tablas vacias tras el corte: {val['tablas_vacias'] or 'ninguna'}")
 
 

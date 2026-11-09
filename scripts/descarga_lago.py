@@ -110,6 +110,16 @@ def utc_ahora() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+class SinRedireccion(urllib.request.HTTPRedirectHandler):
+    """No sigue ninguna redireccion: el opener por defecto reenviaria la cabecera Authorization al host de destino."""
+
+    def redirect_request(self, *args, **kwargs):
+        return None
+
+
+ABRIR = urllib.request.build_opener(SinRedireccion).open
+
+
 class Cliente:
     """GET a `{base}/api/v1{ruta}` con reintentos. La credencial va solo en la cabecera Authorization."""
 
@@ -129,7 +139,7 @@ class Cliente:
             req = urllib.request.Request(url, headers={"Authorization": f"Bearer {self.acceso}",
                                                        "Accept": "application/json"})
             try:
-                with urllib.request.urlopen(req, timeout=TIMEOUT_S) as r:
+                with ABRIR(req, timeout=TIMEOUT_S) as r:
                     doc = json.load(r)
                 if not isinstance(doc, dict):
                     raise ValueError("la respuesta no es un objeto JSON")
@@ -139,6 +149,9 @@ class Cliente:
                 if e.code in (401, 403):
                     raise Parada(f"qn rechaza la credencial (HTTP {e.code}) en {ruta}: comprueba QN_TOKEN, que no este "
                                  f"revocado y que tenga permiso de lectura sobre market.> en el entorno {self.env}") from None
+                if 300 <= e.code < 400:
+                    raise RuntimeError(f"qn responde con una redireccion (HTTP {e.code}) en {ruta}: no se sigue, porque la cabecera "
+                                       "Authorization no debe salir del host de QN_URLS; revisa QN_URLS") from None
                 if e.code >= 500 or e.code == 429:
                     ultimo = f"HTTP {e.code} en {ruta}: {sanear(crudo, self.acceso)}"
                     continue
@@ -257,6 +270,7 @@ def correr(a: argparse.Namespace, base: str, acceso: str, env: str) -> int:
     topics_pedidos = [t.strip() for t in a.topics.split(",") if t.strip()]
     catalogo: list = []
     m = {"esquema": ESQUEMA, "fecha_utc": (previo or {}).get("fecha_utc") or utc_ahora(), "ultima_ejecucion_utc": utc_ahora(),
+         "ejecuciones_utc": [*(previo or {}).get("ejecuciones_utc", []), utc_ahora()],  # una reanudacion lee un qn posterior
          "base": base, "bases": sorted({base, *(previo or {}).get("bases", [])}), "env": env,
          "desde": desde.isoformat(), "hasta": hasta.isoformat(), "trozo_dias": a.trozo_dias,
          "script_sha256": sha256_de(os.path.abspath(__file__)), "python": sys.version.split()[0],
@@ -350,6 +364,7 @@ class QnFalso:
         self.fallos: dict = {}      # (topic, simbolo) -> HTTP a devolver; "inf" en `restantes` = siempre
         self.restantes: dict = {}   # (topic, simbolo) -> cuantos fallos quedan
         self.respuesta_global: int | None = None  # HTTP fijo para todo (p. ej. 401)
+        self.redirigir_a: str | None = None       # responde 302 a esta URL a toda peticion
         self.peticiones: list = []  # (ruta, params, tiene_autorizacion_correcta)
         self.token = TOKEN_PRUEBA
 
@@ -391,6 +406,12 @@ def servidor_falso(estado: QnFalso):
             params = {k: v[0] for k, v in urllib.parse.parse_qs(url.query).items()}
             ok = self.headers.get("Authorization") == f"Bearer {estado.token}"
             estado.peticiones.append((url.path, params, ok))
+            if estado.redirigir_a:
+                self.send_response(302)
+                self.send_header("Location", estado.redirigir_a + url.path)
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
             if estado.respuesta_global is not None:
                 return self._json(estado.respuesta_global, {"code": "unauthorized", "message": "token " + estado.token})
             if not ok:
@@ -625,6 +646,22 @@ def selftest() -> None:
         finally:
             srv.shutdown()
             srv.server_close()
+
+        # --- 10b. una redireccion no se sigue: la credencial no llega al host de destino
+        destino_red = QnFalso()
+        srv_dest = servidor_falso(destino_red)
+        origen_red = QnFalso()
+        origen_red.redirigir_a = f"http://127.0.0.1:{srv_dest.server_address[1]}"
+        srv_orig = servidor_falso(origen_red)
+        try:
+            cod, out, err = lanzar(f"http://127.0.0.1:{srv_orig.server_address[1]}/qn", os.path.join(tmp, "redir"), *comun)
+            assert cod == 1 and "redireccion" in err and "HTTP 302" in err, (cod, err)
+            assert len(origen_red.peticiones) == 1 and destino_red.peticiones == [], (origen_red.peticiones, destino_red.peticiones)
+            sin_credencial(os.path.join(tmp, "redir"), out, err)
+        finally:
+            for s in (srv_orig, srv_dest):
+                s.shutdown()
+                s.server_close()
 
         # --- 11. entorno incompleto o topic inexistente
         env = {k: v for k, v in os.environ.items() if not k.startswith("QN_")}

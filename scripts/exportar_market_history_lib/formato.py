@@ -152,13 +152,15 @@ def entrada_manifest(table_id: str, esquema: str, ruta: str, df: pd.DataFrame, h
             "logical_hash": hash_}
 
 
-def manifest(dataset_id: str, descripcion: str, zona: str, tablas: list[dict]) -> dict:
-    """Manifest en el orden de campos de `MarketHistoryManifest`. `default_lag_ms` queda en null: nunca se inventa."""
+def manifest(dataset_id: str, descripcion: str, zona: str, tablas: list[dict], default_lag_ms: int | None = None) -> dict:
+    """Manifest en el orden de campos de `MarketHistoryManifest`. `default_lag_ms` es null salvo en un dataset con un proxy de
+    disponibilidad declarado (`--disponibilidad-ohlcv cierre`, valor 0): nunca se inventa otro."""
     return {"schema": "engine.market-history", "version": "v1", "dataset_id": dataset_id, "description": descripcion,
-            "time": {"zone": zona}, "sessions": [], "default_lag_ms": None, "tables": tablas, "symbol_history": []}
+            "time": {"zone": zona}, "sessions": [], "default_lag_ms": default_lag_ms, "tables": tablas, "symbol_history": []}
 
 
-def escribir_dataset(directorio: str, dataset_id: str, descripcion: str, zona: str, tablas: list[dict]) -> dict:
+def escribir_dataset(directorio: str, dataset_id: str, descripcion: str, zona: str, tablas: list[dict],
+                     default_lag_ms: int | None = None) -> dict:
     """Escribe parquet y manifest de `tablas` (`table_id`, `schema`, `frame`) en `directorio`; devuelve el manifest."""
     os.makedirs(directorio, exist_ok=True)
     entradas = []
@@ -166,7 +168,7 @@ def escribir_dataset(directorio: str, dataset_id: str, descripcion: str, zona: s
         ruta = t["table_id"] + ".parquet"
         escribir_parquet(t["schema"], t["frame"], os.path.join(directorio, ruta))
         entradas.append(entrada_manifest(t["table_id"], t["schema"], ruta, t["frame"], hash_logico(t["schema"], t["frame"])))
-    m = manifest(dataset_id, descripcion, zona, entradas)
+    m = manifest(dataset_id, descripcion, zona, entradas, default_lag_ms)
     escribir_json(os.path.join(directorio, "manifest.json"), m)
     return m
 

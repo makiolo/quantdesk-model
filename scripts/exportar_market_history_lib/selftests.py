@@ -20,6 +20,7 @@ from . import formato as F
 from . import limpieza as L
 from . import validacion as V
 from .fuentes import ESQUEMA_VOLCADO, sha256_fichero
+from .fuentes import a_ms as A_MS
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO = os.path.dirname(HERE)
@@ -40,6 +41,15 @@ def ns(m: int, d: int, h: int = 0, mi: int = 0) -> int:
 # ---------------------------------------------------------------------------------------------------------------------
 # Piezas puras
 # ---------------------------------------------------------------------------------------------------------------------
+
+def prueba_redondeo_de_marcas() -> None:
+    """La disponibilidad se redondea hacia arriba (nunca por delante de la recepcion); el instante de un evento, hacia abajo."""
+    ns_ = 1793574185437103040
+    assert A_MS(ns_) == 1793574185437 and A_MS(ns_, arriba=True) == 1793574185438
+    assert A_MS(1793574185437000000, arriba=True) == 1793574185437  # un ms exacto no se mueve
+    assert A_MS(1793574185437, arriba=True) == 1793574185437 and A_MS(1793574185.4371, arriba=True) == 1793574185438
+    assert A_MS(None) is None and A_MS(True) is None and A_MS(5) is None
+
 
 def prueba_formato_de_floats() -> None:
     """El formato de ryu/serde_json: sin cero en el exponente, `.0` en los enteros y notacion cientifica fuera de 1e-5..1e16."""
@@ -308,15 +318,33 @@ def prueba_exportar_lago(tmp: str) -> None:
     assert reg["validacion"]["ok"] and reg["validacion"]["tablas_no_consumibles_causalmente"] == []
     assert reg["validacion"]["lookahead"]["violaciones_por_fila"] == 0 and reg["validacion"]["politica"]["ok"]
     assert all(tb["hash_verified"] for tb in reg["validacion"]["describe"]["tablas"])
-    # proxy de disponibilidad: el cierre de la barra; la de `_recv_ts` posterior al corte (AAA 10-30) pasa a entrar
-    cod, out, err = cli(*base[:-1], "lago_p", "--salida-raiz", raiz1, "--disponibilidad-ohlcv", "cierre", runs=runs)
+    # disponibilidad proxy: available_at_ms nulo y default_lag_ms = 0; la barra de `_recv_ts` posterior al corte (AAA 10-30) entra
+    cod, out, err = cli(*base[:-1], "lago_p_cierre", "--salida-raiz", raiz1, "--disponibilidad-ohlcv", "cierre", runs=runs)
     assert cod == 0, (out, err)
-    pp = {x["table_id"]: x for x in leer(raiz1, "lago_p")["tablas"]}
+    pp = {x["table_id"]: x for x in leer(raiz1, "lago_p_cierre")["tablas"]}
     assert pp["lago_ohlcv_1d"]["filas"] == 10 and "posterior_al_corte_por_disponibilidad" not in pp["lago_ohlcv_1d"]["limpieza"]["excluidas"]
-    assert "proxy" in pp["lago_ohlcv_1d"]["disponibilidad"]["declarada"] and pp["lago_rates_quotes"]["filas"] == 7
-    pr = pq.read_table(os.path.join(raiz1, "lago_p", "lago_ohlcv_1d.parquet")).to_pandas()
-    assert (pr["available_at_ms"] == pr["ts_ms"] + pr["interval_ms"]).all()
-    assert "proxy" in json.load(open(os.path.join(raiz1, "lago_p", "manifest.json"), encoding="utf-8"))["description"]
+    assert pp["lago_ohlcv_1d"]["disponibilidad"]["tipo"] == "proxy por default_lag_ms" and pp["lago_rates_quotes"]["filas"] == 7
+    pr = pq.read_table(os.path.join(raiz1, "lago_p_cierre", "lago_ohlcv_1d.parquet")).to_pandas()
+    assert pr["available_at_ms"].isna().all(), "el proxy no se escribe como disponibilidad por fila"
+    mp = json.load(open(os.path.join(raiz1, "lago_p_cierre", "manifest.json"), encoding="utf-8"))
+    assert mp["default_lag_ms"] == 0 and "DISPONIBILIDAD PROXY" in mp["description"] and "DESPUES del corte" in mp["description"]
+    vp = json.load(open(os.path.join(runs, "lago_p_cierre.json"), encoding="utf-8"))["validacion"]
+    assert vp["ok"] and vp["tablas_proxy"] == ["lago_ohlcv_1d", "lago_ohlcv_1h"], vp["tablas_proxy"]
+    d1p = vp["disponibilidad"]["lago_ohlcv_1d"]
+    assert (d1p["declared"], d1p["defaulted"], d1p["undeclared"], d1p["violaciones_dpol_avl_002"]) == (0, 10, 0, 0), d1p
+    assert vp["disponibilidad"]["lago_rates_quotes"]["declared"] == 7 and vp["politica_con_lag_admitido"]["ok"]
+    assert any(v["code"] == "DPOL-AVL-001" for v in vp["politica"]["violaciones"]), "la politica estricta debe avisar del proxy"
+    # el nombre: el proxy lleva `_cierre` por defecto y nunca comparte nombre con el estricto; --sobrescribir no cambia de modo
+    cod, out, err = cli("--lago", dump, "--corte", CORTE, "--salida-raiz", raiz1, "--disponibilidad-ohlcv", "cierre", runs=runs)
+    assert cod == 0 and os.path.isdir(os.path.join(raiz1, "lago_cierre_c20261101")), (out, err)
+    assert cli(*base, "--salida-raiz", os.path.join(tmp, "r6"), "--disponibilidad-ohlcv", "cierre", runs=runs)[0] == 2
+    assert cli(*base[:-1], "lago_t_cierre", "--salida-raiz", os.path.join(tmp, "r6"), runs=runs)[0] == 2
+    assert cli("--binance", "--corte", CORTE, "--disponibilidad-ohlcv", "cierre", "--salida-raiz", os.path.join(tmp, "r6"), runs=runs)[0] == 2
+    shutil.copytree(os.path.join(raiz1, "lago_t"), os.path.join(raiz1, "lago_x_cierre"))
+    antes = sha256_fichero(os.path.join(raiz1, "lago_x_cierre", "manifest.json"))
+    cod, out, err = cli(*base[:-1], "lago_x_cierre", "--salida-raiz", raiz1, "--disponibilidad-ohlcv", "cierre", "--sobrescribir", runs=runs)
+    assert cod == 2 and "otro modo" in err, (cod, err)
+    assert sha256_fichero(os.path.join(raiz1, "lago_x_cierre", "manifest.json")) == antes
     # misma exportacion otra vez: mismo hash y mismos bytes
     cod, out, err = cli(*base, "--salida-raiz", raiz2, "--repeticion", runs=runs)
     assert cod == 0, (out, err)
@@ -506,6 +534,7 @@ def correr() -> None:
     tmp = tempfile.mkdtemp(prefix="selftest-", dir=LAB_TMP)
     try:
         prueba_formato_de_floats()
+        prueba_redondeo_de_marcas()
         prueba_hash_contra_el_motor(tmp)
         prueba_limpieza()
         prueba_versiones_del_lago()

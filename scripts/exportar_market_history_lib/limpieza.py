@@ -72,6 +72,21 @@ def elegir_version(df: pd.DataFrame, clave: list, orden_por: list, conservar: st
     return quitar(df, descarta, motivo, c)
 
 
+def mayor_diferencia(df: pd.DataFrame) -> dict | None:
+    """La barra cuyo `close` mas cambia entre su primera y su ultima version recibida (con todas las versiones, tambien las
+    abiertas): ejemplo de que el valor que llega despues no es el visible al cierre. None si ninguna barra cambia."""
+    s = df.dropna(subset=["recv_ms"]).sort_values(["recv_ms", "orden"], kind="mergesort")
+    g = s.groupby(CLAVE_OHLCV, sort=True)
+    a, b = g[["close", "recv_ms"]].first(), g[["close", "recv_ms"]].last()
+    rel = (b["close"] - a["close"]).abs() / a["close"]
+    if not len(rel) or rel.max() <= 0:
+        return None
+    k = rel.idxmax()
+    return {"instrument": k[0], "interval_ms": int(k[1]), "ts_ms": int(k[2]), "close_primera": float(a.loc[k, "close"]),
+            "recv_primera_ms": int(a.loc[k, "recv_ms"]), "close_ultima": float(b.loc[k, "close"]),
+            "recv_ultima_ms": int(b.loc[k, "recv_ms"]), "dif_relativa": float(rel.max())}
+
+
 def limpiar_ohlcv(df: pd.DataFrame, corte_ms: int, duplicados: str, c: dict, calendario: str | None = None,
                   disp_cierre: bool = False) -> pd.DataFrame:
     """Aplica los pasos a una tabla ohlcv/v1 en construccion y devuelve el DataFrame final, con las columnas de la tabla.
@@ -99,6 +114,7 @@ def limpiar_ohlcv(df: pd.DataFrame, corte_ms: int, duplicados: str, c: dict, cal
     cierre = df["ts_ms"] + df["interval_ms"]
     valores = list(NUMERICAS)
     if duplicados == "recepcion" and df["recv_ms"].notna().any():
+        c["detalle"]["version_mayor_diferencia"] = mayor_diferencia(df[(df["ts_ms"] + df["interval_ms"]) <= corte_ms])  # barras del dataset
         df = quitar(df, df["recv_ms"].isna(), "sin_marca_de_recepcion", c)
         df = quitar(df, df["recv_ms"] < cierre.loc[df.index], "version_en_curso", c)
         df = elegir_version(df, CLAVE_OHLCV, ["recv_ms", "orden"], "primera", valores, c, "version_posterior_descartada")
@@ -111,8 +127,8 @@ def limpiar_ohlcv(df: pd.DataFrame, corte_ms: int, duplicados: str, c: dict, cal
             raise ValueError(f"filas repetidas con valores distintos y sin criterio para elegir: {c['detalle']['duplicado']}")
     # 3. corte: ni el cierre de la barra ni su disponibilidad pueden ser posteriores
     cierre = df["ts_ms"] + df["interval_ms"]
-    if disp_cierre:  # la disponibilidad es un proxy, no un dato del lago: el cierre de la barra (ver el selftest y el informe)
-        df["available_at_ms"] = (df["ts_ms"] + df["interval_ms"]).astype("Int64")
+    if disp_cierre:  # ningun campo respalda la disponibilidad: queda nula y el manifest declara default_lag_ms = 0 (cierre + 0)
+        df["available_at_ms"] = pd.array([None] * len(df), dtype="Int64")
     df = quitar(df, cierre > corte_ms, "posterior_al_corte_por_fecha", c)
     df = quitar(df, df["available_at_ms"] > corte_ms, "posterior_al_corte_por_disponibilidad", c)
     # 4. invariante: nunca disponible antes del cierre

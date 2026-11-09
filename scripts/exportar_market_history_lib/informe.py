@@ -75,6 +75,32 @@ def _detalle_limpieza(t: dict) -> list:
         x = d["ohlc_incoherente_conservada"]
         out.append(f"  - Barras con open o close fuera de [low, high] (se conservan, no se corrigen): {x['filas']}; desvio relativo "
                    f"al cierre, mediana {x['mediana_desvio_relativo']:.3g} y maximo {x['max_desvio_relativo']:.3g}.")
+    v = d.get("version_mayor_diferencia")
+    if v:
+        iv = f"{v['interval_ms'] // 3_600_000} h" if v["interval_ms"] < 86_400_000 else f"{v['interval_ms'] // 86_400_000} d"
+        out.append(f"  - Mayor cambio de `close` entre la primera y la ultima version recibida de una barra del dataset: "
+                   f"{v['instrument']} {iv} {iso_ms(v['ts_ms'])} pasa de {v['close_primera']:.6g} (recibida {iso_ms(v['recv_primera_ms'])}) "
+                   f"a {v['close_ultima']:.6g} (recibida {iso_ms(v['recv_ultima_ms'])}), {v['dif_relativa']:.2%}: el valor que llega "
+                   "despues no es el visible al cierre.")
+    if "date_frente_a_ts" in carga:
+        r = carga["date_frente_a_ts"].get("rango_de__ts_por_desfase", {})
+        r3600, r0 = r.get("3600"), r.get("0")
+        if r3600 and r0 and r3600[1][:10] < "2026-10-25" <= r0[0][:10]:
+            out.append(f"  - Causa del desfase de 3600 s: aparece solo en `_ts` de {r3600[0]} a {r3600[1]} y vale 0 de {r0[0]} en "
+                       "adelante; el horario de verano britanico (BST) acabo el 2026-10-25. `date` es la hora local de Londres "
+                       "escrita como si fuera UTC (los cambios de dia son las barras de las 00:00 de Londres, que en BST son las "
+                       "23:00 UTC del dia anterior) y `_ts` es el instante UTC correcto: se usa `_ts`.")
+    congeladas = carga.get("fechados_mas_de_un_ano_antes_de_leerse")
+    if congeladas:
+        lista = "; ".join(f"{g['instrument']} ({g['filas']} filas de {', '.join(g['anios'])}, {g['valores_distintos']} valor(es) "
+                          f"entre {g['valor_minimo']:g} y {g['valor_maximo']:g})" for g in congeladas)
+        out.append(f"  - Cotizaciones fechadas (`valuation_date`) mas de un ano antes de leerse: {lista}. Las de un unico valor "
+                   "repetido son cotizaciones congeladas de la fuente; el scraper lee todas a partir de 2025-12 y se fechan por `valuation_date` (por eso el "
+                   "rango llega a 2014, aunque el inventario TI-01-INV las fechaba por `_ts`, la lectura) y su disponibilidad es "
+                   "la lectura, asi que no hay look-ahead. Se conservan tal cual.")
+        if any("SARON" in g["instrument"] and g["valor_maximo"] > 0.5 for g in congeladas):
+            out.append("  - Un 1,0072 en SARON no parece un tipo (1 %) sino un precio de futuro dividido entre 100; se conserva "
+                       "sin corregir y quien use estas series debe tratarlo como sospechoso.")
     return out
 
 
@@ -90,13 +116,14 @@ def generar(raiz: str, runs: str, nombres: list) -> str:
          f"- Motor: {v['motor']}; python {v['python']}, pyarrow {v['pyarrow']}, pandas {v['pandas']}, numpy {v['numpy']}.",
          "- Generado por `exportar_market_history.py --informe` a partir de `procedencia.json` y del registro de cada ejecucion.",
          "- Reglas: el corte es el instante `AAAA-MM-DDT00:00:00Z`; una fila entra solo si su cierre y su `available_at_ms` son "
-         "menores o iguales; `default_lag_ms` queda nulo; los huecos no se rellenan; nada se descarta sin contarlo.", ""]
-    L += [_fila(["dataset", "corte", "filas por tabla", "tablas vacias tras el corte", "disponibilidad proxy", "dataset_hash"]),
-          "|---|---|---|---|---|---|"]
+         "menores o iguales (si lo tiene); `default_lag_ms` queda nulo salvo en un dataset con disponibilidad proxy declarada "
+         "(valor 0, y esas filas llevan `available_at_ms` nulo); los huecos no se rellenan; nada se descarta sin contarlo.", ""]
+    L += [_fila(["dataset", "corte", "filas por tabla", "tablas vacias tras el corte", "tipo de disponibilidad por tabla",
+                 "dataset_hash"]), "|---|---|---|---|---|---|"]
     for n, proc, reg, _ in docs:
-        proxies = [t["table_id"] for t in proc["tablas"] if "proxy" in t["disponibilidad"]["declarada"]]
+        tipos = "; ".join(f"{t['table_id']}: {t['disponibilidad']['tipo']}" for t in proc["tablas"] if t["filas"])
         L.append(_fila([f"`{n}`", proc["corte"], ", ".join(f"{t['table_id']} {t['filas']}" for t in proc["tablas"]),
-                        ", ".join(reg["validacion"].get("tablas_vacias", [])) or "ninguna", ", ".join(proxies) or "no",
+                        ", ".join(reg["validacion"].get("tablas_vacias", [])) or "ninguna", tipos or "-",
                         f"`{proc['dataset_hash'][:23]}...`"]))
     L.append("")
     for n, proc, reg, rep in docs:
@@ -141,23 +168,30 @@ def generar(raiz: str, runs: str, nombres: list) -> str:
         L += ["", "### Disponibilidad (`available_at_ms`)", ""]
         for t in proc["tablas"]:
             d = t["disponibilidad"]
-            L.append(f"- `{t['table_id']}`: {d['declarada']}; campo: {d['campo'] or 'ninguno'}. {d['justificacion']}")
+            L.append(f"- `{t['table_id']}` [{d['tipo']}]: {d['declarada']}; campo: {d['campo'] or 'ninguno'}. {d['justificacion']}")
         val = reg["validacion"]
         L += ["", "### Validacion con `data_py` y look-ahead", "",
               f"- `{val['llamadas']['vendor']}`: `dataset_hash` del motor `{val['vendor']['dataset_hash_del_motor']}`, "
               f"{'igual' if val['vendor']['dataset_hash_del_motor'] == proc['dataset_hash'] else 'DISTINTO del'} calculado aqui.",
               f"- `{val['llamadas']['describe']}`: tablas {', '.join(t['table_id'] + ' (' + str(t['rows']) + ' filas, hash_verified=' + str(t['hash_verified']) + ')' for t in val['describe']['tablas'])}.",
               f"- `{val['llamadas']['disponibilidad']}` por tabla: " + "; ".join(
-                  f"{k}: declared {x['declared']}/{x['rows']}, undeclared {x['undeclared']}, violaciones DPOL-AVL-002 {x['violaciones_dpol_avl_002']}"
-                  for k, x in val["disponibilidad"].items()) + ".",
+                  f"{k}: declared {x['declared']}/{x['rows']}, defaulted {x['defaulted']}, undeclared {x['undeclared']}, "
+                  f"violaciones DPOL-AVL-002 {x['violaciones_dpol_avl_002']}" for k, x in val["disponibilidad"].items()) + ".",
               f"- `{val['llamadas']['politica']}`: ok={val['politica']['ok']}, violaciones: "
               f"{[(x['code'], x['severity'], x.get('instrument')) for x in val['politica']['violaciones']] or 'ninguna'}; "
-              f"report_hash `{val['politica']['report_hash']}`.",
+              f"report_hash `{val['politica']['report_hash']}`."]
+        if "politica_con_lag_admitido" in val:
+            x = val["politica_con_lag_admitido"]
+            L.append(f"- Misma politica con `max_default_lag_ms` = {x['max_default_lag_ms']} (admite el lag declarado): ok={x['ok']}, "
+                     f"violaciones {[(v['code'], v['severity']) for v in x['violaciones']] or 'ninguna'}. El DPOL-AVL-001 de arriba es "
+                     "el aviso de que esas filas son proxy y no estrictas.")
+        L += [
               f"- Comprobacion propia sobre el parquet releido (esquema exacto de `data_py.table_schemas_json()`, orden, "
               f"cierre y disponibilidad <= corte, disponibilidad >= cierre, revision 0): "
               + ("sin incidencias." if not any(x["problemas"] for x in val["parquet"].values()) else str(val["parquet"])),
               f"- Violaciones de look-ahead por fila: **{val['lookahead']['violaciones_por_fila']}**; tablas no consumibles "
-              f"causalmente: {val['tablas_no_consumibles_causalmente'] or 'ninguna'}; tablas vacias tras el corte (ninguna fila "
+              f"causalmente en sentido estricto: {val['tablas_no_consumibles_causalmente'] or 'ninguna'} (de ellas, proxy por "
+              f"`default_lag_ms`: {val['tablas_proxy'] or 'ninguna'}); tablas vacias tras el corte (ninguna fila "
               f"cumple cierre y disponibilidad <= corte): {val['tablas_vacias'] or 'ninguna'}.", ""]
         L += ["### Universo y sesgo de supervivencia (D-07)", ""]
         for o in proc["origenes"]:

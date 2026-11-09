@@ -86,13 +86,16 @@ def cargar_binance(raiz: str) -> dict:
             "table_id": f"binance_ohlcv_{iv}", "schema": "ohlcv/v1", "frame": marco, "duplicados": "identicos",
             "calendario": None, "contador": nuevo_contador(len(marco)), "carga": {"filas_leidas": int(len(marco))},
             "disponibilidad": {
-                "campo": "ts_ms + interval_ms (cierre de la vela)", "declarada": "por fila",
+                "tipo": "cierre declarado por la fuente", "campo": "ts_ms + interval_ms (cierre de la vela)",
+                "declarada": "por fila",
                 "justificacion": (
-                    "Una vela solo es definitiva al cerrar (close_time de Binance = apertura + intervalo - 1 ms) y TI-13-PUB no "
-                    "conserva ninguna marca de publicacion por fila: solo la apertura de la vela y la fecha de descarga "
-                    "(2026-11-08), que como disponibilidad dejaria todo el historico fuera de cualquier corte anterior. Se "
-                    "declara el instante de cierre, la cota inferior de lo que pudo saberse, sin latencia de red ni de "
-                    "publicacion (limitacion: un consumidor que necesite latencia debe aplicarla en su politica).")}})
+                    "No es un proxy: es el cierre que declara la propia fuente. Cada kline de Binance trae su `close_time`, que "
+                    "vale apertura + intervalo - 1 ms; TI-13-PUB lo descarto y conserva solo la apertura. Se comprobo en el crudo "
+                    "(1640 zips de data.binance.vision, 420 219 klines): lo cumplen todos salvo 61 de 1 h, que cierran antes "
+                    "(el cierre declarado aqui es conservador en esas). Es el instante en que la vela deja de cambiar, no un "
+                    "instante de publicacion: no modela latencia de red ni de publicacion (un consumidor que la necesite debe "
+                    "aplicarla en su politica), y la fecha de descarga (2026-11-08) no sirve porque dejaria todo el historico "
+                    "fuera de cualquier corte anterior.")}})
     return {
         "nombre": "binance", "fuente": {"tipo": "binance", "datasets": fuentes}, "tablas": tablas,
         "licencia": "CC BY-NC-SA 4.0 de Binance Vision, solo uso personal no productivo",
@@ -107,12 +110,18 @@ def cargar_binance(raiz: str) -> dict:
 # Lago de qn (volcado de descarga_lago.py)
 # ---------------------------------------------------------------------------------------------------------------------
 
-def a_ms(v) -> int | None:
-    """Marca numerica del lago (s, ms, us o ns, por magnitud) a milisegundos UTC; None si no es una marca plausible."""
+def a_ms(v, arriba: bool = False) -> int | None:
+    """Marca numerica del lago (s, ms, us o ns, por magnitud) a milisegundos UTC; None si no es una marca plausible.
+    Redondea hacia abajo (instante de un evento) o, con `arriba`, hacia arriba: una disponibilidad nunca debe quedar por
+    delante de la recepcion real."""
     if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
         return None
     m = abs(v)
-    ms = int(v) // 10 ** 6 if m >= 1e17 else int(v) // 10 ** 3 if m >= 1e14 else int(v) if m >= 1e11 else int(v * 1000)
+    div = 10 ** 6 if m >= 1e17 else 10 ** 3 if m >= 1e14 else 1 if m >= 1e11 else None
+    if div is None:
+        ms = math.ceil(v * 1000) if arriba else int(v * 1000)
+    else:
+        ms = -(-int(v) // div) if arriba else int(v) // div
     return ms if 631_152_000_000 <= ms <= 4_102_444_800_000 else None  # 1990..2100
 
 
@@ -178,15 +187,16 @@ def abrir_volcado(directorio: str) -> dict:
 
 
 DISP_OHLCV_PROXY = {
-    "campo": "cierre de la barra, ts_ms + interval_ms (PROXY)", "declarada": "por fila (proxy, no evidenciada por el lago)",
+    "tipo": "proxy por default_lag_ms", "campo": "ninguno: available_at_ms nulo y default_lag_ms = 0 en el manifest (cierre + 0)",
+    "declarada": "por default_lag_ms = 0 (proxy, sin campo que la respalde)",
     "justificacion": (
-        "PROXY elegido con --disponibilidad-ohlcv cierre. El lago solo conserva `_recv_ts`, la recepcion en qn, y qn se relleno "
-        "con el historico de golpe (ver el primer `_recv_ts` de la tabla en la seccion de limpieza): con ese campo ninguna barra "
-        "anterior queda disponible antes de esa fecha. Aqui se declara el cierre de la barra, la cota inferior de lo que pudo "
-        "saberse, con el mismo criterio que Binance: una barra de un feed publico existe al cerrar. No lo respalda ningun "
-        "campo del lago (no se conoce cuando se leyo cada barra de yfinance) y los valores son los recibidos despues, que pueden "
-        "diferir de lo visible al cierre (ver la diferencia relativa entre versiones). Es optimista; el dataset estricto es el "
-        "que usa `_recv_ts`.")}
+        "PROXY elegido con --disponibilidad-ohlcv cierre. Ningun campo del lago dice cuando se supo cada barra antes de que qn la "
+        "recibiera: `_recv_ts` es la recepcion en qn, y qn se relleno con el historico de golpe (primer `_recv_ts` en la seccion "
+        "de limpieza), asi que con ese campo no hay ninguna barra anterior a esa fecha. Por eso `available_at_ms` queda nulo y "
+        "el manifest declara `default_lag_ms` = 0, el mecanismo del motor para 'disponible al cierre, sin evidencia' (el motor "
+        "cuenta estas filas como `defaulted`, no `declared`). Los VALORES son la version que qn recibio DESPUES del corte, no la "
+        "visible al cierre (ver el ejemplo de mayor diferencia entre versiones en la limpieza): el dataset NO es causal en "
+        "sentido estricto. Para eso esta el dataset estricto, que usa `_recv_ts`.")}
 
 
 def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: bool = False) -> tuple[list, int]:
@@ -201,7 +211,7 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: b
                                                             "recv_ms", "orden")},
                                    "leidas": 0, "sin_ts": 0, "sub_ms": 0, "con_recv": 0, "recv_antes_de_ts": 0,
                                    "desfases": Counter(), "con_date": 0, "mismo_dia": 0, "ejemplos_dia": [],
-                                   "fuentes": Counter(), "recv_min": None, "recv_max": None})
+                                   "fuentes": Counter(), "recv_min": None, "recv_max": None, "rango_desfase": {}})
         cols = a["cols"]
         for r in leer_ndjson(os.path.join(directorio, *fich["ruta"].split("/"))):
             a["leidas"] += 1
@@ -211,7 +221,7 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: b
                 a["sin_ts"] += 1
                 continue
             a["sub_ms"] += sub_ms(r.get("_ts"))
-            recv = a_ms(r.get("_recv_ts"))
+            recv = a_ms(r.get("_recv_ts"), arriba=True)
             a["con_recv"] += recv is not None
             a["recv_antes_de_ts"] += recv is not None and recv < ts
             if recv is not None:
@@ -228,6 +238,8 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: b
             if dc is not None:
                 a["con_date"] += 1
                 a["desfases"][(dc - ts) // 1000] += 1
+                lo, hi = a["rango_desfase"].get((dc - ts) // 1000, (ts, ts))
+                a["rango_desfase"][(dc - ts) // 1000] = (min(lo, ts), max(hi, ts))
                 if dc // MS_DIA == ts // MS_DIA:
                     a["mismo_dia"] += 1
                 elif len(a["ejemplos_dia"]) < 3:
@@ -256,8 +268,11 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: b
                           "filas_con_date": a["con_date"], "mismo_dia_utc": a["mismo_dia"],
                           "dia_utc_distinto": a["con_date"] - a["mismo_dia"],
                           "desfase_date_menos_ts_en_segundos": {str(k): v for k, v in a["desfases"].most_common(8)},
+                          "rango_de__ts_por_desfase": {str(k): [iso_ms(a["rango_desfase"][k][0]), iso_ms(a["rango_desfase"][k][1])]
+                                                       for k, _ in a["desfases"].most_common(8)},
                           "ejemplos_de_dia_distinto": a["ejemplos_dia"]}},
             "disponibilidad": DISP_OHLCV_PROXY if disp_cierre else {
+                "tipo": "campo del lago" if con_recv else "no declarada",
                 "campo": "_recv_ts (instante en que qn recibio la version elegida de la barra)" if con_recv else None,
                 "declarada": "por fila" if con_recv else "no declarada",
                 "justificacion": (
@@ -281,7 +296,7 @@ def _cargar_lago_eventos(directorio: str, topic: dict, orden0: int, cfg: dict) -
     """rates.quotes y performance como custom/v1: una fila por observacion, con su payload en `data_json`."""
     cols = {k: [] for k in ("instrument", "custom_type", "ts_ms", "available_at_ms", "data_json", "orden")}
     c = {"leidas": 0, "excluidas": Counter(), "disp_ausente": 0, "disp_distinta_de_ts": 0, "fuentes": Counter(),
-         "ts_igual_a_fecha": 0, "disp_min": None, "disp_max": None}
+         "ts_igual_a_fecha": 0, "disp_min": None, "disp_max": None, "congeladas": {}}
     orden = orden0
     nombres = set()
     for fich in sorted(topic["ficheros"], key=lambda x: x["ruta"]):
@@ -301,7 +316,7 @@ def _cargar_lago_eventos(directorio: str, topic: dict, orden0: int, cfg: dict) -
             if not math.isfinite(valor):
                 c["excluidas"][f"{cfg['campo_valor']}_no_valido"] += 1
                 continue
-            disp = a_ms(r.get(cfg["campo_disp"]))
+            disp = a_ms(r.get(cfg["campo_disp"]), arriba=True)
             c["disp_ausente"] += disp is None
             if disp is not None:
                 c["disp_min"] = disp if c["disp_min"] is None else min(c["disp_min"], disp)
@@ -311,6 +326,11 @@ def _cargar_lago_eventos(directorio: str, topic: dict, orden0: int, cfg: dict) -
                 propio = a_ms(r.get("_ts"))
                 c["disp_distinta_de_ts"] += propio is not None and disp is not None and propio != disp
             c["fuentes"][str(r.get("source"))] += 1
+            if disp is not None and disp - ts > 365 * MS_DIA:  # dato fechado mas de un ano antes de que se leyera
+                g = c["congeladas"].setdefault(inst, {"filas": 0, "anios": set(), "valores": set()})
+                g["filas"] += 1
+                g["anios"].add(r.get(cfg["campo_fecha"])[:4])
+                g["valores"].add(valor)
             cols["instrument"].append(inst)
             cols["custom_type"].append(cfg["topic"])
             cols["ts_ms"].append(ts)
@@ -332,8 +352,13 @@ def _cargar_lago_eventos(directorio: str, topic: dict, orden0: int, cfg: dict) -
                   "filas_con__ts_igual_a_la_fecha": c["ts_igual_a_fecha"],
                   "disponibilidad_primera": iso_ms(c["disp_min"]) if c["disp_min"] is not None else None,
                   "disponibilidad_ultima": iso_ms(c["disp_max"]) if c["disp_max"] is not None else None,
+                  "fechados_mas_de_un_ano_antes_de_leerse": [
+                      {"instrument": k, "filas": g["filas"], "anios": sorted(g["anios"]), "valores_distintos": len(g["valores"]),
+                       "valor_minimo": min(g["valores"]), "valor_maximo": max(g["valores"])}
+                      for k, g in sorted(c["congeladas"].items())],
                   "source": dict(c["fuentes"])},
-        "disponibilidad": {"campo": cfg["campo_disp"], "declarada": "por fila", "justificacion": cfg["justificacion"]},
+        "disponibilidad": {"tipo": "campo del lago", "campo": cfg["campo_disp"], "declarada": "por fila",
+                           "justificacion": cfg["justificacion"]},
     }, orden
 
 
