@@ -852,3 +852,26 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
   - En Binance todos quedan entre 1,00 y 1,05. HMM y GARCH ganan a h=1 y en QLIKE.
   - Ningún modelo zero-shot mejora claramente a GARCH.
 - Intento BDD 127 aceptado y tarea cerrada en la BDD. TS-00-OBJ pasa a en curso (puerta 3 del usuario).
+
+### Cierre de TS-00-OBJ (2026-11-09) — CERRADA (puerta 3 del usuario)
+
+- El usuario eligió las tres opciones recomendadas. Están escritas en `quantdesk` `docs/plans/backlog/PLAN_TSFM_FINANZAS.md`,
+  «Fase 0», commit `905b1670` sin push, con la excepción de GAP-01 y enlace al informe del banco (`8a849c6`).
+- **Forecast.** Éxito si se cumplen las tres condiciones:
+  - CRPS ≤ 0,97 veces GARCH en al menos 2 de los 3 horizontes, y nunca > 1,02;
+  - Kupiec rechaza en ≤ 10 % de los activos por cola;
+  - el percentil 99 de la banda 1–99 % es ≤ 2 veces el de GARCH.
+- **«Pierde claramente» (D-08, GAP-TSFM-03).** Basta con una de tres condiciones:
+  - CRPS más de un 3 % peor que el mejor de Chronos-2/Toto en al menos 2 de los 3 horizontes;
+  - el doble de rechazos de Kupiec;
+  - no ganar ni en colas ni en QLIKE.
+- **H1, provisional:** error de σ_loc sobre una superficie sintética ≤ 5 % en |k| ≤ 1σ√T y ≤ 15 % hasta 2σ√T.
+- **TS-08-STAB, provisional:**
+  - variación total de gamma en spot ±15 % ≤ 1,5 veces la de la volatilidad local sintética;
+  - residuo diario de delta ≤ 10 %.
+- Tarea cerrada en la BDD.
+- **Pendiente para cerrar TI-12-MT5:** el criterio «1 m agregado a diario cuadra con otra fuente diaria». Encargado
+  como última sub-entrega: descarga m1 de fx28 dos veces para comparar el hash, y cuadre contra el D1 de MT5 y contra
+  el FX diario del lago.
+- **Noche 1 de la carga 1d en qn:** programada a las 02:03 CET, con el OK de network y backend y a 40 000 objetos cada
+  5 min. La noche 2, la de las acciones, espera a network.
