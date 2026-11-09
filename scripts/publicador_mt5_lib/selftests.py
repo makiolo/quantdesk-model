@@ -132,6 +132,38 @@ def prueba_codificacion() -> None:
     assert "source" not in N.objeto(cfg, "EURUSD", "1h", bh, 0)[1] and cfg.topic is None  # sin topic por defecto
 
 
+# Contrato de market.ohlcv.v2 (quantdesk-network d61b65b, deploy/qn-topics/market.ohlcv.v2.json), copiado aqui a proposito
+# para no depender de ese repo: kind object, tags symbol/interval/source, seis propiedades obligatorias y
+# additionalProperties false.
+CONTRATO_V2_TAGS = ("symbol", "interval", "source")
+CONTRATO_V2_PROPIEDADES = {"open": "number", "high": "number", "low": "number", "close": "number", "volume": "number",
+                           "date": "string"}
+
+
+def cumple_contrato_v2(tags: dict, obj: dict) -> None:
+    assert tuple(sorted(tags)) == tuple(sorted(CONTRATO_V2_TAGS)) and all(isinstance(v, str) and v for v in tags.values()), tags
+    assert set(obj) == set(CONTRATO_V2_PROPIEDADES), sorted(obj)  # exactamente las seis: ni source ni nada mas
+    for k, tipo in CONTRATO_V2_PROPIEDADES.items():
+        v = obj[k]
+        ok = isinstance(v, str) if tipo == "string" else (isinstance(v, (int, float)) and not isinstance(v, bool))
+        assert ok and (tipo == "string" or v == v), (k, v)  # number: ni bool ni NaN
+    assert "source" not in obj  # `source` solo como tag
+
+
+def prueba_contrato_v2() -> None:
+    cfg = N.Config(urls=[], topic=QF.TOPIC)
+    for iv, ts in (("1d", utc(2026, 11, 3)), ("1h", utc(2026, 11, 3, 22)), ("5m", utc(2026, 11, 3, 22, 5))):
+        b = {"ts_utc_ms": np.array([ts * 1000]), "open": np.array([1.08]), "high": np.array([1.09]),
+             "low": np.array([1.07]), "close": np.array([1.085]), "tick_volume": np.array([123], dtype=np.uint64)}
+        tags, obj, ts_ns = N.objeto(cfg, "EURUSD", iv, b, 0)
+        cumple_contrato_v2(tags, obj)
+        assert tags["source"] == "mt5" and type(obj["volume"]) is float and isinstance(ts_ns, int)
+        cuerpo = json.loads(Q.codificar(cfg.topic, tags, obj, ts_ns)[0])
+        assert set(cuerpo) == {"tags", "obj", "ts", "batch_id"} and isinstance(cuerpo["ts"], int)
+        cumple_contrato_v2(cuerpo["tags"], cuerpo["obj"])
+    assert set(QF.PROPIEDADES) == set(CONTRATO_V2_PROPIEDADES) and QF.TOPIC == "market.ohlcv.v2"
+
+
 def prueba_cliente_reintentos_y_errores() -> None:
     alm = QF.Almacen(TOKEN)
     flota = QF.Flota(alm, vivas=2, caida=True)
@@ -165,13 +197,16 @@ def prueba_cliente_reintentos_y_errores() -> None:
             assert e.estado == 409 and not isinstance(e, Q.ErrorQnAutorizacion)
         else:
             raise AssertionError("409")
-        # Topic que no existe: 404 en publish (permanente).
-        try:
-            cli.publicar("market.ohlcv", tags, obj, 1)
-        except Q.ErrorQnPermanente as e:
-            assert e.estado == 404
-        else:
-            raise AssertionError("404")
+        # Topic no registrado (UnknownTopic = 404 `unknown_topic`): error fatal propio en publish, latest y schema; nunca
+        # "sin datos".
+        for llamada in (lambda: cli.publicar("market.ohlcv.v9", tags, obj, 1), lambda: cli.latest("market.ohlcv.v9", tags),
+                        lambda: cli.esquema("market.ohlcv.v9")):
+            try:
+                llamada()
+            except Q.ErrorQnTopicDesconocido as e:
+                assert e.estado == 404 and e.codigo == "unknown_topic" and "no registrado" in str(e)
+            else:
+                raise AssertionError("UnknownTopic")
         # 401: token malo; el mensaje no lleva el token.
         try:
             Q.ClienteQn(flota.urls, "token-malo-77", dormir=esperas.append).latest(T, tags)
@@ -190,15 +225,25 @@ def prueba_cliente_reintentos_y_errores() -> None:
         assert not any(TOKEN in r for r in alm.rutas)  # el token nunca va en la URL
     finally:
         flota.parar()
-    # latest como objeto suelto (ts en RFC 3339) y 404 cuando no hay nada: las dos formas que network no descarta.
-    alm = QF.Almacen(TOKEN, latest="suelto")
+    # latest confirmado por network: topic registrado sin datos para el filtro -> 200 con items: [] (sin datos); con datos,
+    # `ts` en ns enteros (con precision de ns: no pasa por RFC 3339). Un 404 que no sea unknown_topic es error.
+    alm = QF.Almacen(TOKEN)
     flota = QF.Flota(alm, vivas=1, caida=False)
     try:
         cli = Q.ClienteQn(flota.urls, TOKEN)
+        crudo = cli.peticion("GET", f"/api/v1/topics/{QF.TOPIC}/latest?env=main&symbol=EURUSD")
+        assert crudo == {"env": "main", "topic": QF.TOPIC, "kind": "object", "items": []}, crudo
         assert cli.latest(QF.TOPIC, tags) == []
-        for k in (5_000_000_000, 7_000_123_000):
+        for k in (5_000_000_000, 7_000_123_456):
             cli.publicar(QF.TOPIC, tags, obj, k)
-        assert [Q.ts_ns_de(x["ts"]) for x in cli.latest(QF.TOPIC, tags)] == [7_000_123_000]
+        items = cli.latest(QF.TOPIC, tags)
+        assert isinstance(items[0]["ts"], int) and [Q.ts_ns_de(x["ts"]) for x in items] == [7_000_123_456]
+        try:
+            cli.peticion("GET", "/api/v1/otra/ruta")
+        except Q.ErrorQnPermanente as e:
+            assert e.estado == 404 and not isinstance(e, Q.ErrorQnTopicDesconocido)
+        else:
+            raise AssertionError("404 generico")
     finally:
         flota.parar()
     assert Q.items_latest({"items": [1]}) == [1] and Q.items_latest([2]) == [2] and Q.items_latest({}) == []
@@ -230,8 +275,13 @@ def prueba_extremo_a_extremo(ejecutar, raiz: str) -> dict:
             n = sum(alm.peticiones.values())
             c, out = b(flota, utc(2026, 11, 4, 12, 30), topic=topic)
             assert c == 2 and "--topic" in out and sum(alm.peticiones.values()) == n, out
-        #    b) un topic que no existe (404); c) market.ohlcv de hoy, sin el tag source; d) source como tag y como campo.
-        casos = [(QF.Almacen(TOKEN), "market.ohlcv", "unknown_topic"),
+        #    b) market.ohlcv.v2 aun sin registrar en qn (UnknownTopic en schema); c) registrado para schema pero UnknownTopic
+        #    en latest (fatal, no "sin datos"); d) market.ohlcv de hoy, sin el tag source; e) source como tag y como campo.
+        sin_registrar = QF.Almacen(TOKEN, topic="otro.topic")
+        desaparece = QF.Almacen(TOKEN)
+        desaparece.latest_desconocido = True
+        casos = [(sin_registrar, QF.TOPIC, "no esta registrado"),
+                 (desaparece, QF.TOPIC, "no esta registrado"),
                  (QF.Almacen(TOKEN, tags=("symbol", "interval"), propiedades=QF.PROPIEDADES + ("source",),
                              topic="market.ohlcv"), "market.ohlcv", "le faltan ['source']"),
                  (QF.Almacen(TOKEN, propiedades=QF.PROPIEDADES + ("source",)), QF.TOPIC, "a la vez tag y campo")]
@@ -256,6 +306,8 @@ def prueba_extremo_a_extremo(ejecutar, raiz: str) -> dict:
             if o["tags"]["interval"] == "1d":
                 d = dt.date.fromisoformat(o["obj"]["date"])
                 assert d.weekday() < 5 and o["ts"] == utc(d.year, d.month, d.day) * 10 ** 9, o
+        for o in alm.objetos:  # contrato de market.ohlcv.v2 sobre todo lo publicado de verdad
+            cumple_contrato_v2(o["tags"], o["obj"])
         d1 = q[("EURUSD", "1d")]  # desde la sesion del 26-oct (abre el 25 a las 21:00 UTC) hasta la del 3-nov, cerrada
         assert (d1[0], d1[-1]) == (utc(2026, 10, 26) * 10 ** 9, utc(2026, 11, 3) * 10 ** 9), (d1[0], d1[-1])
         reg = b.ultimo()
@@ -289,9 +341,9 @@ def prueba_extremo_a_extremo(ejecutar, raiz: str) -> dict:
         assert s["huecos_cola_rellenados"] == 1, s
         assert en_qn(alm) == esperado(ahora3)
         sin_duplicados(alm)
-        # 5. batch_id estable: un qn nuevo recibe los mismos ids para las mismas velas. Este qn responde `latest` como
-        #    objeto suelto con ts en RFC 3339 (404 sin datos): con dos ejecuciones se cubre tambien esa forma.
-        alm2 = QF.Almacen(TOKEN, latest="suelto")
+        # 5. batch_id estable: un qn nuevo (vacio: `latest` da items []) recibe los mismos ids para las mismas velas; una
+        #    segunda ejecucion tras el apagado deja la serie igual a MT5.
+        alm2 = QF.Almacen(TOKEN)
         flota2 = QF.Flota(alm2, vivas=1, caida=False)
         try:
             assert b(flota2, ahora1)[0] == 0
@@ -414,8 +466,8 @@ def prueba_tarea_xml() -> None:
     assert v("t:Principals/t:Principal/t:RunLevel") == "LeastPrivilege"
     assert v("t:Principals/t:Principal/t:LogonType") == "InteractiveToken"
     assert raiz.find("t:Principals/t:Principal/t:UserId", ns) is None  # el usuario que la registra
-    # Marcador del topic: hasta que el usuario lo sustituya, el publicador sale BLOQUEADO sin publicar.
-    assert v("t:Actions/t:Exec/t:Arguments").endswith("scripts\\publicador_mt5.py --ejecutar --topic TOPIC_POR_DECIDIR")
+    # Topic elegido por el usuario (la guarda del marcador TOPIC_POR_DECIDIR sigue en el codigo y se prueba aparte).
+    assert v("t:Actions/t:Exec/t:Arguments").endswith("scripts\\publicador_mt5.py --ejecutar --topic market.ohlcv.v2")
     assert v("t:Actions/t:Exec/t:Command").endswith("\\.venv\\Scripts\\pythonw.exe")
 
 
@@ -423,7 +475,7 @@ def correr(ejecutar) -> int:
     raiz = os.path.join(TMP, f"selftest_pub_{os.getpid()}")
     os.makedirs(raiz, exist_ok=True)
     try:
-        for p in (prueba_codificacion, prueba_cliente_reintentos_y_errores, prueba_tarea_xml):
+        for p in (prueba_codificacion, prueba_contrato_v2, prueba_cliente_reintentos_y_errores, prueba_tarea_xml):
             p()
             print(f"ok  {p.__name__}")
         prueba_candado(raiz)

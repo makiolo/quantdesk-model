@@ -32,15 +32,23 @@ Cambios de esta fase en el extractor:
 
 ## Contrato con qn (confirmado por network leyendo su código)
 
-**Topic nuevo.**
-- `source` no puede ser tag de `market.ohlcv`: añadir un tag a un topic existente da conflicto y no hay DELETE.
-- Hace falta un topic NUEVO con tags `{symbol, interval, source}`. Su nombre lo decide el usuario y aún no está.
-- En el publicador, `--topic` es obligatorio para publicar y no tiene valor por defecto. El XML de la tarea lleva el
-  marcador `TOPIC_POR_DECIDIR`; con él, o sin `--topic`, el publicador sale BLOQUEADO sin preguntar a qn.
+**Topic: `market.ohlcv.v2`** (elegido por el usuario).
+- Lo define quantdesk-network en d61b65b, en `deploy/qn-topics/market.ohlcv.v2.json`.
+- **Todavía no está registrado en producción.**
+- `source` no podía ser tag de `market.ohlcv`: añadir un tag a un topic existente da conflicto y no hay DELETE. Por eso
+  el topic es nuevo.
+- Contrato:
+  - `kind: object`, tags `symbol`, `interval` y `source`;
+  - propiedades `open`, `high`, `low`, `close` y `volume` (number) y `date` (string);
+  - las seis obligatorias y `additionalProperties: false`;
+  - **sin `source` en el objeto**: un tag no puede llamarse como un campo (`fuente_en_objeto=False`).
+- El selftest lleva una copia del contrato (`CONTRATO_V2_*`, sin depender del repo de network). Comprueba que cada objeto
+  publicado tiene exactamente esas seis propiedades con sus tipos y que `source` va sólo como tag.
+- En el publicador, `--topic` sigue siendo obligatorio para publicar y no tiene valor por defecto. La tarea programada
+  pasa `--topic market.ohlcv.v2`. La guarda del marcador `TOPIC_POR_DECIDIR` se mantiene en el código y en el selftest:
+  sin `--topic`, o con el marcador, sale BLOQUEADO sin preguntar a qn.
 - Los nombres de los tres tags y el valor de `source` son configurables. Por defecto `source=mt5`, y
   `--fuente mt5:<bróker>` si hay que distinguir brókers.
-- Objeto: `open`, `high`, `low`, `close`, `volume` y `date`, **sin `source`**: un tag no puede llamarse como un campo
-  del objeto (`fuente_en_objeto=False`).
 
 **Publicar.**
 - `POST {base}/api/v1/topics/<topic>/publish?env=main&wait=accepted`, un objeto por POST, con
@@ -49,16 +57,22 @@ Cambios de esta fase en el extractor:
 - Reintentos sólo en 5xx y errores de red: se rota entre las réplicas de `QN_URLS` y se espera lo que diga
   `Retry-After`, con un tope de 30 s.
 - Una réplica que no responde pasa 60 s en cuarentena. En Windows, conectar a un puerto cerrado cuesta unos 2 s.
-- Un 401 o un 403 paran la ejecución. Cualquier otro 4xx, incluido el 409, para la serie.
+- Un 401 o un 403 paran la ejecución.
+- `UnknownTopic` (404 con `code: unknown_topic`, «topic no registrado») también para la ejecución: código 2, sin
+  publicar nada.
+- Cualquier otro 4xx, incluido el 409, para la serie.
 
 **Leer.**
 - Última vela de la serie: `GET {base}/api/v1/topics/<topic>/latest?env=main&symbol=…&interval=…&source=mt5`.
   - Exige `sub:` y acepta `env` y el filtro por tags.
-  - Devuelve `{tags, ts, recv_ts, batch_id, schema_version, obj}`. Network no sabe si como objeto suelto o en
-    `{"items":[...]}`, así que el lector acepta las dos formas (y una lista).
-  - `ts` puede venir en ns o en RFC 3339. Gana el mayor `(ts, recv_ts, batch_id)`.
-  - Un 404 en `latest` se toma como «sin datos», porque el topic ya se comprobó con `schema`. **A confirmar por
-    network**: qué devuelve `latest` cuando un conjunto de tags no tiene datos. Lo pregunta la raíz.
+  - Comportamiento confirmado por network:
+    - con datos: 200 con `{"env","topic","kind":"object","items":[{tags, ts, recv_ts, batch_id, schema_version, obj}]}`,
+      con `ts` en **nanosegundos enteros**. Gana el mayor `(ts, recv_ts, batch_id)`;
+    - topic registrado sin datos para el filtro: 200 con `items: []`. **Esto es «sin datos»**, y la serie empieza en
+      su fecha inicial;
+    - topic no registrado: `UnknownTopic` (404, `code: unknown_topic`, «topic no registrado»). Es un error **fatal**:
+      la ejecución sale BLOQUEADO con código 2 y 0 POST. Nunca se toma como «sin datos».
+  - Cualquier otro 404 es un error de la serie. El tratamiento antiguo de «404 = sin datos» se quitó.
 - Cola: `GET {base}/api/v1/objects/<topic>?env=main&<tags>&from=<ns>&to=<ns>&limit=…`. Formato JSON confirmado:
   - `{"head_cycle","lake_cycle","columns":[{"name","type"}],"rows":[{...}]}`, cada fila un objeto por nombre de columna;
   - columnas fijas `_ts`, `_recv_ts`, `_batch_id` y `_schema_version`, y después los tags y los campos;
@@ -66,7 +80,8 @@ Cambios de esta fase en el extractor:
   - no deduplica.
   El lector toma `_ts` y, si las filas llegaran como listas, las nombra con `columns`.
 - Esquema: `GET {base}/api/v1/topics/<topic>/schema?env=main` (exige `sub:`), con `tags` y el JSON Schema del objeto.
-- El qn falso del selftest responde con este formato: `/objects` confirmado y `latest` en sus dos formas.
+- El qn falso del selftest reproduce este comportamiento: `/objects` confirmado, `latest` con `items` (ns), `items: []`
+  sin datos y `UnknownTopic` para un topic no registrado.
 
 **Marcas de tiempo.**
 - 1h, 5m y 1m:
@@ -78,13 +93,15 @@ Cambios de esta fase en el extractor:
     lleva `ts` = lunes 00:00 UTC y `date` = lunes.
 - `volume` es el `tick_volume` de MT5, porque el FX no tiene volumen real.
 
-**Seguro mientras no exista el topic.**
+**Seguro mientras `market.ohlcv.v2` no esté registrado.**
 - Sin `--topic`, o con el marcador, sale BLOQUEADO (código 2) sin preguntar a qn.
 - Con un topic, antes de publicar lee `GET …/topics/<topic>/schema`. Sale BLOQUEADO y no publica nada si:
-  - el topic no existe (404);
-  - no declara los tres tags (es el caso de `market.ohlcv` hoy);
+  - el topic no está registrado (`UnknownTopic`): es lo que pasará hoy con `market.ohlcv.v2`;
+  - no declara los tres tags (es el caso de `market.ohlcv`);
   - `source` es a la vez tag y campo del objeto.
-- Así el publicador queda **desactivado contra qn real** hasta que exista el topic nuevo.
+- Si el topic dejara de estar registrado entre `schema` y `latest`, el `UnknownTopic` de `latest` también para la
+  ejecución con código 2.
+- Así el publicador queda **desactivado contra qn real** hasta que network registre el topic.
 
 ## Convención de `ts` en 1d: decidida la opción (b)
 
@@ -235,9 +252,9 @@ Salida: 0 ok, 1 alguna serie con error (la siguiente ejecución retoma), 2 BLOQU
   No guarda ninguna contraseña de Windows.
 - No despierta el equipo y tiene un límite de 6 h por ejecución.
 - La acción es `pythonw.exe` del `.venv` (sin ventana) con
-  `scripts\publicador_mt5.py --ejecutar --topic TOPIC_POR_DECIDIR` y el repo como directorio de trabajo.
-- **Marcador `TOPIC_POR_DECIDIR`:** antes de registrar la tarea hay que sustituirlo en `<Arguments>` por el nombre del
-  topic nuevo. Mientras siga el marcador, el publicador sale BLOQUEADO sin publicar.
+  `scripts\publicador_mt5.py --ejecutar --topic market.ohlcv.v2` y el repo como directorio de trabajo.
+- Mientras `market.ohlcv.v2` no esté registrado en qn, cada ejecución sale BLOQUEADO (`UnknownTopic`) sin publicar
+  nada. Conviene registrar la tarea después de que network registre el topic.
 
 **Cómo se registra.** Lo hace el usuario:
 
@@ -263,21 +280,20 @@ Register-ScheduledTask -TaskName "quantdesk\publicador_mt5" -Xml (Get-Content -R
    ```
    .venv/Scripts/python -X utf8 scripts/publicador_mt5.py --simular --sin-credenciales --intervalos 1d,1h,5m,1m
    ```
-4. **El usuario** decide el nombre del topic nuevo y la convención de `ts` en 1d. **Network** crea el topic con tags
-   `symbol`, `interval` y `source` y sin `source` en el objeto. **La raíz** emite el token (`pub:` + `sub:` sobre ese
-   topic en `main`) y lo deja en `secrets/qn-mt5.token`.
-5. **Primera ejecución real**, con el terminal abierto por el usuario y con `QN_URLS` puesto. `<topic>` es el nombre
-   decidido. Empieza con un símbolo y 1d, y luego todo:
+4. **Network** registra `market.ohlcv.v2` en producción. El usuario ya eligió el topic y la raíz la convención de 1d.
+   **La raíz** emite el token (`pub:` + `sub:` sobre `market.ohlcv.v2` en `main`) y lo deja en `secrets/qn-mt5.token`.
+5. **Primera ejecución real**, con el terminal abierto por el usuario y con `QN_URLS` puesto. Empieza con un símbolo y
+   1d, y luego todo:
    ```
-   .venv/Scripts/python -X utf8 scripts/publicador_mt5.py --ejecutar --topic <topic> --sin-credenciales --simbolos EURUSD --intervalos 1d
-   .venv/Scripts/python -X utf8 scripts/publicador_mt5.py --ejecutar --topic <topic> --sin-credenciales
+   .venv/Scripts/python -X utf8 scripts/publicador_mt5.py --ejecutar --topic market.ohlcv.v2 --sin-credenciales --simbolos EURUSD --intervalos 1d
+   .venv/Scripts/python -X utf8 scripts/publicador_mt5.py --ejecutar --topic market.ohlcv.v2 --sin-credenciales
    ```
-6. **El usuario** sustituye `TOPIC_POR_DECIDIR` en el XML y registra la tarea con la orden de arriba. Desde ese momento,
-   el publicador hace `initialize(path)` y `login` con `secrets/mt5.json` en su propia sesión.
+6. **El usuario** registra la tarea con la orden de arriba; el XML ya lleva `--topic market.ohlcv.v2`. Desde ese
+   momento, el publicador hace `initialize(path)` y `login` con `secrets/mt5.json` en su propia sesión.
 
 **Cómo comprobar la continuidad en qn después.**
 - `ultimo.json` y el `jsonl` del día: `sin_publicar` = 0, `error` nulo y `huecos_cola_rellenados` tras un corte.
-- En qn, por serie: `GET /api/v1/objects/<topic>?env=main&symbol=EURUSD&interval=1h&source=mt5&from=…&to=…`.
+- En qn, por serie: `GET /api/v1/objects/market.ohlcv.v2?env=main&symbol=EURUSD&interval=1h&source=mt5&from=…&to=…`.
   - Los `_ts` tienen que ir de hora en hora sin más saltos que los fines de semana, que se ven en `huecos_mercado`.
   - Ningún `_ts` puede repetirse con distinto `_batch_id`. `/objects` no deduplica, así que una repetición se vería.
 - Tras apagar la máquina unos días, la primera ejecución al encender tiene que dar `nuevas` > 0 y, en la siguiente,
@@ -287,16 +303,21 @@ Register-ScheduledTask -TaskName "quantdesk\publicador_mt5" -Xml (Get-Content -R
 
 `.venv/Scripts/python -X utf8 scripts/publicador_mt5.py --selftest` termina en `selftest ok` en unos 85 s, sin red real
 ni terminal. Comprueba:
-- Sale BLOQUEADO y hace 0 POST:
+- Sale BLOQUEADO con código 2 y 0 POST:
   - sin `--topic` o con el marcador, sin preguntar a qn;
-  - con un topic que no existe (404);
-  - con `market.ohlcv` tal como está hoy (sin el tag `source`);
+  - con `market.ohlcv.v2` sin registrar (`UnknownTopic` en `schema`);
+  - con `UnknownTopic` en `latest` aunque `schema` respondiera, que nunca se toma como «sin datos»;
+  - con `market.ohlcv` tal como está (sin el tag `source`);
   - con `source` a la vez como tag y como campo.
-- Lectores con el formato de network:
-  - `/objects` con `_ts` en RFC 3339 con µs y filas por nombre de columna;
-  - `latest` como `{"items":[...]}` con `ts` en ns, y como objeto suelto con `ts` en RFC 3339 y 404 sin datos. Con
-    este último, dos ejecuciones completas dan igualdad exacta con MT5 y ningún duplicado.
-- El objeto publicado no lleva `source`.
+- Contrato de `market.ohlcv.v2`, copiado en el test: cada objeto, el de `objeto()`, el cuerpo del POST y todo lo
+  publicado de punta a punta, tiene exactamente las seis propiedades con sus tipos, y `source` sólo como tag.
+- Lectores con el comportamiento confirmado:
+  - `latest` de un topic registrado sin datos da 200 con `{"env","topic","kind":"object","items":[]}`, y eso es «sin
+    datos»;
+  - con datos, `ts` es un entero en ns;
+  - `UnknownTopic` en `publish`, `latest` y `schema` lanza el error fatal propio; cualquier otro 404 es un error
+    genérico;
+  - `/objects` lleva `_ts` en RFC 3339 con µs y filas por nombre de columna.
 - Primera ejecución un miércoles a las 12:30: en qn quedan exactamente las velas cerradas de MT5 (1d, 1h, 5m de 2
   símbolos) y ninguna abierta. La réplica caída y tres 503 con Retry-After se superan rotando.
 - Una ejecución repetida en el mismo instante no hace ningún POST.

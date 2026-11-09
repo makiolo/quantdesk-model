@@ -156,6 +156,10 @@ def ejecutar(argv, fabrica=LT.importar_paquete, cargar_cred=X.cargar_credenciale
             try:
                 cliente = Q.ClienteQn(cfg.urls, token, env=cfg.env, espera_max_s=cfg.espera_max_s)
                 doc = cliente.esquema(cfg.topic)
+            except Q.ErrorQnTopicDesconocido:
+                registro["resultado"] = f"bloqueado: topic no registrado en qn ({cfg.topic})"
+                decir(f"BLOQUEADO: el topic {cfg.topic} no esta registrado en qn (UnknownTopic); no se publica nada")
+                return guardar(2)
             except (ValueError, Q.ErrorQn) as e:
                 registro["resultado"] = f"bloqueado: {LT.censurar(str(e), secretos)}"
                 decir(f"BLOQUEADO: qn ({cfg.topic}): {LT.censurar(str(e), secretos)}")
@@ -191,8 +195,8 @@ def ejecutar(argv, fabrica=LT.importar_paquete, cargar_cred=X.cargar_credenciale
                 try:
                     r = N.serie(cfg, cliente, term, sim, todos[sim]["base"], info, iv, regla, ahora, a.desde, candado)
                 except (D.ErrorTerminal, D.ErrorFormato, Q.ErrorQnAgotado, Q.ErrorQnPermanente) as e:
-                    if isinstance(e, Q.ErrorQnAutorizacion):
-                        raise
+                    if isinstance(e, (Q.ErrorQnAutorizacion, Q.ErrorQnTopicDesconocido)):
+                        raise  # fatales: paran toda la ejecucion
                     r = {"simbolo": todos[sim]["base"], "simbolo_mt5": sim, "intervalo": iv,
                          "error": LT.censurar(str(e), secretos)}
                 if r.get("error"):
@@ -211,6 +215,10 @@ def ejecutar(argv, fabrica=LT.importar_paquete, cargar_cred=X.cargar_credenciale
     except Q.ErrorQnAutorizacion as e:
         registro["resultado"] = f"bloqueado: qn rechazo el token ({e.estado})"
         decir(f"BLOQUEADO: qn rechazo el token o el permiso (HTTP {e.estado})")
+        return guardar(2)
+    except Q.ErrorQnTopicDesconocido:
+        registro["resultado"] = f"bloqueado: topic no registrado en qn ({a.topic})"
+        decir(f"BLOQUEADO: el topic {a.topic} no esta registrado en qn (UnknownTopic); no se publica nada")
         return guardar(2)
     except X.ParadaDisco as e:
         registro["resultado"] = f"parada: {e}"

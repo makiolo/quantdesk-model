@@ -6,9 +6,9 @@ Contrato (investigacion de la raiz, quantdesk-backend/market_scrapper/qn_sink.py
   durable}`.
 - `batch_id` = uuid5(espacio fijo de qn_sink.py, JSON canonico de {topic, tags, obj, ts}): el mismo contenido da el mismo
   id en cualquier ejecucion, y qn lo trata como duplicado (7 dias de memoria); el mismo id con otro contenido es 409.
-- `GET {base}/api/v1/topics/{topic}/latest?env&<tag>=<valor>...` (permiso `sub:`) -> `{tags, ts, recv_ts, batch_id,
-  schema_version, obj}`, suelto o dentro de `{"items":[...]}` (network no lo sabe: se aceptan los dos). Gana el mayor
-  `(ts, recv_ts, batch_id)`.
+- `GET {base}/api/v1/topics/{topic}/latest?env&<tag>=<valor>...` (permiso `sub:`) -> `{"env","topic","kind":"object",
+  "items":[{tags, ts, recv_ts, batch_id, schema_version, obj}]}` con `ts` en ns enteros; `items: []` si no hay datos
+  para el filtro. Gana el mayor `(ts, recv_ts, batch_id)`. Topic no registrado: 404 `unknown_topic` (fatal).
 - `GET {base}/api/v1/objects/{topic}?env&<tags>&from=<ns>&to=<ns>&limit` -> `{"head_cycle","lake_cycle","columns":
   [{"name","type"}],"rows":[{...}]}` (confirmado por network): filas por nombre de columna con `_ts`, `_recv_ts`,
   `_batch_id`, `_schema_version`, tags y campos; marcas en RFC 3339 con us; `from` incluido, `to` excluido; no deduplica.
@@ -40,13 +40,26 @@ class ErrorQn(RuntimeError):
 class ErrorQnPermanente(ErrorQn):
     """4xx: reintentar no lo arregla (contenido, conflicto de batch_id, topic)."""
 
-    def __init__(self, estado: int, detalle: str) -> None:
+    def __init__(self, estado: int, detalle: str, codigo: str | None = None) -> None:
         super().__init__(f"HTTP {estado} {detalle}")
-        self.estado = estado
+        self.estado, self.codigo = estado, codigo
 
 
 class ErrorQnAutorizacion(ErrorQnPermanente):
     """401/403: el token no vale o no tiene permiso; se para toda la ejecucion."""
+
+
+class ErrorQnTopicDesconocido(ErrorQnPermanente):
+    """`UnknownTopic` de qn (HTTP 404, `code: unknown_topic`, «topic no registrado»): fatal, se para toda la ejecucion.
+    Nunca se confunde con «sin datos», que es un 200 con `items: []`."""
+
+
+def _codigo(datos: bytes) -> str | None:
+    try:
+        doc = json.loads(datos or b"{}")
+    except ValueError:
+        return None
+    return doc.get("code") if isinstance(doc, dict) else None
 
 
 class ErrorQnAgotado(ErrorQn):
@@ -146,10 +159,13 @@ class ClienteQn:
                 self._dormir(min(max(espera, 0.0), self.espera_max_s))
                 continue
             detalle = datos[:200].decode("utf-8", "replace")
+            codigo = _codigo(datos)
             if estado in (401, 403):
-                raise ErrorQnAutorizacion(estado, detalle)
+                raise ErrorQnAutorizacion(estado, detalle, codigo)
+            if codigo == "unknown_topic":
+                raise ErrorQnTopicDesconocido(estado, "topic no registrado", codigo)
             if estado >= 400:
-                raise ErrorQnPermanente(estado, detalle)
+                raise ErrorQnPermanente(estado, detalle, codigo)
             return json.loads(datos or b"{}")
         raise ErrorQnAgotado(f"ninguna replica de qn respondio bien: {ultimo}")
 
@@ -161,16 +177,11 @@ class ClienteQn:
         return self.peticion("POST", f"/api/v1/topics/{topic}/publish?{self._q({'wait': 'accepted'})}", cuerpo)
 
     def latest(self, topic: str, tags: dict) -> list[dict]:
-        """Ultimos objetos por conjunto de tags. Network no sabe si `latest` responde con un objeto suelto
-        `{tags, ts, recv_ts, batch_id, schema_version, obj}` o con `{"items":[...]}`: se aceptan los dos (y una lista).
-        Un 404 aqui es "sin datos": el topic ya se comprobo con `esquema` antes."""
-        try:
-            doc = self.peticion("GET", f"/api/v1/topics/{topic}/latest?{self._q(tags)}")
-        except ErrorQnPermanente as e:
-            if e.estado == 404 and not isinstance(e, ErrorQnAutorizacion):
-                return []
-            raise
-        return items_latest(doc)
+        """Ultimos objetos por conjunto de tags (confirmado por network): 200 con `{"env","topic","kind":"object",
+        "items":[{tags, ts, recv_ts, batch_id, schema_version, obj}]}`, `ts` en ns enteros. Topic registrado sin datos
+        para el filtro: 200 con `items: []` (sin datos). Topic no registrado: `ErrorQnTopicDesconocido` (fatal). Cualquier
+        otro 404 es un error, nunca "sin datos"."""
+        return items_latest(self.peticion("GET", f"/api/v1/topics/{topic}/latest?{self._q(tags)}"))
 
     def objetos(self, topic: str, tags: dict, desde_ns: int, hasta_ns: int, limite: int = 100_000) -> list[dict]:
         """Filas crudas de `/objects` (JSON confirmado por network): `{"head_cycle","lake_cycle","columns":[{"name",

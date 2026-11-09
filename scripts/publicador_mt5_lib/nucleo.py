@@ -220,8 +220,8 @@ def serie(cfg: Config, cliente: Q.ClienteQn | None, term, simbolo: str, simbolo_
         tags, obj, ts_ns = objeto(cfg, simbolo_tag, intervalo, b, i)
         try:
             return "duplicada" if cliente.publicar(cfg.topic, tags, obj, ts_ns).get("duplicate") else "publicada"
-        except Q.ErrorQnAutorizacion:
-            raise
+        except (Q.ErrorQnAutorizacion, Q.ErrorQnTopicDesconocido):
+            raise  # fatales: paran toda la ejecucion
         except (Q.ErrorQn, ValueError) as e:
             return f"error en {HR.iso(int(b['ts_utc_ms'][i]))}: {e}"
 

@@ -1,6 +1,8 @@
-"""qn falso para el selftest: varias replicas HTTP en 127.0.0.1 que comparten un almacen y siguen el contrato supuesto
-(publish con 200/duplicate/409/503 con Retry-After/401, latest, objects y schema). Fallos programables por replica y por
-ts. Registra cada peticion (ruta y cabeceras) para comprobar que el token no viaja en la URL."""
+"""qn falso para el selftest: varias replicas HTTP en 127.0.0.1 que comparten un almacen y siguen el contrato confirmado
+por network (publish con 200/duplicate/409/503 con Retry-After/401; latest con `items` y `ts` en ns, `items: []` sin
+datos; objects con `_ts` en RFC 3339 us; schema; y `UnknownTopic` = 404 `unknown_topic` «topic no registrado» para un
+topic que no existe). Fallos programables por replica y por ts. Registra cada peticion (ruta y cabeceras) para
+comprobar que el token no viaja en la URL."""
 from __future__ import annotations
 
 import collections
@@ -11,8 +13,8 @@ import threading
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-PROPIEDADES = ("open", "high", "low", "close", "volume", "date")  # el topic nuevo: `source` solo como tag
-TOPIC = "prueba.ohlcv.fuentes"
+PROPIEDADES = ("open", "high", "low", "close", "volume", "date")  # market.ohlcv.v2: `source` solo como tag
+TOPIC = "market.ohlcv.v2"
 
 
 def rfc3339_us(ns: int) -> str:
@@ -21,12 +23,13 @@ def rfc3339_us(ns: int) -> str:
 
 
 class Almacen:
-    """`latest`: "items" responde `{"items":[...]}` con ts en ns; "suelto" responde el objeto suelto (un solo conjunto de
-    tags) con ts en RFC 3339 y 404 si no hay nada (las dos formas que network no ha podido descartar)."""
+    """`registrado=False` simula un topic que deja de estar registrado entre `schema` y `latest`: `latest` responde
+    `UnknownTopic` aunque `schema` haya contestado."""
 
     def __init__(self, token: str, tags: tuple = ("symbol", "interval", "source"), propiedades: tuple = PROPIEDADES,
-                 topic: str = TOPIC, latest: str = "items") -> None:
-        self.token, self.tags, self.propiedades, self.topic, self.modo_latest = token, list(tags), set(propiedades), topic, latest
+                 topic: str = TOPIC) -> None:
+        self.token, self.tags, self.propiedades, self.topic = token, list(tags), set(propiedades), topic
+        self.latest_desconocido = False
         self.cerrojo = threading.Lock()
         self.objetos: list[dict] = []
         self.por_id: dict[str, str] = {}
@@ -92,6 +95,9 @@ def _handler(almacen: Almacen, nombre: str):
                                  "schema": {"type": "object", "properties": {p: {} for p in sorted(almacen.propiedades)},
                                             "additionalProperties": False}})
             elif ruta.endswith("/latest"):
+                if almacen.latest_desconocido:
+                    self._json(404, {"code": "unknown_topic", "message": "topic no registrado"})
+                    return
                 with almacen.cerrojo:
                     mejor: dict = {}
                     for o in almacen.objetos:
@@ -99,14 +105,7 @@ def _handler(almacen: Almacen, nombre: str):
                             k = tuple(sorted(o["tags"].items()))
                             if k not in mejor or (o["ts"], o["recv_ts"], o["batch_id"]) > (mejor[k]["ts"], mejor[k]["recv_ts"], mejor[k]["batch_id"]):
                                 mejor[k] = o
-                if almacen.modo_latest == "suelto":
-                    if not mejor:
-                        self._json(404, {"code": "not_found", "message": "sin datos"})
-                        return
-                    o = max(mejor.values(), key=lambda x: (x["ts"], x["recv_ts"], x["batch_id"]))
-                    self._json(200, {"tags": o["tags"], "ts": rfc3339_us(o["ts"]), "recv_ts": rfc3339_us(o["recv_ts"]),
-                                     "batch_id": o["batch_id"], "schema_version": 1, "obj": o["obj"]})
-                    return
+                # Sin datos para el filtro: 200 con items vacio (confirmado por network), nunca un 404.
                 items = [{"tags": o["tags"], "ts": o["ts"], "recv_ts": o["recv_ts"], "batch_id": o["batch_id"],
                           "schema_version": 1, "obj": o["obj"]} for _, o in sorted(mejor.items())]
                 self._json(200, {"env": q.get("env"), "topic": almacen.topic, "kind": "object", "items": items})
@@ -130,7 +129,9 @@ def _handler(almacen: Almacen, nombre: str):
         def _topic_ok(self, ruta: str) -> bool:
             if f"/topics/{almacen.topic}/" in ruta or ruta.endswith(f"/objects/{almacen.topic}"):
                 return True
-            self._json(404, {"code": "unknown_topic", "message": ruta.rsplit("/", 2)[-2]})
+            if "/topics/" not in ruta and "/objects/" not in ruta:
+                return True  # otra ruta: 404 generico (not_found) mas adelante
+            self._json(404, {"code": "unknown_topic", "message": "topic no registrado"})  # UnknownTopic de qn
             return False
 
         def do_POST(self):
