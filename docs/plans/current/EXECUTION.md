@@ -739,3 +739,21 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
   - El 1d crea unas 9 500 particiones diarias pequeñas en el lago.
   - **Condición:** 1h, 5m y 1m NO se lanzan sin el visto bueno previo de network, que fijará con el usuario cuándo y a
     qué ritmo, y puede compactar antes.
+- **Backend: corte hecho.**
+  - Bento lee `market.ohlcv.v2`.
+  - Las 178 522 barras 1d de MT5 están en ClickHouse `fx_spot_1d` con `source=mt5`, y se sirven con
+    `/api/fxspot/...?source=mt5`. Por defecto se sigue sirviendo yfinance.
+  - Los símbolos coinciden: yfinance también publica `EURUSD`.
+  - `market.ohlcv` (v1) queda congelado.
+  - La carga inicial tumbó un sondeo del backend, por la memoria y las más de 100 particiones por INSERT; ya está
+    corregido.
+  - **Condición:** avisar al backend, además de a network, antes de cualquier carga histórica grande, como la del
+    universo ampliado de la fase C o 1h. Cada republicación completa cuesta unos 1,4 GiB y unos 4 min de CPU en mini.
+  - La publicación diaria normal no es problema, y el publicador no republica: sólo envía lo nuevo.
+- **Fase C** (petición del usuario, intento BDD 131):
+  - **Universo** (AskUserQuestion): el continuo (forex 60, metales y energía 16, índices 23 y crypto 94, alts
+    incluidas) más las acciones US grandes (S&P 500, sesión normal).
+  - **Destino:** local ya; en qn cuando network y el backend den el visto bueno.
+  - El 1d local de los 193 continuos se está descargando en `E:/quantdesk-lab/data/mt5/continuo_1d_20261109`.
+  - El autor prepara los grupos con nombre, el mapeo del S&P 500, las reglas de sesión por clase y la estimación de
+    volumen.
