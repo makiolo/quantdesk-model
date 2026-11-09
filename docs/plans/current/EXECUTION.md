@@ -592,3 +592,23 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
   2. lectores de `/objects` y `latest` según lo que confirmó network;
   3. estudio de la convención de `ts` en 1d, (a) inicio real o (b) 00:00 UTC de la sesión, comparado con lo que publica
      yfinance. La decisión es de la raíz.
+- Commit `45a93ce`:
+  - `--topic` es obligatorio y no tiene valor por defecto; el XML lleva el marcador `TOPIC_POR_DECIDIR`;
+  - el objeto va sin `source`;
+  - el publicador queda BLOQUEADO, con 0 POST, en cinco casos:
+    1. sin topic;
+    2. con el marcador;
+    3. con un topic que no existe (404);
+    4. con `market.ohlcv` tal como está hoy;
+    5. con `source` como tag y como campo a la vez;
+  - los lectores de `/objects` (`_ts` en RFC 3339 µs) y de `latest` siguen el formato de network, con pruebas.
+  - Según el código del backend (`fx_spot_scraper.run_daily`, `market_sink.publish_ohlcv`) y el lago, yfinance publica
+    1d con `ts` a las 00:00 UTC de D.
+  - Verificación de la raíz sobre `git archive 45a93ce`: los dos selftests ok, la suite 11 OK y ninguna función de
+    órdenes.
+- **Decisión de la raíz: en 1d, opción (b).** `ts` es las 00:00 UTC del día de la sesión D y `date` es D. Así coincide
+  con yfinance, con la partición diaria del lago y con las consultas `from`/`to` por día UTC. No hay mirada al futuro:
+  la barra sólo se publica cuando la sesión ya ha cerrado, y la disponibilidad real la da `_recv_ts`. El autor la
+  implementa en el mismo intento 128.
+- Pregunta a network: qué devuelve `latest` cuando el filtro de tags no tiene datos. Hoy el publicador trata un 404 como
+  «sin datos».
