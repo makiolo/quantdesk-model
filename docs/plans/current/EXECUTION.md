@@ -733,3 +733,9 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
 - **Falta:**
   1. Que el usuario registre la tarea programada (`schtasks /Create /XML scripts\publicador_mt5_tarea.xml /TN ...`).
   2. Que el backend corte a v2 cuando el usuario lo priorice.
+- **Network, tras la carga de 1d:**
+  - qn sigue sano: malla 2+2, sin huecos y lake_errors 0.
+  - qn-server en mini pasó de 1,85 a 2,17 GB; el tope de memoria es de 3 GiB.
+  - El 1d crea unas 9 500 particiones diarias pequeñas en el lago.
+  - **Condición:** 1h, 5m y 1m NO se lanzan sin el visto bueno previo de network, que fijará con el usuario cuándo y a
+    qué ritmo, y puede compactar antes.
