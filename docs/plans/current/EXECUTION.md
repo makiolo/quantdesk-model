@@ -575,3 +575,20 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
   - Grafana y las alertas agrupan por fuente.
   - Orden: primero el esquema de network, luego el despliegue del backend y luego MT5. La raíz aceptó la propuesta y
     avisará al backend cuando network confirme el tag. El publicador MT5 no publica hasta entonces.
+- Respuesta de network (06:50): **`source` no puede ser tag de `market.ohlcv`**. Añadir un tag a un topic existente
+  da conflicto (`ObjectTopic::compatibility`, qn-core/src/object/topic.rs:441), no hay DELETE de topics y un tag no
+  puede llamarse como un campo del objeto. Hace falta un topic nuevo con tags `symbol`, `interval` y `source`, y el
+  objeto sin `source`; yfinance se republica allí con `source=market_scraper`. Network llevó al usuario la decisión del
+  nombre y del plan de corte, y no toca producción hasta entonces. La raíz se lo trasladó al backend.
+  - Confirmado del código:
+    - `/objects` devuelve filas por nombre de columna, con `_ts`, `_recv_ts`, `_batch_id` y `_schema_version` en
+      RFC 3339 µs;
+    - `env` vale en `latest` y en `schema`, y los dos piden `sub:`;
+    - `market.ohlcv` no declara `timeframes`, así que no hay cubos @1d.
+  - El lago particiona por el día UTC de `ts`. Con el `ts` de 1d de MT5 (21:00/22:00 UTC de D-1), la sesión D cae en la
+    partición D-1.
+- TI-12-MT5 fase B, entrega 3 (intento BDD 128, mismo autor):
+  1. topic configurable, sin apuntar a `market.ohlcv` por defecto, y el objeto sin `source`;
+  2. lectores de `/objects` y `latest` según lo que confirmó network;
+  3. estudio de la convención de `ts` en 1d, (a) inicio real o (b) 00:00 UTC de la sesión, comparado con lo que publica
+     yfinance. La decisión es de la raíz.
