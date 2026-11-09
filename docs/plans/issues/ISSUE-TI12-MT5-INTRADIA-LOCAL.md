@@ -48,5 +48,19 @@ Límite del bróker (`maxbars`), no del código: el extractor ya soporta `--inte
 - **Sprint de resolución:** Fuera de sprint.
 - **Fecha de resolución:** pendiente.
 - **Commit(s) / diagnóstico:** pendiente.
-- **Verificación:** pendiente.
-- **Pendientes:** todos; la publicación en qn se pide al planificar SPRINT-04 del laboratorio.
+- **Verificación:** parcial (raíz, 2026-11-09).
+  - **Primera descarga completa de `@continuo`** (193 símbolos, m1 y m5, `--sin-credenciales`), terminada a las
+    18:33 CET.
+    - rc 0: 386 series, 37 944 660 filas y 1246,7 MiB en `E:/quantdesk-lab/data/mt5/continuo_m1m5_20261109`.
+    - `hash_conjunto` `sha256:5cd9bf8691bd9d0c5dd5cb0b7328631fb69d52491acc65ddc2b1cdc324e2f9cf`; el manifiesto queda
+      en la carpeta (criterio 3).
+    - Profundidad de m1: 18,9 M filas. Primera vela: mediana 2026-08-04, la más antigua 2025-11-05.
+    - Profundidad de m5: 19,0 M filas. Primera vela: mediana 2025-07-08, la más antigua 2021-11-10.
+  - **Criterio 1, en parte:** dos descargas de m1 de fx28 en el mismo rango dieron el mismo hash (`fdfa3a7`,
+    `sha256:8a6fa0dc…`, en `execution/TI-12-MT5/cuadre.md` del archivo de SPRINT-01).
+- **Pendientes:**
+  - Criterio 2: descargas incrementales periódicas (tarea programada o ejecución manual) que sólo añadan barras
+    nuevas. Hasta entonces, las barras más viejas del bróker se van perdiendo y conviene repetir la descarga cada
+    pocas semanas, a otra `--salida` o reanudando.
+  - Criterio 1 sobre `@continuo` completo.
+  - La publicación en qn se pide al planificar SPRINT-04 del laboratorio.
