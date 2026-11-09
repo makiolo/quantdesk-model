@@ -34,7 +34,9 @@ Ciclo: planificación → inicio → ejecución → cierre y archivo → freeze 
 
 | Plan | Ámbito | Estado | Descripción |
 |---|---|---|---|
-| [Backlog del laboratorio](backlog/README.md) | Tareas que se ejecutan aquí (TI-*, TS-00-*, TS-02-DISC, ejecuciones de entrenamiento) y calendario de todo | Repartido en SPRINT-01…04 | Antes en `docs/plans/BACKLOG.md` (ahora puntero). Especificación en los planes de `quantdesk` (sólo lectura) |
+| [Backlog del laboratorio](backlog/README.md) | Índice, regla de separación, estado de las tareas ya en sprint (TS-00-*, TS-02-DISC, ejecuciones de entrenamiento) y calendario del laboratorio | Repartido en SPRINT-01…04 | Antes en `docs/plans/BACKLOG.md` (ahora puntero). Especificación en los planes de `quantdesk` (sólo lectura). Dividido el 2026-11-09 (usuario) |
+| [PLAN_ARCHIVO_OPCIONES](backlog/PLAN_ARCHIVO_OPCIONES.md) | TI-09-ARCH (parte laboratorio), TI-09-SONDA, copia propia del archivo de opciones | Backlog; sonda fuera de sprint (issue) | Lector del lago de `market.options.chain` con hash; espera a OC-03 del backend (GAP-BACKLOG_README-01) |
+| [PLAN_DATOS_VIA_QN](backlog/PLAN_DATOS_VIA_QN.md) | TI-12-MT5 (fase C, intradía, INTRA-LOCAL, tarea programada), TI-13-PUB (mercado público, movido al backend), TI-02-DATA-V2, TI-02-DIARIO | Fase C en SPRINT-01; INTRA-LOCAL fuera de sprint (issue); resto backlog | Datos de mercado sólo por publicadores y consumo vía qn (A16 bis); Binance como corpus congelado |
 
 ## 🧭 Tablero Kanban de Planes
 

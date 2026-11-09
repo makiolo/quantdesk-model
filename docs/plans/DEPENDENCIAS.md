@@ -32,8 +32,15 @@ parte de la tarea indicada (skill `sprint`, `references/deps.md`). SPRINT-01 no 
 que lleguen sus tareas, el laboratorio lee del lago en el modo «mientras tanto». El backend hace OC-01 y OC-02 en su SPRINT-01 y
 OC-03…OC-05 en su SPRINT-02 (usuario, 2026-11-07).
 
+TI-09-ARCH salió de SPRINT-01 el 2026-11-08 (usuario) y vive en
+[backlog/PLAN_ARCHIVO_OPCIONES.md](backlog/PLAN_ARCHIVO_OPCIONES.md); sus filas se conservan con el estado del
+2026-11-09 (revisión de planes).
+
 | Tarea local (sprint) | Depende de (proyecto, sprint, tarea) | Motivo | Estado |
 |---|---|---|---|
-| TI-09-ARCH (SPRINT-01), captura al cierre con spot | quantdesk-backend SPRINT-02 OC-03-CLOSE (que espera a quantdesk-network SPRINT-01 OCS-01) | Hasta entonces se archiva la última captura de cada día y el subyacente del OHLCV diario | decidido (usuario, 2026-11-07) |
-| TI-09-ARCH (SPRINT-01), aviso en origen | quantdesk-backend SPRINT-01 OC-01-FAIL, OC-02-ALERT | Fallos y huecos detectados en origen el mismo día | decidido (usuario, 2026-11-07) |
-| TI-09-ARCH (SPRINT-01), lectura bajo demanda | quantdesk-network SPRINT-01 OCS-02 | Garantía de S3 sin retención en los topics `market.*` de los scrapers (decisión 12-A): el laboratorio lee del lago y no copia a diario | decidido (usuario, 2026-11-07) |
+| TI-09-ARCH (backlog; fuera de SPRINT-01 desde 2026-11-08), captura al cierre con spot | quantdesk-backend SPRINT-02 OC-03-CLOSE (que espera a quantdesk-network SPRINT-01 OCS-01, ya cerrada) | Hasta entonces se archiva la última captura de cada día y el subyacente del OHLCV diario | decidido (usuario, 2026-11-07); pendiente |
+| TI-09-ARCH (backlog), aviso en origen | quantdesk-backend SPRINT-01 OC-01-FAIL, OC-02-ALERT | Fallos y huecos detectados en origen el mismo día | decidido (usuario, 2026-11-07); **servida** (2026-11-08/09) |
+| TI-09-ARCH (backlog), lectura bajo demanda | quantdesk-network SPRINT-01 OCS-01, OCS-02 | Garantía de S3 sin retención en los topics `market.*` de los scrapers (decisión 12-A): el laboratorio lee del lago y no copia a diario | decidido (usuario, 2026-11-07); **servida** (2026-11-08). **Garantía rota** por la herramienta genérica de borrado en el lago (usuario, 2026-11-09): el laboratorio planifica copia propia (PLAN_ARCHIVO_OPCIONES §4) |
+| TI-09-ARCH (backlog), universo | quantdesk-backend (sin sprint) 5–10 ETF/índices en la captura, en OC-03 o tarea al lado | Subyacentes con `asset_type` ETF/INDEX en el lector y el informe de huecos | decidido (usuario, 2026-11-09) |
+| TI-13-PUB ampliación (SPRINT-02 fila 7) y TI-02-DATA ampliada | quantdesk-backend (backlog, sin sprint) `PLAN_PUBLICADORES_MERCADO_PUBLICO` | Las fuentes públicas (Yahoo/Stooq, FRED, cripto) entran al lago sólo por publicadores del backend (A16 bis); el laboratorio las consume vía qn | decidido (usuario, 2026-11-09) |
+| TI-02-DIARIO (backlog; dueño por decidir, laboratorio o backend) | quantdesk-backend (backlog, sin sprint) `PLAN_PUBLICADORES_MERCADO_PUBLICO`, tarea OAS | Exportador diario de D-I4: escribe desde qn el mercado del día y los datasets que `quantdesk` abre, incluidos los OAS para XVA; debe existir antes de la ola 1 de SPRINT-03 de `quantdesk` | decidido (usuario, 2026-11-09) |

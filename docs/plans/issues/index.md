@@ -6,3 +6,5 @@ el archivo; archivado no significa resuelto.
 
 | ID | Estado | Severidad | Destino | Ficha |
 |---|---|---|---|---|
+| ISSUE-TI09-SONDA-CADENAS | Abierto | Media | Fuera de sprint — urgente (puerta de usuario: token de lectura) | [ficha](ISSUE-TI09-SONDA-CADENAS.md) |
+| ISSUE-TI12-MT5-INTRADIA-LOCAL | Abierto | Media | Fuera de sprint — urgente | [ficha](ISSUE-TI12-MT5-INTRADIA-LOCAL.md) |

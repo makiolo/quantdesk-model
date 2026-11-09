@@ -40,7 +40,7 @@ Leído de `S:/projects/quantdesk/docs/plans/current/SPRINT.md` y sus planes de g
 | 4 | **TI-02-DATA** (ampliación) | Cruce con el manifiesto del universo59 (G-MKT05-RAW-a); nuevas fuentes de TI-12/TI-13 | Diferencias con el universo59 explicadas; mismas garantías de hash y look-ahead | — |
 | 5 | **TI-12-MT5** (incremental) | Descarga diaria reanudable, más símbolos y periodos | Reanudación sin duplicados; mismo hash para el mismo rango | — |
 | 6 | **TI-09-ARCH** (cobertura) | **Condicionada:** TI-09-ARCH salió de SPRINT-01 el 2026-11-08 por falta de datos en qn; antes de medir cobertura hay que entregar la parte de laboratorio (fila 3 de SPRINT-01) cuando el backend publique la cadena. Medición de cobertura del mes siguiente a la entrega; adoptar la captura al cierre si el backend ya entregó OC-03 | Cobertura ≥ 98 % de días hábiles (aceptación del plan) o causa documentada | — |
-| 7 | **TI-13-PUB** (ampliación) | Más tickers y cripto; refresco del filtro de fugas | Informe del filtro actualizado; licencias en la tabla | — |
+| 7 | **TI-13-PUB** (ampliación) | **Consumir y exportar lo que publique el backend** (Yahoo/Stooq, FRED, cripto desde qn, vía TI-02-DATA); refresco del filtro de fugas sobre esas series. Ya no es ingesta propia: A16 bis y decisión del usuario del 2026-11-09 (C-10 de la revisión de planes; [PLAN_DATOS_VIA_QN](../backlog/PLAN_DATOS_VIA_QN.md) §3) | Informe del filtro actualizado; licencias en la tabla; datasets con hash exportados desde qn | `quantdesk-backend` `PLAN_PUBLICADORES_MERCADO_PUBLICO` |
 
 ## 4. Dependencias externas
 
