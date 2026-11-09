@@ -37,7 +37,7 @@ estos grupos. Las reglas van sobre `ruta`, la carpeta del símbolo en el termina
 | `@crypto` | lo que cuelga directamente de `Crypto\` (las 17 grandes del broker) | 17 |
 | `@crypto_alts` | `Crypto\Crypto Alts\*` | 77 |
 | `@continuo` | unión de los cinco anteriores | 193 |
-| `@us_grandes` | S&P 500 con su versión de sesión normal (`.NYSE`, `.NAS`, `.US`) | 484 |
+| `@us_grandes` | S&P 500 con su versión de sesión normal (`.NYSE`, `.NAS`, `.US`); si sólo existe la `-24`, la `-24` | 497 |
 
 Fuera siempre:
 - Lo que tiene vencimiento: 35 símbolos. Son los sufijos de mes y año (`_Z6`, `_H7`, `_Z6_CFD`, `GCG27_CFD`) y todo lo
@@ -63,11 +63,13 @@ sector, fecha de alta).
 **Qué es `-24` según el inventario.** Hay 5.173 símbolos `.NAS-24`, `.NYSE-24` y `.US-24`, en las carpetas `24HR NAS`,
 `24HR NYSE` y `24HR Other US`. Su descripción dice «24/5 CFD»: es la misma acción cotizada 24 horas, 5 días a la semana
 (preapertura, sesión, después del cierre y nocturna). Su vela 1d no acaba en el cierre oficial de las 16:00 de Nueva
-York. Por eso se usa siempre la versión de sesión normal, sin `-24`.
+York. Por eso manda la versión de sesión normal siempre que existe.
 
 **Regla de cruce.**
 - Para cada ticker se busca primero el sufijo de su bolsa: `.NYSE` para NYSE y `.NAS` para Nasdaq. Luego los otros dos,
   y por último `.US`.
+- Si no hay ninguna versión de sesión normal, se repite la búsqueda con `-24` detrás (`META.NAS-24`). La regla queda
+  escrita en el mapeo: «solo -24 (decision usuario 2026-11-09), ticker tal cual, .NAS-24».
 - La bolsa del broker no siempre es la del índice, pero la sesión sí: HON y PANW están como `.NYSE`, y GPC y HLT como
   `.NAS`. CBOE está como `CBOE.US`.
 - Clases de acción: el punto del ticker se busca como `-`, como `/` y sin separador. Así `BRK.B` da `BRK-B.NYSE` y
@@ -75,15 +77,37 @@ York. Por eso se usa siempre la versión de sesión normal, sin `-24`.
 - El tag `symbol` de qn de una acción es su ticker con la clase separada por `-` (`BRK-B`, `BF-B`), como yfinance. Las
   demás clases llevan la base normalizada (`EURUSD`, `XAUUSD`, `DE40`, `BTCUSD`), igual que fx28.
 
-**Casados: 484 de 503.** Sin casar, 19:
+**Casados: 497 de 503.** 484 con su versión de sesión normal y 13 con su `-24`. Sin casar, 6, porque el broker no los
+tiene: FDXF (FedEx Freight), GOOGL (Alphabet clase A; está GOOG), HONA, MDT (Medtronic), OKE (Oneok) y VYLR.
 
-| Motivo | Tickers |
-|---|---|
-| sólo existe la versión `-24` (13) | ARES, BDX, CPAY, CRH, ECHO, FERG, FIX, META, Q, SHW, SKYD, SNDK, WDC |
-| el broker no lo tiene (6) | FDXF (FedEx Freight), GOOGL (Alphabet clase A; está GOOG), HONA, MDT (Medtronic), OKE (Oneok), VYLR |
+**Decisión del usuario (2026-11-09): las que sólo existen en `-24` entran con su `-24`.** El tag `symbol` de qn es su
+ticker, como el resto. En el mapeo llevan `clase: acciones_us_24` (las demás, `acciones_us`).
 
-**Decisión pendiente.** Meta Platforms sólo está en `-24`. Si se quiere en el universo, la opción es tomar su `-24`
-marcada aparte, sabiendo que su 1d no cierra a las 16:00. No lo hago sin que se decida.
+| Ticker | Símbolo del broker | Ticker | Símbolo del broker |
+|---|---|---|---|
+| ARES | `ARES.NYSE-24` | META | `META.NAS-24` |
+| BDX | `BDX.NYSE-24` | Q | `Q.NYSE-24` |
+| CPAY | `CPAY.NYSE-24` | SHW | `SHW.NYSE-24` |
+| CRH | `CRH.NYSE-24` | SKYD | `SKYD.NYSE-24` |
+| ECHO | `ECHO.NAS-24` | SNDK | `SNDK.NAS-24` |
+| FERG | `FERG.NYSE-24` | WDC | `WDC.NAS-24` |
+| FIX | `FIX.NYSE-24` | | |
+
+**Su vela 1d y sus huecos (clase `acciones_us_24`).**
+- La regla 1d es la de todas las clases: `date` = fecha del servidor de la apertura, cerrada al pasar de día el
+  servidor (17:00 NY). Para una `-24` la vela de D va de las 17:00 NY de D-1 a las 17:00 NY de D. Lleva la nocturna,
+  la preapertura, la sesión de D entera (16:30 a 23:00 del servidor) y la primera hora del después del cierre. La
+  sesión de D cae siempre dentro de la vela de D, así que la fecha es la buena. El cierre es el precio de las 17:00
+  NY, no el de las 16:00: es la diferencia con `acciones_us`, y por eso van marcadas aparte.
+- Calendario: el de la NYSE, como `acciones_us`. Una vela de más (un festivo en que el broker cotice algo) no es un
+  hueco; sólo cuentan los días que faltan.
+- Sin medir: el inventario no trae horarios de sesión, y no hay ninguna `-24` descargada en la caché. Si el broker
+  cotiza el viernes después de las 17:00 NY, esa cola sale como vela con fecha de sábado del servidor. Los huecos de
+  `acciones_us_24` traen `sesiones_fin_de_semana`, que cuenta esas velas. Sólo se informa: no se toca la vela ni se
+  para nada. Se mira en la primera descarga de las 13.
+- La descarga de `@us_grandes` que estaba en curso el 2026-11-09 se lanzó con los 484. Una `--salida` ya empezada
+  rechaza otra lista de símbolos, así que las 497 van a otra `--salida`. Los trozos de las 484 ya bajadas se reutilizan
+  de la caché.
 
 ## Vela 1d publicable por clase
 
@@ -101,6 +125,7 @@ hoy): todas abren a las 00:00 del servidor. Lo mismo vale para índices, cripto 
 | indices | lunes a viernes | 17:00 NY (después de la sesión de cualquier bolsa) | los de la bolsa de cada índice |
 | crypto | los siete días | 17:00 NY, también sábado y domingo | ninguno |
 | acciones_us | lunes a viernes | 17:00 NY; la sesión acaba a las 16:00 | NYSE |
+| acciones_us_24 (las 13 sólo `-24`) | lunes a viernes (se cuentan las de sábado, si salen) | 17:00 NY, con horario extendido | NYSE |
 
 Las acciones se publican una hora después del cierre de la bolsa, a propósito. El día del servidor acaba a las 17:00 NY y
 así la subasta de cierre ya está dentro de la vela. Es la misma regla para todas las clases.
@@ -183,9 +208,9 @@ símbolos ya descargados.
 | crypto | 17 | ~41.500 | 14 de 17 medidos |
 | crypto_alts | 77 | ~50.600 | 74 de 77 medidos (casi todas desde dic-2024) |
 | **nuevo de `@continuo`** | 165 | **~351.000** | |
-| `@us_grandes` | 484 | 1,2 a 3,3 M | sin medir: 252 sesiones/año durante 10 a 26,8 años |
+| `@us_grandes` | 497 | 1,2 a 3,4 M | sin medir: 252 sesiones/año durante 10 a 26,8 años |
 
-Incremento diario en 1d: unos 680 objetos (193 + 484, y la cripto también en fin de semana).
+Incremento diario en 1d: unos 690 objetos (193 + 497, y la cripto también en fin de semana).
 
 **Duración de la carga 1d al ritmo del Bento.**
 - A 180.000 por 5 min (600 objetos/s), si el publicador da para tanto:
@@ -230,13 +255,15 @@ fuera del terminal real) no cambia.
 
 - Extractor:
   - `prueba_calendarios`: Pascua; la NYSE de 2026 completa; los traslados de 2021 y 2022; los festivos medidos en el
-    terminal real de ASX y TSX; huecos de índice, cripto y acciones.
+    terminal real de ASX y TSX; huecos de índice, cripto y acciones; en `acciones_us_24`, una vela de sábado se
+    cuenta en `sesiones_fin_de_semana` y no es hueco.
   - `prueba_universos`: un broker falso con las carpetas del real da los grupos, los excluidos, el cruce del S&P 500
-    (`-24`, clases con `-` y `/`, la bolsa cambiada) y las etiquetas. También se comprueban `@fx28`, un universo
-    desconocido, el wikitext y el fichero del repo (60/16/23/17/77/193, 503 = 484 + 19).
+    (AAPL con `.NAS` y `.NAS-24` toma `.NAS`; META sólo con `-24` toma `META.NAS-24`, clase `acciones_us_24`,
+    etiqueta `META`; clases con `-` y `/`; la bolsa cambiada) y las etiquetas. También se comprueban `@fx28`, un
+    universo desconocido, el wikitext y el fichero del repo (60/16/23/17/77/193; 503 = 497 + 6, con las 13 `-24`).
   - `prueba_clases_extremo_a_extremo`: `--descargar --simbolos @us_grandes,@continuo --periodos d1` con huecos por clase.
-    Las acciones y los índices tienen festivos y 0 otros; la cripto tiene velas de fin de semana; un martes sin cripto
-    es 1 otro; fx sigue con el método de siempre.
+    Las acciones y los índices tienen festivos y 0 otros; `META.NAS-24` va con clase `acciones_us_24` y bolsa NYSE; la
+    cripto tiene velas de fin de semana; un martes sin cripto es 1 otro; fx sigue con el método de siempre.
 - Publicador:
   - `prueba_regla_1d_igual_que_v2` y el re-run sobre v2 (arriba);
   - `prueba_ritmo_unitario`;

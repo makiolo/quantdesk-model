@@ -554,7 +554,12 @@ def prueba_calendarios() -> None:
     assert (h["fin_de_semana"], h["festivos"], h["festivos_probables"], h["otros"]) == (1, 0, 0, 1), h
     # Acciones US: la semana de Accion de Gracias de 2026 (jueves 26 festivo de la NYSE).
     h = CAL.huecos_sesiones(laborables("2026-11-23", "2026-11-30", {dia("2026-11-26")}), "acciones_us", "NYSE")
-    assert (h["festivos"], h["otros"], h["festivos_probables"]) == (1, 0, 0), h
+    assert (h["festivos"], h["otros"], h["festivos_probables"]) == (1, 0, 0) and "sesiones_fin_de_semana" not in h, h
+    # Acciones US solo -24 (24/5): mismo calendario NYSE; una vela de sabado (la cola del viernes) se cuenta y no es hueco.
+    assert CAL.bolsa_de("acciones_us_24", "META") == "NYSE"
+    h = CAL.huecos_sesiones(sorted(laborables("2026-11-23", "2026-11-30", {dia("2026-11-26")}) + [dia("2026-11-28")]),
+                            "acciones_us_24", "NYSE")
+    assert (h["festivos"], h["otros"], h["fin_de_semana"], h["sesiones_fin_de_semana"]) == (1, 0, 1, 1), h
 
 
 def prueba_universos() -> None:
@@ -566,11 +571,20 @@ def prueba_universos() -> None:
     assert g["continuo"] == sorted(["EURUSD", "USDJPY", "XAUUSD", "DE40", "HK50", "BTCUSD", "ETCUSD"])
     assert sorted(u["excluidos"]["vencimiento"]) == ["BRENT_F7", "DXY_Z6", "SIN26"]
     assert (u["excluidos"]["bonos"], u["excluidos"]["stohastic"]) == (1, 1)
-    assert g["us_grandes"] == ["AAPL.NAS", "BF/B.NYSE", "BRK-B.NYSE", "HON.NYSE"]  # nunca la -24; HON cotiza como .NYSE
-    assert u["etiquetas"] == {"AAPL.NAS": "AAPL", "BF/B.NYSE": "BF-B", "BRK-B.NYSE": "BRK-B", "HON.NYSE": "HON"}
+    # La sesion normal manda (AAPL tiene AAPL.NAS y AAPL.NAS-24); META solo existe en -24 y entra con su -24 (decision
+    # del usuario del 2026-11-09), con clase propia y la etiqueta de su ticker. HON cotiza como .NYSE.
+    assert g["us_grandes"] == ["AAPL.NAS", "BF/B.NYSE", "BRK-B.NYSE", "HON.NYSE", "META.NAS-24"]
+    assert u["etiquetas"] == {"AAPL.NAS": "AAPL", "BF/B.NYSE": "BF-B", "BRK-B.NYSE": "BRK-B", "HON.NYSE": "HON",
+                              "META.NAS-24": "META"}
+    cas = {x["ticker"]: x for x in u["us_grandes"]["casados"]}
+    assert (cas["AAPL"]["simbolo"], cas["AAPL"]["clase"]) == ("AAPL.NAS", "acciones_us")
+    assert (cas["META"]["simbolo"], cas["META"]["clase"]) == ("META.NAS-24", "acciones_us_24")
+    assert cas["META"]["regla"] == UNI.REGLA_24 + ", ticker tal cual, .NAS-24" and "-24" not in cas["AAPL"]["regla"]
+    fila =lambda s, ruta: {"simbolo": s, "ruta": ruta}  # noqa: E731
+    assert UNI.clase_de(fila("AAPL.NAS-24", "Stock CFD's\\Nasdaq\\24HR NAS\\AAPL.NAS-24")) == "acciones_us_24"
+    assert UNI.calendario(fila("META.NAS-24", "Stock CFD's\\Nasdaq\\24HR NAS\\META.NAS-24")) == ("acciones_us_24", "NYSE")
     sin = {x["ticker"]: x for x in u["us_grandes"]["sin_casar"]}
-    assert sin["META"]["motivo"] == "solo existe la version -24" and sin["META"]["version_24"] == "META.NAS-24"
-    assert sin["GOOGL"]["motivo"] == "el broker no lo tiene" and len(sin) == 2
+    assert sin == {"GOOGL": {"ticker": "GOOGL", "nombre": "Alphabet Inc. (Class A)", "motivo": "el broker no lo tiene"}}
     assert UNI.con_vencimiento("WheatZ6_CFD") and UNI.con_vencimiento("GCG27_CFD") and not UNI.con_vencimiento("NETH25")
     assert not UNI.con_vencimiento("STOXX50") and not UNI.con_vencimiento("US2000")
     # --simbolos: @fx28 sigue igual; un universo se expande; uno desconocido es uso incorrecto.
@@ -594,8 +608,13 @@ def prueba_universos() -> None:
     assert real["fecha"] == "2026-11-09" and real["inventario"]["simbolos_en_terminal"] == 9421
     assert {k: real["cuentas"][k] for k in ("fx60", "metales_energia", "indices", "crypto", "crypto_alts", "continuo")} == {
         "fx60": 60, "metales_energia": 16, "indices": 23, "crypto": 17, "crypto_alts": 77, "continuo": 193}
-    assert set(INV.FX28) <= set(real["grupos"]["fx60"]) and not any(s.endswith("-24") for s in real["grupos"]["us_grandes"])
-    assert real["cuentas"]["us_grandes"] + real["sp500"]["sin_casar"] == real["sp500"]["componentes"] == 503
+    assert set(INV.FX28) <= set(real["grupos"]["fx60"])
+    solo24 = {c["ticker"]: c["simbolo"] for c in real["us_grandes"]["casados"] if c["clase"] == "acciones_us_24"}
+    assert sorted(solo24) == ["ARES", "BDX", "CPAY", "CRH", "ECHO", "FERG", "FIX", "META", "Q", "SHW", "SKYD", "SNDK", "WDC"]
+    assert solo24["META"] == "META.NAS-24" and all(s.endswith("-24") for s in solo24.values())
+    assert sum(s.endswith("-24") for s in real["grupos"]["us_grandes"]) == 13 and real["etiquetas"]["META.NAS-24"] == "META"
+    assert sorted(x["ticker"] for x in real["us_grandes"]["sin_casar"]) == ["FDXF", "GOOGL", "HONA", "MDT", "OKE", "VYLR"]
+    assert real["cuentas"]["us_grandes"] == 497 and real["sp500"]["sin_casar"] == 6 and real["sp500"]["componentes"] == 503
     filas, cabecera = UNI.leer_sp500()
     assert len(filas) == 503 and "wikipedia.org" in cabecera and "2026-11-09" in cabecera
 
@@ -626,6 +645,9 @@ def prueba_clases_extremo_a_extremo(ejecutar, raiz: str) -> None:
     for s in ("AAPL.NAS", "BRK-B.NYSE", "BF/B.NYSE"):
         h = ent[s]["huecos"]
         assert ent[s]["clase"] == "acciones_us" and h["festivos"] > 20 and h["otros"] == 0, (s, h)
+    h = ent["META.NAS-24"]["huecos"]  # solo -24: su clase, calendario NYSE, sin huecos y sin velas de fin de semana
+    assert (ent["META.NAS-24"]["clase"], ent["META.NAS-24"]["bolsa"]) == ("acciones_us_24", "NYSE"), ent["META.NAS-24"]
+    assert h["otros"] == 0 and h["sesiones_fin_de_semana"] == 0, h
     assert ent["DE40"]["huecos"]["festivos"] > 10 and ent["DE40"]["huecos"]["otros"] == 0 and ent["DE40"]["bolsa"] == "XETRA"
     assert ent["XAUUSD"]["huecos"]["festivos"] > 0 and ent["XAUUSD"]["huecos"]["otros"] == 0
     hb = ent["BTCUSD"]["huecos"]

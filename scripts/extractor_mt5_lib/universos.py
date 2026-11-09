@@ -12,7 +12,9 @@ Reglas (sobre `ruta` del inventario, la carpeta del simbolo en el terminal):
 - crypto_alts: `Crypto\\Crypto Alts\\...`.
 - continuo: la union de los cinco anteriores.
 - us_grandes: los componentes del S&P 500 de `universos/sp500.csv` cruzados con la version de sesion normal del broker
-  (`.NYSE`, `.NAS`, `.US`; nunca la `-24`). Clases de accion: el punto del ticker (BRK.B) se busca como `-` y como `/`.
+  (`.NYSE`, `.NAS`, `.US`). Si el broker solo lo tiene en `-24` (24/5), se toma la `-24`, con clase de sesion propia
+  `acciones_us_24` (decision del usuario del 2026-11-09: META, BDX, SHW...). La sesion normal manda cuando existe.
+  Clases de accion: el punto del ticker (BRK.B) se busca como `-`, como `/` y sin separador.
 Fuera siempre: lo que tiene vencimiento (sufijos de mes y ano como `_Z6`, `_H7`, `SIN26`, o `_CFD`), los bonos (todos
 con vencimiento) y `Stohastic` (indices sinteticos del broker).
 """
@@ -32,7 +34,7 @@ RUTA_SP500 = os.path.join(CARPETA, "sp500.csv")
 FORMATO = "quantdesk-lab.mt5-universos/v1"
 GRUPOS = ("fx60", "metales_energia", "indices", "crypto", "crypto_alts", "continuo", "us_grandes")
 CLASE_GRUPO = {"fx60": "forex", "metales_energia": "metales_energia", "indices": "indices", "crypto": "crypto",
-               "crypto_alts": "crypto", "us_grandes": "acciones_us"}
+               "crypto_alts": "crypto", "us_grandes": "acciones_us (acciones_us_24 las que solo existen en -24)"}
 REGLAS = {
     "fx60": "ruta Forex\\* (Majors, Minors, Exotics)",
     "metales_energia": "ruta Commodities\\Metals\\* o Commodities\\Energies\\Energies Spot\\*, sin vencimiento",
@@ -40,8 +42,10 @@ REGLAS = {
     "crypto": "ruta Crypto\\<simbolo> (directamente bajo Crypto: las grandes del broker)",
     "crypto_alts": "ruta Crypto\\Crypto Alts\\*",
     "continuo": "union de fx60, metales_energia, indices, crypto y crypto_alts",
-    "us_grandes": "componentes del S&P 500 (sp500.csv) con su simbolo de sesion normal .NYSE/.NAS/.US (no -24)",
+    "us_grandes": "componentes del S&P 500 (sp500.csv) con su simbolo de sesion normal .NYSE/.NAS/.US; si el broker "
+                  "solo lo tiene en -24, la -24 (decision usuario 2026-11-09)",
 }
+REGLA_24 = "solo -24 (decision usuario 2026-11-09)"
 # Vencimiento en el nombre: `_Z6`, `_H7`, `_Z6_CFD`, `GCG27_CFD`, `WheatZ6_CFD`. Los futuros sin marca en el nombre
 # (`SIN26`) tambien quedan fuera, porque estan en carpetas de futuros (`Metal Futures`, `Energies Futures`, `Indices Futures`).
 VENCIMIENTO = re.compile(r"(_[FGHJKMNQUVXZ]\d{1,2}(_CFD)?|_CFD)$")
@@ -74,13 +78,14 @@ def grupo_de(d: dict) -> str | None:
 
 
 def clase_de(d: dict) -> str | None:
-    """Clase de sesion de una fila del inventario (forex, metales_energia, indices, crypto, acciones_us) o None."""
+    """Clase de sesion de una fila del inventario (forex, metales_energia, indices, crypto, acciones_us,
+    acciones_us_24) o None. `acciones_us_24`: las `-24` de las carpetas `24HR ...` (la misma accion cotizada 24/5)."""
     g = grupo_de(d)
     if g is not None:
         return CLASE_GRUPO[g]
     r = _partes(d)
-    if r[:1] == ["Stock CFD's"] and r[1:2] and r[1] in ("NYSE", "Nasdaq", "Other US") and not d["simbolo"].endswith("-24"):
-        return "acciones_us"
+    if r[:1] == ["Stock CFD's"] and r[1:2] and r[1] in ("NYSE", "Nasdaq", "Other US"):
+        return "acciones_us_24" if d["simbolo"].endswith("-24") else "acciones_us"
     return None
 
 
@@ -139,18 +144,18 @@ def etiqueta_us(ticker: str) -> str:
 
 
 def casar_sp500(sp500: list[dict], disponibles: dict[str, dict]) -> tuple[list[dict], list[dict]]:
+    """Cada componente con su simbolo de sesion normal; si no lo hay, con su `-24` (mismo orden de candidatos)."""
     casados, sin_casar = [], []
     for f in sp500:
-        elegido = next(((s, r) for s, r in candidatos_us(f["ticker"], f["bolsa"]) if s in disponibles
-                        and clase_de(disponibles[s]) == "acciones_us"), None)
+        cands = candidatos_us(f["ticker"], f["bolsa"])
+        opciones = [(s, r, "acciones_us") for s, r in cands] + [
+            (s + "-24", f"{REGLA_24}, {r}-24", "acciones_us_24") for s, r in cands]
+        elegido = next((o for o in opciones if o[0] in disponibles and clase_de(disponibles[o[0]]) == o[2]), None)
         if elegido:
             casados.append({"ticker": f["ticker"], "nombre": f["nombre"], "simbolo": elegido[0], "regla": elegido[1],
-                            "etiqueta": etiqueta_us(f["ticker"])})
-            continue
-        solo24 = sorted(s + "-24" for s, _ in candidatos_us(f["ticker"], f["bolsa"]) if s + "-24" in disponibles)
-        sin_casar.append({"ticker": f["ticker"], "nombre": f["nombre"],
-                          "motivo": "solo existe la version -24" if solo24 else "el broker no lo tiene",
-                          "version_24": solo24[0] if solo24 else None})
+                            "clase": elegido[2], "etiqueta": etiqueta_us(f["ticker"])})
+        else:
+            sin_casar.append({"ticker": f["ticker"], "nombre": f["nombre"], "motivo": "el broker no lo tiene"})
     return casados, sin_casar
 
 

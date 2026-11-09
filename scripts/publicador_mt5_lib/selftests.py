@@ -632,7 +632,9 @@ def prueba_fase_c_extremo_a_extremo(ejecutar, raiz: str) -> None:
         assert ultima[utc(2026, 11, 4, 22, 30)]["BRK-B"] == utc(2026, 11, 4) * 10 ** 9
         assert ultima[utc(2026, 11, 4, 22, 30)]["EURUSD"] == utc(2026, 11, 4) * 10 ** 9
         tags = {k[0] for k in en_qn(alm)}
-        assert tags == {"EURUSD", "USDJPY", "XAUUSD", "DE40", "HK50", "BTCUSD", "ETCUSD", "AAPL", "BRK-B", "BF-B", "HON"}
+        assert tags == {"EURUSD", "USDJPY", "XAUUSD", "DE40", "HK50", "BTCUSD", "ETCUSD", "AAPL", "BRK-B", "BF-B", "HON",
+                        "META"}  # META sale de META.NAS-24 (solo -24) con la etiqueta de su ticker
+        assert ultima[utc(2026, 11, 4, 22, 30)]["META"] == utc(2026, 11, 4) * 10 ** 9
         finde = [o for o in alm.objetos if o["tags"]["symbol"] == "BTCUSD"
                  and dt.date.fromisoformat(o["obj"]["date"]).weekday() >= 5]
         assert len(finde) == 2 and all(o["ts"] == utc(*dt.date.fromisoformat(o["obj"]["date"]).timetuple()[:3]) * 10 ** 9
@@ -655,6 +657,7 @@ def prueba_fase_c_extremo_a_extremo(ejecutar, raiz: str) -> None:
     assert hm["BTCUSD"]["otros"] == 1 and hm["BTCUSD"]["otros_mayores"][0]["desde"] == "2026-10-28", hm["BTCUSD"]
     assert pasada["codigo"] == 0 and all(x.get("publicadas", 0) > 0 for x in pasada["series"]), pasada["series"]
     assert hm["DE40"]["clase"] == "indices" and hm["AAPL"]["clase"] == "acciones_us" and "metodo" not in hm["EURUSD"]
+    assert hm["META"]["clase"] == "acciones_us_24" and hm["META"]["sesiones_fin_de_semana"] == 0, hm["META"]
     # Ni funciones prohibidas ni secretos en nada de la fase C.
     assert all(f.llamadas_prohibidas == [] for f in b.falsos)
     secretos = [TOKEN, str(CRED["login"]), CRED["password"], CRED["server"], CRED["path"]]

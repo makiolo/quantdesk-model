@@ -11,6 +11,10 @@ Lo que cambia por clase es que dias se esperan (para no contar como huecos los q
 - metales_energia: lunes a viernes, festivos del CME (1 ene, Viernes Santo, 25 dic).
 - indices: lunes a viernes, festivos de la bolsa de cada indice (`BOLSA_INDICE`).
 - acciones_us: lunes a viernes, festivos de la NYSE (reglas y cierres extraordinarios desde 1990).
+- acciones_us_24: las `-24` (24/5) que entran en us_grandes porque el broker no tiene su version de sesion normal. Mismo
+  calendario que acciones_us (NYSE). La vela de D va de las 17:00 NY de D-1 a las 17:00 NY de D: lleva la nocturna, la
+  preapertura, la sesion de D y la primera hora del despues del cierre. Si el broker cotiza el viernes despues de las
+  17:00 NY, esa cola cae en sabado del servidor: se cuenta en `sesiones_fin_de_semana` (solo se informa).
 - crypto: los siete dias; un sabado o domingo sin vela se cuenta como fin de semana (el broker no daba cripto en fin de
   semana en su historia antigua), no como hueco.
 Los festivos son reglas (fechas fijas con su traslado, Pascua, n-esimo dia de la semana). No hay tablas lunares: un
@@ -26,7 +30,8 @@ import numpy as np
 
 DIA = 86400
 EPOCA = dt.date(1970, 1, 1)
-CLASES = ("forex", "metales_energia", "indices", "crypto", "acciones_us")
+CLASES = ("forex", "metales_energia", "indices", "crypto", "acciones_us", "acciones_us_24")
+CON_BOLSA = ("metales_energia", "indices", "acciones_us", "acciones_us_24")
 MAX_PROBABLE = 3  # dias laborables seguidos fuera del calendario que aun se cuentan como festivo probable
 
 # Bolsa (calendario) de cada indice al contado del broker.
@@ -36,7 +41,7 @@ BOLSA_INDICE = {
     "IT40": "MIL", "JP225": "JPX", "NOR25": "OSLO", "SA40": "JSE", "SE30": "STO", "SWI20": "SIX", "UK100": "LSE",
     "US2000": "NYSE", "US30": "NYSE", "US500": "NYSE", "USTEC": "NYSE",
 }
-BOLSA_CLASE = {"metales_energia": "CME", "acciones_us": "NYSE"}
+BOLSA_CLASE = {"metales_energia": "CME", "acciones_us": "NYSE", "acciones_us_24": "NYSE"}
 
 
 def pascua(anio: int) -> dt.date:
@@ -194,6 +199,8 @@ def huecos_sesiones(dias, clase: str, bolsa: str | None) -> dict:
            "otros_por_tamano": {"<=5 pasos": 0, "<=60 pasos": 0, ">60 pasos": 0}, "otros_mayores": [],
            "festivos_probables_dias": []}
     dias = np.asarray(dias, dtype=np.int64)
+    if clase == "acciones_us_24":  # velas con fecha de sabado o domingo del servidor (la cola del viernes): se cuentan
+        out["sesiones_fin_de_semana"] = int(((dias + 3) % 7 >= 5).sum())
     if dias.size < 2:
         return out
     rachas = []  # rachas de laborables que faltan y no estan en el calendario
@@ -215,7 +222,7 @@ def huecos_sesiones(dias, clase: str, bolsa: str | None) -> dict:
                 racha.append(d)
         if racha:
             rachas.append(racha)
-    con_bolsa = clase in ("metales_energia", "indices", "acciones_us")
+    con_bolsa = clase in CON_BOLSA
     otras = []
     for r in rachas:
         if con_bolsa and len(r) <= MAX_PROBABLE:

@@ -5,7 +5,7 @@
   "fx60": "forex",
   "indices": "indices",
   "metales_energia": "metales_energia",
-  "us_grandes": "acciones_us"
+  "us_grandes": "acciones_us (acciones_us_24 las que solo existen en -24)"
  },
  "cuentas": {
   "continuo": 193,
@@ -14,7 +14,7 @@
   "fx60": 60,
   "indices": 23,
   "metales_energia": 16,
-  "us_grandes": 484
+  "us_grandes": 497
  },
  "etiquetas": {
   "A.NYSE": "A",
@@ -59,6 +59,7 @@
   "APP.NAS": "APP",
   "APTV.NYSE": "APTV",
   "ARE.NYSE": "ARE",
+  "ARES.NYSE-24": "ARES",
   "ATO.NYSE": "ATO",
   "AVGO.NAS": "AVGO",
   "AVY.NYSE": "AVY",
@@ -71,6 +72,7 @@
   "BALL.NYSE": "BALL",
   "BAX.NYSE": "BAX",
   "BBY.NYSE": "BBY",
+  "BDX.NYSE-24": "BDX",
   "BE.NYSE": "BE",
   "BEN.NYSE": "BEN",
   "BF/B.NYSE": "BF-B",
@@ -124,8 +126,10 @@
   "COP.NYSE": "COP",
   "COR.NYSE": "COR",
   "COST.NAS": "COST",
+  "CPAY.NYSE-24": "CPAY",
   "CPRT.NAS": "CPRT",
   "CPT.NYSE": "CPT",
+  "CRH.NYSE-24": "CRH",
   "CRL.NYSE": "CRL",
   "CRM.NYSE": "CRM",
   "CRWD.NAS": "CRWD",
@@ -163,6 +167,7 @@
   "DVN.NYSE": "DVN",
   "DXCM.NAS": "DXCM",
   "EBAY.NAS": "EBAY",
+  "ECHO.NAS-24": "ECHO",
   "ECL.NYSE": "ECL",
   "ED.NYSE": "ED",
   "EFX.NYSE": "EFX",
@@ -194,11 +199,13 @@
   "FDS.NYSE": "FDS",
   "FDX.NYSE": "FDX",
   "FE.NYSE": "FE",
+  "FERG.NYSE-24": "FERG",
   "FFIV.NAS": "FFIV",
   "FICO.NYSE": "FICO",
   "FIS.NYSE": "FIS",
   "FISV.NAS": "FISV",
   "FITB.NYSE": "FITB",
+  "FIX.NYSE-24": "FIX",
   "FLEX.NAS": "FLEX",
   "FOX.NAS": "FOX",
   "FOXA.NAS": "FOXA",
@@ -308,6 +315,7 @@
   "MCO.NYSE": "MCO",
   "MDLZ.NAS": "MDLZ",
   "MET.NYSE": "MET",
+  "META.NAS-24": "META",
   "MGM.NYSE": "MGM",
   "MKC.NYSE": "MKC",
   "MLM.NYSE": "MLM",
@@ -386,6 +394,7 @@
   "PTC.NAS": "PTC",
   "PWR.NYSE": "PWR",
   "PYPL.NAS": "PYPL",
+  "Q.NYSE-24": "Q",
   "QCOM.NAS": "QCOM",
   "RCL.NYSE": "RCL",
   "RDDT.NYSE": "RDDT",
@@ -405,10 +414,13 @@
   "SBAC.NAS": "SBAC",
   "SBUX.NAS": "SBUX",
   "SCHW.NYSE": "SCHW",
+  "SHW.NYSE-24": "SHW",
   "SJM.NYSE": "SJM",
+  "SKYD.NYSE-24": "SKYD",
   "SLB.NYSE": "SLB",
   "SMCI.NAS": "SMCI",
   "SNA.NYSE": "SNA",
+  "SNDK.NAS-24": "SNDK",
   "SNPS.NAS": "SNPS",
   "SO.NYSE": "SO",
   "SOLV.NYSE": "SOLV",
@@ -481,6 +493,7 @@
   "WAB.NYSE": "WAB",
   "WAT.NYSE": "WAT",
   "WDAY.NAS": "WDAY",
+  "WDC.NAS-24": "WDC",
   "WEC.NYSE": "WEC",
   "WELL.NYSE": "WELL",
   "WFC.NYSE": "WFC",
@@ -987,6 +1000,7 @@
    "APP.NAS",
    "APTV.NYSE",
    "ARE.NYSE",
+   "ARES.NYSE-24",
    "ATO.NYSE",
    "AVGO.NAS",
    "AVY.NYSE",
@@ -999,6 +1013,7 @@
    "BALL.NYSE",
    "BAX.NYSE",
    "BBY.NYSE",
+   "BDX.NYSE-24",
    "BE.NYSE",
    "BEN.NYSE",
    "BF/B.NYSE",
@@ -1052,8 +1067,10 @@
    "COP.NYSE",
    "COR.NYSE",
    "COST.NAS",
+   "CPAY.NYSE-24",
    "CPRT.NAS",
    "CPT.NYSE",
+   "CRH.NYSE-24",
    "CRL.NYSE",
    "CRM.NYSE",
    "CRWD.NAS",
@@ -1091,6 +1108,7 @@
    "DVN.NYSE",
    "DXCM.NAS",
    "EBAY.NAS",
+   "ECHO.NAS-24",
    "ECL.NYSE",
    "ED.NYSE",
    "EFX.NYSE",
@@ -1122,11 +1140,13 @@
    "FDS.NYSE",
    "FDX.NYSE",
    "FE.NYSE",
+   "FERG.NYSE-24",
    "FFIV.NAS",
    "FICO.NYSE",
    "FIS.NYSE",
    "FISV.NAS",
    "FITB.NYSE",
+   "FIX.NYSE-24",
    "FLEX.NAS",
    "FOX.NAS",
    "FOXA.NAS",
@@ -1236,6 +1256,7 @@
    "MCO.NYSE",
    "MDLZ.NAS",
    "MET.NYSE",
+   "META.NAS-24",
    "MGM.NYSE",
    "MKC.NYSE",
    "MLM.NYSE",
@@ -1314,6 +1335,7 @@
    "PTC.NAS",
    "PWR.NYSE",
    "PYPL.NAS",
+   "Q.NYSE-24",
    "QCOM.NAS",
    "RCL.NYSE",
    "RDDT.NYSE",
@@ -1333,10 +1355,13 @@
    "SBAC.NAS",
    "SBUX.NAS",
    "SCHW.NYSE",
+   "SHW.NYSE-24",
    "SJM.NYSE",
+   "SKYD.NYSE-24",
    "SLB.NYSE",
    "SMCI.NAS",
    "SNA.NYSE",
+   "SNDK.NAS-24",
    "SNPS.NAS",
    "SO.NYSE",
    "SOLV.NYSE",
@@ -1409,6 +1434,7 @@
    "WAB.NYSE",
    "WAT.NYSE",
    "WDAY.NAS",
+   "WDC.NAS-24",
    "WEC.NYSE",
    "WELL.NYSE",
    "WFC.NYSE",
@@ -1444,19 +1470,20 @@
   "fx60": "ruta Forex\\* (Majors, Minors, Exotics)",
   "indices": "ruta Indices\\Indices Spot\\*, sin vencimiento",
   "metales_energia": "ruta Commodities\\Metals\\* o Commodities\\Energies\\Energies Spot\\*, sin vencimiento",
-  "us_grandes": "componentes del S&P 500 (sp500.csv) con su simbolo de sesion normal .NYSE/.NAS/.US (no -24)"
+  "us_grandes": "componentes del S&P 500 (sp500.csv) con su simbolo de sesion normal .NYSE/.NAS/.US; si el broker solo lo tiene en -24, la -24 (decision usuario 2026-11-09)"
  },
  "sp500": {
-  "casados": 484,
+  "casados": 497,
   "componentes": 503,
   "fichero": "sp500.csv",
   "fuente": "Componentes del S&P 500. Fuente: https://en.wikipedia.org/wiki/List_of_S%26P_500_companies (revid 1384572480). Fecha de la instantanea: 2026-11-09. Filas: 503.",
-  "sin_casar": 19
+  "sin_casar": 6
  },
  "tarea": "TI-12-MT5 fase C",
  "us_grandes": {
   "casados": [
    {
+    "clase": "acciones_us",
     "etiqueta": "A",
     "nombre": "Agilent Technologies",
     "regla": "ticker tal cual, .NYSE",
@@ -1464,6 +1491,7 @@
     "ticker": "A"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AAPL",
     "nombre": "Apple Inc.",
     "regla": "ticker tal cual, .NAS",
@@ -1471,6 +1499,7 @@
     "ticker": "AAPL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ABBV",
     "nombre": "AbbVie",
     "regla": "ticker tal cual, .NYSE",
@@ -1478,6 +1507,7 @@
     "ticker": "ABBV"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ABNB",
     "nombre": "Airbnb",
     "regla": "ticker tal cual, .NAS",
@@ -1485,6 +1515,7 @@
     "ticker": "ABNB"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ABT",
     "nombre": "Abbott Laboratories",
     "regla": "ticker tal cual, .NYSE",
@@ -1492,6 +1523,7 @@
     "ticker": "ABT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ACGL",
     "nombre": "Arch Capital Group",
     "regla": "ticker tal cual, .NAS",
@@ -1499,6 +1531,7 @@
     "ticker": "ACGL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ACN",
     "nombre": "Accenture",
     "regla": "ticker tal cual, .NYSE",
@@ -1506,6 +1539,7 @@
     "ticker": "ACN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ADBE",
     "nombre": "Adobe Inc.",
     "regla": "ticker tal cual, .NAS",
@@ -1513,6 +1547,7 @@
     "ticker": "ADBE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ADI",
     "nombre": "Analog Devices",
     "regla": "ticker tal cual, .NAS",
@@ -1520,6 +1555,7 @@
     "ticker": "ADI"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ADM",
     "nombre": "Archer Daniels Midland",
     "regla": "ticker tal cual, .NYSE",
@@ -1527,6 +1563,7 @@
     "ticker": "ADM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ADP",
     "nombre": "Automatic Data Processing",
     "regla": "ticker tal cual, .NAS",
@@ -1534,6 +1571,7 @@
     "ticker": "ADP"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ADSK",
     "nombre": "Autodesk",
     "regla": "ticker tal cual, .NAS",
@@ -1541,6 +1579,7 @@
     "ticker": "ADSK"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AEE",
     "nombre": "Ameren",
     "regla": "ticker tal cual, .NYSE",
@@ -1548,6 +1587,7 @@
     "ticker": "AEE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AEP",
     "nombre": "American Electric Power",
     "regla": "ticker tal cual, .NAS",
@@ -1555,6 +1595,7 @@
     "ticker": "AEP"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AES",
     "nombre": "AES Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -1562,6 +1603,7 @@
     "ticker": "AES"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AFL",
     "nombre": "Aflac",
     "regla": "ticker tal cual, .NYSE",
@@ -1569,6 +1611,7 @@
     "ticker": "AFL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AIG",
     "nombre": "American International Group",
     "regla": "ticker tal cual, .NYSE",
@@ -1576,6 +1619,7 @@
     "ticker": "AIG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AIZ",
     "nombre": "Assurant",
     "regla": "ticker tal cual, .NYSE",
@@ -1583,6 +1627,7 @@
     "ticker": "AIZ"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AJG",
     "nombre": "Arthur J. Gallagher & Co.",
     "regla": "ticker tal cual, .NYSE",
@@ -1590,6 +1635,7 @@
     "ticker": "AJG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AKAM",
     "nombre": "Akamai Technologies",
     "regla": "ticker tal cual, .NAS",
@@ -1597,6 +1643,7 @@
     "ticker": "AKAM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ALB",
     "nombre": "Albemarle Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -1604,6 +1651,7 @@
     "ticker": "ALB"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ALGN",
     "nombre": "Align Technology",
     "regla": "ticker tal cual, .NAS",
@@ -1611,6 +1659,7 @@
     "ticker": "ALGN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ALL",
     "nombre": "Allstate",
     "regla": "ticker tal cual, .NYSE",
@@ -1618,6 +1667,7 @@
     "ticker": "ALL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ALLE",
     "nombre": "Allegion",
     "regla": "ticker tal cual, .NYSE",
@@ -1625,6 +1675,7 @@
     "ticker": "ALLE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AMAT",
     "nombre": "Applied Materials",
     "regla": "ticker tal cual, .NAS",
@@ -1632,6 +1683,7 @@
     "ticker": "AMAT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AMCR",
     "nombre": "Amcor",
     "regla": "ticker tal cual, .NYSE",
@@ -1639,6 +1691,7 @@
     "ticker": "AMCR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AMD",
     "nombre": "Advanced Micro Devices",
     "regla": "ticker tal cual, .NAS",
@@ -1646,6 +1699,7 @@
     "ticker": "AMD"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AME",
     "nombre": "Ametek",
     "regla": "ticker tal cual, .NYSE",
@@ -1653,6 +1707,7 @@
     "ticker": "AME"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AMGN",
     "nombre": "Amgen",
     "regla": "ticker tal cual, .NAS",
@@ -1660,6 +1715,7 @@
     "ticker": "AMGN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AMP",
     "nombre": "Ameriprise Financial",
     "regla": "ticker tal cual, .NYSE",
@@ -1667,6 +1723,7 @@
     "ticker": "AMP"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AMT",
     "nombre": "American Tower",
     "regla": "ticker tal cual, .NYSE",
@@ -1674,6 +1731,7 @@
     "ticker": "AMT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AMZN",
     "nombre": "Amazon",
     "regla": "ticker tal cual, .NAS",
@@ -1681,6 +1739,7 @@
     "ticker": "AMZN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ANET",
     "nombre": "Arista Networks",
     "regla": "ticker tal cual, .NYSE",
@@ -1688,6 +1747,7 @@
     "ticker": "ANET"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AON",
     "nombre": "Aon plc",
     "regla": "ticker tal cual, .NYSE",
@@ -1695,6 +1755,7 @@
     "ticker": "AON"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AOS",
     "nombre": "A. O. Smith",
     "regla": "ticker tal cual, .NYSE",
@@ -1702,6 +1763,7 @@
     "ticker": "AOS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "APA",
     "nombre": "APA Corporation",
     "regla": "ticker tal cual, .NAS",
@@ -1709,6 +1771,7 @@
     "ticker": "APA"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "APD",
     "nombre": "Air Products",
     "regla": "ticker tal cual, .NYSE",
@@ -1716,6 +1779,7 @@
     "ticker": "APD"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "APH",
     "nombre": "Amphenol",
     "regla": "ticker tal cual, .NYSE",
@@ -1723,6 +1787,7 @@
     "ticker": "APH"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "APO",
     "nombre": "Apollo Global Management",
     "regla": "ticker tal cual, .NYSE",
@@ -1730,6 +1795,7 @@
     "ticker": "APO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "APP",
     "nombre": "AppLovin",
     "regla": "ticker tal cual, .NAS",
@@ -1737,6 +1803,7 @@
     "ticker": "APP"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "APTV",
     "nombre": "Aptiv",
     "regla": "ticker tal cual, .NYSE",
@@ -1744,6 +1811,7 @@
     "ticker": "APTV"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ARE",
     "nombre": "Alexandria Real Estate Equities",
     "regla": "ticker tal cual, .NYSE",
@@ -1751,6 +1819,15 @@
     "ticker": "ARE"
    },
    {
+    "clase": "acciones_us_24",
+    "etiqueta": "ARES",
+    "nombre": "Ares Management",
+    "regla": "solo -24 (decision usuario 2026-11-09), ticker tal cual, .NYSE-24",
+    "simbolo": "ARES.NYSE-24",
+    "ticker": "ARES"
+   },
+   {
+    "clase": "acciones_us",
     "etiqueta": "ATO",
     "nombre": "Atmos Energy",
     "regla": "ticker tal cual, .NYSE",
@@ -1758,6 +1835,7 @@
     "ticker": "ATO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AVGO",
     "nombre": "Broadcom",
     "regla": "ticker tal cual, .NAS",
@@ -1765,6 +1843,7 @@
     "ticker": "AVGO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AVY",
     "nombre": "Avery Dennison",
     "regla": "ticker tal cual, .NYSE",
@@ -1772,6 +1851,7 @@
     "ticker": "AVY"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AWK",
     "nombre": "American Water Works",
     "regla": "ticker tal cual, .NYSE",
@@ -1779,6 +1859,7 @@
     "ticker": "AWK"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AXON",
     "nombre": "Axon Enterprise",
     "regla": "ticker tal cual, .NAS",
@@ -1786,6 +1867,7 @@
     "ticker": "AXON"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AXP",
     "nombre": "American Express",
     "regla": "ticker tal cual, .NYSE",
@@ -1793,6 +1875,7 @@
     "ticker": "AXP"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "AZO",
     "nombre": "AutoZone",
     "regla": "ticker tal cual, .NYSE",
@@ -1800,6 +1883,7 @@
     "ticker": "AZO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BA",
     "nombre": "Boeing",
     "regla": "ticker tal cual, .NYSE",
@@ -1807,6 +1891,7 @@
     "ticker": "BA"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BAC",
     "nombre": "Bank of America",
     "regla": "ticker tal cual, .NYSE",
@@ -1814,6 +1899,7 @@
     "ticker": "BAC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BALL",
     "nombre": "Ball Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -1821,6 +1907,7 @@
     "ticker": "BALL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BAX",
     "nombre": "Baxter International",
     "regla": "ticker tal cual, .NYSE",
@@ -1828,6 +1915,7 @@
     "ticker": "BAX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BBY",
     "nombre": "Best Buy",
     "regla": "ticker tal cual, .NYSE",
@@ -1835,6 +1923,15 @@
     "ticker": "BBY"
    },
    {
+    "clase": "acciones_us_24",
+    "etiqueta": "BDX",
+    "nombre": "Becton Dickinson",
+    "regla": "solo -24 (decision usuario 2026-11-09), ticker tal cual, .NYSE-24",
+    "simbolo": "BDX.NYSE-24",
+    "ticker": "BDX"
+   },
+   {
+    "clase": "acciones_us",
     "etiqueta": "BE",
     "nombre": "Bloom Energy",
     "regla": "ticker tal cual, .NYSE",
@@ -1842,6 +1939,7 @@
     "ticker": "BE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BEN",
     "nombre": "Franklin Resources",
     "regla": "ticker tal cual, .NYSE",
@@ -1849,6 +1947,7 @@
     "ticker": "BEN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BF-B",
     "nombre": "Brown–Forman",
     "regla": "clase con /, .NYSE",
@@ -1856,6 +1955,7 @@
     "ticker": "BF.B"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BG",
     "nombre": "Bunge Global",
     "regla": "ticker tal cual, .NYSE",
@@ -1863,6 +1963,7 @@
     "ticker": "BG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BIIB",
     "nombre": "Biogen",
     "regla": "ticker tal cual, .NAS",
@@ -1870,6 +1971,7 @@
     "ticker": "BIIB"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BKNG",
     "nombre": "Booking Holdings",
     "regla": "ticker tal cual, .NAS",
@@ -1877,6 +1979,7 @@
     "ticker": "BKNG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BKR",
     "nombre": "Baker Hughes",
     "regla": "ticker tal cual, .NAS",
@@ -1884,6 +1987,7 @@
     "ticker": "BKR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BLK",
     "nombre": "BlackRock",
     "regla": "ticker tal cual, .NYSE",
@@ -1891,6 +1995,7 @@
     "ticker": "BLK"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BMY",
     "nombre": "Bristol Myers Squibb",
     "regla": "ticker tal cual, .NYSE",
@@ -1898,6 +2003,7 @@
     "ticker": "BMY"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BNY",
     "nombre": "BNY Mellon",
     "regla": "ticker tal cual, .NYSE",
@@ -1905,6 +2011,7 @@
     "ticker": "BNY"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BR",
     "nombre": "Broadridge Financial Solutions",
     "regla": "ticker tal cual, .NYSE",
@@ -1912,6 +2019,7 @@
     "ticker": "BR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BRK-B",
     "nombre": "Berkshire Hathaway",
     "regla": "clase con -, .NYSE",
@@ -1919,6 +2027,7 @@
     "ticker": "BRK.B"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BRO",
     "nombre": "Brown & Brown",
     "regla": "ticker tal cual, .NYSE",
@@ -1926,6 +2035,7 @@
     "ticker": "BRO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BSX",
     "nombre": "Boston Scientific",
     "regla": "ticker tal cual, .NYSE",
@@ -1933,6 +2043,7 @@
     "ticker": "BSX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BX",
     "nombre": "Blackstone Inc.",
     "regla": "ticker tal cual, .NYSE",
@@ -1940,6 +2051,7 @@
     "ticker": "BX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "BXP",
     "nombre": "BXP, Inc.",
     "regla": "ticker tal cual, .NYSE",
@@ -1947,6 +2059,7 @@
     "ticker": "BXP"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "C",
     "nombre": "Citigroup",
     "regla": "ticker tal cual, .NYSE",
@@ -1954,6 +2067,7 @@
     "ticker": "C"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CAH",
     "nombre": "Cardinal Health",
     "regla": "ticker tal cual, .NYSE",
@@ -1961,6 +2075,7 @@
     "ticker": "CAH"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CARR",
     "nombre": "Carrier Global",
     "regla": "ticker tal cual, .NYSE",
@@ -1968,6 +2083,7 @@
     "ticker": "CARR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CASY",
     "nombre": "Casey's",
     "regla": "ticker tal cual, .NAS",
@@ -1975,6 +2091,7 @@
     "ticker": "CASY"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CAT",
     "nombre": "Caterpillar Inc.",
     "regla": "ticker tal cual, .NYSE",
@@ -1982,6 +2099,7 @@
     "ticker": "CAT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CB",
     "nombre": "Chubb Limited",
     "regla": "ticker tal cual, .NYSE",
@@ -1989,6 +2107,7 @@
     "ticker": "CB"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CBOE",
     "nombre": "Cboe Global Markets",
     "regla": "ticker tal cual, .US",
@@ -1996,6 +2115,7 @@
     "ticker": "CBOE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CBRE",
     "nombre": "CBRE Group",
     "regla": "ticker tal cual, .NYSE",
@@ -2003,6 +2123,7 @@
     "ticker": "CBRE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CCI",
     "nombre": "Crown Castle",
     "regla": "ticker tal cual, .NYSE",
@@ -2010,6 +2131,7 @@
     "ticker": "CCI"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CCL",
     "nombre": "Carnival Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -2017,6 +2139,7 @@
     "ticker": "CCL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CDNS",
     "nombre": "Cadence Design Systems",
     "regla": "ticker tal cual, .NAS",
@@ -2024,6 +2147,7 @@
     "ticker": "CDNS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CDW",
     "nombre": "CDW Corporation",
     "regla": "ticker tal cual, .NAS",
@@ -2031,6 +2155,7 @@
     "ticker": "CDW"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CEG",
     "nombre": "Constellation Energy",
     "regla": "ticker tal cual, .NAS",
@@ -2038,6 +2163,7 @@
     "ticker": "CEG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CF",
     "nombre": "CF Industries",
     "regla": "ticker tal cual, .NYSE",
@@ -2045,6 +2171,7 @@
     "ticker": "CF"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CFG",
     "nombre": "Citizens Financial Group",
     "regla": "ticker tal cual, .NYSE",
@@ -2052,6 +2179,7 @@
     "ticker": "CFG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CHD",
     "nombre": "Church & Dwight",
     "regla": "ticker tal cual, .NYSE",
@@ -2059,6 +2187,7 @@
     "ticker": "CHD"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CHRW",
     "nombre": "C.H. Robinson",
     "regla": "ticker tal cual, .NAS",
@@ -2066,6 +2195,7 @@
     "ticker": "CHRW"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CHTR",
     "nombre": "Charter Communications",
     "regla": "ticker tal cual, .NAS",
@@ -2073,6 +2203,7 @@
     "ticker": "CHTR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CI",
     "nombre": "Cigna",
     "regla": "ticker tal cual, .NYSE",
@@ -2080,6 +2211,7 @@
     "ticker": "CI"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CIEN",
     "nombre": "Ciena",
     "regla": "ticker tal cual, .NYSE",
@@ -2087,6 +2219,7 @@
     "ticker": "CIEN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CINF",
     "nombre": "Cincinnati Financial",
     "regla": "ticker tal cual, .NAS",
@@ -2094,6 +2227,7 @@
     "ticker": "CINF"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CL",
     "nombre": "Colgate-Palmolive",
     "regla": "ticker tal cual, .NYSE",
@@ -2101,6 +2235,7 @@
     "ticker": "CL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CLX",
     "nombre": "Clorox",
     "regla": "ticker tal cual, .NYSE",
@@ -2108,6 +2243,7 @@
     "ticker": "CLX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CMCSA",
     "nombre": "Comcast",
     "regla": "ticker tal cual, .NAS",
@@ -2115,6 +2251,7 @@
     "ticker": "CMCSA"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CME",
     "nombre": "CME Group",
     "regla": "ticker tal cual, .NAS",
@@ -2122,6 +2259,7 @@
     "ticker": "CME"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CMG",
     "nombre": "Chipotle Mexican Grill",
     "regla": "ticker tal cual, .NYSE",
@@ -2129,6 +2267,7 @@
     "ticker": "CMG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CMI",
     "nombre": "Cummins",
     "regla": "ticker tal cual, .NYSE",
@@ -2136,6 +2275,7 @@
     "ticker": "CMI"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CMS",
     "nombre": "CMS Energy",
     "regla": "ticker tal cual, .NYSE",
@@ -2143,6 +2283,7 @@
     "ticker": "CMS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CNC",
     "nombre": "Centene Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -2150,6 +2291,7 @@
     "ticker": "CNC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CNP",
     "nombre": "CenterPoint Energy",
     "regla": "ticker tal cual, .NYSE",
@@ -2157,6 +2299,7 @@
     "ticker": "CNP"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "COF",
     "nombre": "Capital One",
     "regla": "ticker tal cual, .NYSE",
@@ -2164,6 +2307,7 @@
     "ticker": "COF"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "COHR",
     "nombre": "Coherent Corp.",
     "regla": "ticker tal cual, .NYSE",
@@ -2171,6 +2315,7 @@
     "ticker": "COHR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "COIN",
     "nombre": "Coinbase",
     "regla": "ticker tal cual, .NAS",
@@ -2178,6 +2323,7 @@
     "ticker": "COIN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "COO",
     "nombre": "Cooper Companies (The)",
     "regla": "ticker tal cual, .NAS",
@@ -2185,6 +2331,7 @@
     "ticker": "COO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "COP",
     "nombre": "ConocoPhillips",
     "regla": "ticker tal cual, .NYSE",
@@ -2192,6 +2339,7 @@
     "ticker": "COP"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "COR",
     "nombre": "Cencora",
     "regla": "ticker tal cual, .NYSE",
@@ -2199,6 +2347,7 @@
     "ticker": "COR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "COST",
     "nombre": "Costco",
     "regla": "ticker tal cual, .NAS",
@@ -2206,6 +2355,15 @@
     "ticker": "COST"
    },
    {
+    "clase": "acciones_us_24",
+    "etiqueta": "CPAY",
+    "nombre": "Corpay",
+    "regla": "solo -24 (decision usuario 2026-11-09), ticker tal cual, .NYSE-24",
+    "simbolo": "CPAY.NYSE-24",
+    "ticker": "CPAY"
+   },
+   {
+    "clase": "acciones_us",
     "etiqueta": "CPRT",
     "nombre": "Copart",
     "regla": "ticker tal cual, .NAS",
@@ -2213,6 +2371,7 @@
     "ticker": "CPRT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CPT",
     "nombre": "Camden Property Trust",
     "regla": "ticker tal cual, .NYSE",
@@ -2220,6 +2379,15 @@
     "ticker": "CPT"
    },
    {
+    "clase": "acciones_us_24",
+    "etiqueta": "CRH",
+    "nombre": "CRH plc",
+    "regla": "solo -24 (decision usuario 2026-11-09), ticker tal cual, .NYSE-24",
+    "simbolo": "CRH.NYSE-24",
+    "ticker": "CRH"
+   },
+   {
+    "clase": "acciones_us",
     "etiqueta": "CRL",
     "nombre": "Charles River Laboratories",
     "regla": "ticker tal cual, .NYSE",
@@ -2227,6 +2395,7 @@
     "ticker": "CRL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CRM",
     "nombre": "Salesforce",
     "regla": "ticker tal cual, .NYSE",
@@ -2234,6 +2403,7 @@
     "ticker": "CRM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CRWD",
     "nombre": "CrowdStrike",
     "regla": "ticker tal cual, .NAS",
@@ -2241,6 +2411,7 @@
     "ticker": "CRWD"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CSCO",
     "nombre": "Cisco",
     "regla": "ticker tal cual, .NAS",
@@ -2248,6 +2419,7 @@
     "ticker": "CSCO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CSGP",
     "nombre": "CoStar Group",
     "regla": "ticker tal cual, .NAS",
@@ -2255,6 +2427,7 @@
     "ticker": "CSGP"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CSX",
     "nombre": "CSX Corporation",
     "regla": "ticker tal cual, .NAS",
@@ -2262,6 +2435,7 @@
     "ticker": "CSX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CTAS",
     "nombre": "Cintas",
     "regla": "ticker tal cual, .NAS",
@@ -2269,6 +2443,7 @@
     "ticker": "CTAS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CTSH",
     "nombre": "Cognizant",
     "regla": "ticker tal cual, .NAS",
@@ -2276,6 +2451,7 @@
     "ticker": "CTSH"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CVNA",
     "nombre": "Carvana",
     "regla": "ticker tal cual, .NYSE",
@@ -2283,6 +2459,7 @@
     "ticker": "CVNA"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CVS",
     "nombre": "CVS Health",
     "regla": "ticker tal cual, .NYSE",
@@ -2290,6 +2467,7 @@
     "ticker": "CVS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "CVX",
     "nombre": "Chevron Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -2297,6 +2475,7 @@
     "ticker": "CVX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "D",
     "nombre": "Dominion Energy",
     "regla": "ticker tal cual, .NYSE",
@@ -2304,6 +2483,7 @@
     "ticker": "D"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DAL",
     "nombre": "Delta Air Lines",
     "regla": "ticker tal cual, .NYSE",
@@ -2311,6 +2491,7 @@
     "ticker": "DAL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DASH",
     "nombre": "DoorDash",
     "regla": "ticker tal cual, .NAS",
@@ -2318,6 +2499,7 @@
     "ticker": "DASH"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DD",
     "nombre": "DuPont",
     "regla": "ticker tal cual, .NYSE",
@@ -2325,6 +2507,7 @@
     "ticker": "DD"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DDOG",
     "nombre": "Datadog",
     "regla": "ticker tal cual, .NAS",
@@ -2332,6 +2515,7 @@
     "ticker": "DDOG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DE",
     "nombre": "Deere & Company",
     "regla": "ticker tal cual, .NYSE",
@@ -2339,6 +2523,7 @@
     "ticker": "DE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DECK",
     "nombre": "Deckers Brands",
     "regla": "ticker tal cual, .NYSE",
@@ -2346,6 +2531,7 @@
     "ticker": "DECK"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DELL",
     "nombre": "Dell Technologies",
     "regla": "ticker tal cual, .NYSE",
@@ -2353,6 +2539,7 @@
     "ticker": "DELL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DG",
     "nombre": "Dollar General",
     "regla": "ticker tal cual, .NYSE",
@@ -2360,6 +2547,7 @@
     "ticker": "DG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DGX",
     "nombre": "Quest Diagnostics",
     "regla": "ticker tal cual, .NYSE",
@@ -2367,6 +2555,7 @@
     "ticker": "DGX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DHI",
     "nombre": "D. R. Horton",
     "regla": "ticker tal cual, .NYSE",
@@ -2374,6 +2563,7 @@
     "ticker": "DHI"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DHR",
     "nombre": "Danaher Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -2381,6 +2571,7 @@
     "ticker": "DHR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DIS",
     "nombre": "Walt Disney Company (The)",
     "regla": "ticker tal cual, .NYSE",
@@ -2388,6 +2579,7 @@
     "ticker": "DIS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DLR",
     "nombre": "Digital Realty",
     "regla": "ticker tal cual, .NYSE",
@@ -2395,6 +2587,7 @@
     "ticker": "DLR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DLTR",
     "nombre": "Dollar Tree",
     "regla": "ticker tal cual, .NAS",
@@ -2402,6 +2595,7 @@
     "ticker": "DLTR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DOC",
     "nombre": "Healthpeak Properties",
     "regla": "ticker tal cual, .NYSE",
@@ -2409,6 +2603,7 @@
     "ticker": "DOC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DOV",
     "nombre": "Dover Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -2416,6 +2611,7 @@
     "ticker": "DOV"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DOW",
     "nombre": "Dow Inc.",
     "regla": "ticker tal cual, .NYSE",
@@ -2423,6 +2619,7 @@
     "ticker": "DOW"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DPZ",
     "nombre": "Domino's",
     "regla": "ticker tal cual, .NAS",
@@ -2430,6 +2627,7 @@
     "ticker": "DPZ"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DRI",
     "nombre": "Darden Restaurants",
     "regla": "ticker tal cual, .NYSE",
@@ -2437,6 +2635,7 @@
     "ticker": "DRI"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DTE",
     "nombre": "DTE Energy",
     "regla": "ticker tal cual, .NYSE",
@@ -2444,6 +2643,7 @@
     "ticker": "DTE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DUK",
     "nombre": "Duke Energy",
     "regla": "ticker tal cual, .NYSE",
@@ -2451,6 +2651,7 @@
     "ticker": "DUK"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DVA",
     "nombre": "DaVita",
     "regla": "ticker tal cual, .NYSE",
@@ -2458,6 +2659,7 @@
     "ticker": "DVA"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DVN",
     "nombre": "Devon Energy",
     "regla": "ticker tal cual, .NYSE",
@@ -2465,6 +2667,7 @@
     "ticker": "DVN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "DXCM",
     "nombre": "Dexcom",
     "regla": "ticker tal cual, .NAS",
@@ -2472,6 +2675,7 @@
     "ticker": "DXCM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "EBAY",
     "nombre": "eBay Inc.",
     "regla": "ticker tal cual, .NAS",
@@ -2479,6 +2683,15 @@
     "ticker": "EBAY"
    },
    {
+    "clase": "acciones_us_24",
+    "etiqueta": "ECHO",
+    "nombre": "EchoStar",
+    "regla": "solo -24 (decision usuario 2026-11-09), ticker tal cual, .NAS-24",
+    "simbolo": "ECHO.NAS-24",
+    "ticker": "ECHO"
+   },
+   {
+    "clase": "acciones_us",
     "etiqueta": "ECL",
     "nombre": "Ecolab",
     "regla": "ticker tal cual, .NYSE",
@@ -2486,6 +2699,7 @@
     "ticker": "ECL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ED",
     "nombre": "Consolidated Edison",
     "regla": "ticker tal cual, .NYSE",
@@ -2493,6 +2707,7 @@
     "ticker": "ED"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "EFX",
     "nombre": "Equifax",
     "regla": "ticker tal cual, .NYSE",
@@ -2500,6 +2715,7 @@
     "ticker": "EFX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "EG",
     "nombre": "Everest Group",
     "regla": "ticker tal cual, .NYSE",
@@ -2507,6 +2723,7 @@
     "ticker": "EG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "EIX",
     "nombre": "Edison International",
     "regla": "ticker tal cual, .NYSE",
@@ -2514,6 +2731,7 @@
     "ticker": "EIX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "EL",
     "nombre": "Estée Lauder Companies (The)",
     "regla": "ticker tal cual, .NYSE",
@@ -2521,6 +2739,7 @@
     "ticker": "EL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ELV",
     "nombre": "Elevance Health",
     "regla": "ticker tal cual, .NYSE",
@@ -2528,6 +2747,7 @@
     "ticker": "ELV"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "EME",
     "nombre": "Emcor",
     "regla": "ticker tal cual, .NYSE",
@@ -2535,6 +2755,7 @@
     "ticker": "EME"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "EMR",
     "nombre": "Emerson Electric",
     "regla": "ticker tal cual, .NYSE",
@@ -2542,6 +2763,7 @@
     "ticker": "EMR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "EOG",
     "nombre": "EOG Resources",
     "regla": "ticker tal cual, .NYSE",
@@ -2549,6 +2771,7 @@
     "ticker": "EOG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "EQIX",
     "nombre": "Equinix",
     "regla": "ticker tal cual, .NAS",
@@ -2556,6 +2779,7 @@
     "ticker": "EQIX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "EQT",
     "nombre": "EQT Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -2563,6 +2787,7 @@
     "ticker": "EQT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ERIE",
     "nombre": "Erie Indemnity",
     "regla": "ticker tal cual, .NAS",
@@ -2570,6 +2795,7 @@
     "ticker": "ERIE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ES",
     "nombre": "Eversource Energy",
     "regla": "ticker tal cual, .NYSE",
@@ -2577,6 +2803,7 @@
     "ticker": "ES"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ESS",
     "nombre": "Essex Property Trust",
     "regla": "ticker tal cual, .NYSE",
@@ -2584,6 +2811,7 @@
     "ticker": "ESS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ETN",
     "nombre": "Eaton Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -2591,6 +2819,7 @@
     "ticker": "ETN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ETR",
     "nombre": "Entergy",
     "regla": "ticker tal cual, .NYSE",
@@ -2598,6 +2827,7 @@
     "ticker": "ETR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "EVRG",
     "nombre": "Evergy",
     "regla": "ticker tal cual, .NAS",
@@ -2605,6 +2835,7 @@
     "ticker": "EVRG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "EW",
     "nombre": "Edwards Lifesciences",
     "regla": "ticker tal cual, .NYSE",
@@ -2612,6 +2843,7 @@
     "ticker": "EW"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "EXC",
     "nombre": "Exelon",
     "regla": "ticker tal cual, .NAS",
@@ -2619,6 +2851,7 @@
     "ticker": "EXC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "EXE",
     "nombre": "Expand Energy",
     "regla": "ticker tal cual, .NAS",
@@ -2626,6 +2859,7 @@
     "ticker": "EXE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "EXPD",
     "nombre": "Expeditors International",
     "regla": "ticker tal cual, .NYSE",
@@ -2633,6 +2867,7 @@
     "ticker": "EXPD"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "EXPE",
     "nombre": "Expedia Group",
     "regla": "ticker tal cual, .NAS",
@@ -2640,6 +2875,7 @@
     "ticker": "EXPE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "EXR",
     "nombre": "Extra Space Storage",
     "regla": "ticker tal cual, .NYSE",
@@ -2647,6 +2883,7 @@
     "ticker": "EXR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "F",
     "nombre": "Ford Motor Company",
     "regla": "ticker tal cual, .NYSE",
@@ -2654,6 +2891,7 @@
     "ticker": "F"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "FANG",
     "nombre": "Diamondback Energy",
     "regla": "ticker tal cual, .NAS",
@@ -2661,6 +2899,7 @@
     "ticker": "FANG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "FAST",
     "nombre": "Fastenal",
     "regla": "ticker tal cual, .NAS",
@@ -2668,6 +2907,7 @@
     "ticker": "FAST"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "FCX",
     "nombre": "Freeport-McMoRan",
     "regla": "ticker tal cual, .NYSE",
@@ -2675,6 +2915,7 @@
     "ticker": "FCX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "FDS",
     "nombre": "FactSet",
     "regla": "ticker tal cual, .NYSE",
@@ -2682,6 +2923,7 @@
     "ticker": "FDS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "FDX",
     "nombre": "FedEx",
     "regla": "ticker tal cual, .NYSE",
@@ -2689,6 +2931,7 @@
     "ticker": "FDX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "FE",
     "nombre": "FirstEnergy",
     "regla": "ticker tal cual, .NYSE",
@@ -2696,6 +2939,15 @@
     "ticker": "FE"
    },
    {
+    "clase": "acciones_us_24",
+    "etiqueta": "FERG",
+    "nombre": "Ferguson Enterprises",
+    "regla": "solo -24 (decision usuario 2026-11-09), ticker tal cual, .NYSE-24",
+    "simbolo": "FERG.NYSE-24",
+    "ticker": "FERG"
+   },
+   {
+    "clase": "acciones_us",
     "etiqueta": "FFIV",
     "nombre": "F5, Inc.",
     "regla": "ticker tal cual, .NAS",
@@ -2703,6 +2955,7 @@
     "ticker": "FFIV"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "FICO",
     "nombre": "Fair Isaac",
     "regla": "ticker tal cual, .NYSE",
@@ -2710,6 +2963,7 @@
     "ticker": "FICO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "FIS",
     "nombre": "Fidelity National Information Services",
     "regla": "ticker tal cual, .NYSE",
@@ -2717,6 +2971,7 @@
     "ticker": "FIS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "FISV",
     "nombre": "Fiserv",
     "regla": "ticker tal cual, .NAS",
@@ -2724,6 +2979,7 @@
     "ticker": "FISV"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "FITB",
     "nombre": "Fifth Third Bancorp",
     "regla": "ticker tal cual, .NYSE",
@@ -2731,6 +2987,15 @@
     "ticker": "FITB"
    },
    {
+    "clase": "acciones_us_24",
+    "etiqueta": "FIX",
+    "nombre": "Comfort Systems USA",
+    "regla": "solo -24 (decision usuario 2026-11-09), ticker tal cual, .NYSE-24",
+    "simbolo": "FIX.NYSE-24",
+    "ticker": "FIX"
+   },
+   {
+    "clase": "acciones_us",
     "etiqueta": "FLEX",
     "nombre": "Flex Ltd.",
     "regla": "ticker tal cual, .NAS",
@@ -2738,6 +3003,7 @@
     "ticker": "FLEX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "FOX",
     "nombre": "Fox Corporation (Class B)",
     "regla": "ticker tal cual, .NAS",
@@ -2745,6 +3011,7 @@
     "ticker": "FOX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "FOXA",
     "nombre": "Fox Corporation (Class A)",
     "regla": "ticker tal cual, .NAS",
@@ -2752,6 +3019,7 @@
     "ticker": "FOXA"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "FRT",
     "nombre": "Federal Realty Investment Trust",
     "regla": "ticker tal cual, .NYSE",
@@ -2759,6 +3027,7 @@
     "ticker": "FRT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "FSLR",
     "nombre": "First Solar",
     "regla": "ticker tal cual, .NAS",
@@ -2766,6 +3035,7 @@
     "ticker": "FSLR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "FTNT",
     "nombre": "Fortinet",
     "regla": "ticker tal cual, .NAS",
@@ -2773,6 +3043,7 @@
     "ticker": "FTNT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "FTV",
     "nombre": "Fortive",
     "regla": "ticker tal cual, .NYSE",
@@ -2780,6 +3051,7 @@
     "ticker": "FTV"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "GD",
     "nombre": "General Dynamics",
     "regla": "ticker tal cual, .NYSE",
@@ -2787,6 +3059,7 @@
     "ticker": "GD"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "GDDY",
     "nombre": "GoDaddy",
     "regla": "ticker tal cual, .NYSE",
@@ -2794,6 +3067,7 @@
     "ticker": "GDDY"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "GE",
     "nombre": "GE Aerospace",
     "regla": "ticker tal cual, .NYSE",
@@ -2801,6 +3075,7 @@
     "ticker": "GE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "GEHC",
     "nombre": "GE HealthCare",
     "regla": "ticker tal cual, .NAS",
@@ -2808,6 +3083,7 @@
     "ticker": "GEHC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "GEN",
     "nombre": "Gen Digital",
     "regla": "ticker tal cual, .NAS",
@@ -2815,6 +3091,7 @@
     "ticker": "GEN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "GEV",
     "nombre": "GE Vernova",
     "regla": "ticker tal cual, .NYSE",
@@ -2822,6 +3099,7 @@
     "ticker": "GEV"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "GILD",
     "nombre": "Gilead Sciences",
     "regla": "ticker tal cual, .NAS",
@@ -2829,6 +3107,7 @@
     "ticker": "GILD"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "GIS",
     "nombre": "General Mills",
     "regla": "ticker tal cual, .NYSE",
@@ -2836,6 +3115,7 @@
     "ticker": "GIS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "GL",
     "nombre": "Globe Life",
     "regla": "ticker tal cual, .NYSE",
@@ -2843,6 +3123,7 @@
     "ticker": "GL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "GLW",
     "nombre": "Corning Inc.",
     "regla": "ticker tal cual, .NYSE",
@@ -2850,6 +3131,7 @@
     "ticker": "GLW"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "GM",
     "nombre": "General Motors",
     "regla": "ticker tal cual, .NYSE",
@@ -2857,6 +3139,7 @@
     "ticker": "GM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "GNRC",
     "nombre": "Generac",
     "regla": "ticker tal cual, .NYSE",
@@ -2864,6 +3147,7 @@
     "ticker": "GNRC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "GOOG",
     "nombre": "Alphabet Inc. (Class C)",
     "regla": "ticker tal cual, .NAS",
@@ -2871,6 +3155,7 @@
     "ticker": "GOOG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "GPC",
     "nombre": "Genuine Parts Company",
     "regla": "ticker tal cual, .NAS",
@@ -2878,6 +3163,7 @@
     "ticker": "GPC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "GPN",
     "nombre": "Global Payments",
     "regla": "ticker tal cual, .NYSE",
@@ -2885,6 +3171,7 @@
     "ticker": "GPN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "GRMN",
     "nombre": "Garmin",
     "regla": "ticker tal cual, .NYSE",
@@ -2892,6 +3179,7 @@
     "ticker": "GRMN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "GS",
     "nombre": "Goldman Sachs",
     "regla": "ticker tal cual, .NYSE",
@@ -2899,6 +3187,7 @@
     "ticker": "GS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "GWW",
     "nombre": "W. W. Grainger",
     "regla": "ticker tal cual, .NYSE",
@@ -2906,6 +3195,7 @@
     "ticker": "GWW"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HAL",
     "nombre": "Halliburton",
     "regla": "ticker tal cual, .NYSE",
@@ -2913,6 +3203,7 @@
     "ticker": "HAL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HAS",
     "nombre": "Hasbro",
     "regla": "ticker tal cual, .NAS",
@@ -2920,6 +3211,7 @@
     "ticker": "HAS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HBAN",
     "nombre": "Huntington Bancshares",
     "regla": "ticker tal cual, .NAS",
@@ -2927,6 +3219,7 @@
     "ticker": "HBAN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HCA",
     "nombre": "HCA Healthcare",
     "regla": "ticker tal cual, .NYSE",
@@ -2934,6 +3227,7 @@
     "ticker": "HCA"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HD",
     "nombre": "Home Depot (The)",
     "regla": "ticker tal cual, .NYSE",
@@ -2941,6 +3235,7 @@
     "ticker": "HD"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HIG",
     "nombre": "Hartford (The)",
     "regla": "ticker tal cual, .NYSE",
@@ -2948,6 +3243,7 @@
     "ticker": "HIG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HII",
     "nombre": "Huntington Ingalls Industries",
     "regla": "ticker tal cual, .NYSE",
@@ -2955,6 +3251,7 @@
     "ticker": "HII"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HLT",
     "nombre": "Hilton Worldwide",
     "regla": "ticker tal cual, .NAS",
@@ -2962,6 +3259,7 @@
     "ticker": "HLT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HON",
     "nombre": "Honeywell Technologies",
     "regla": "ticker tal cual, .NYSE",
@@ -2969,6 +3267,7 @@
     "ticker": "HON"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HOOD",
     "nombre": "Robinhood Markets",
     "regla": "ticker tal cual, .NAS",
@@ -2976,6 +3275,7 @@
     "ticker": "HOOD"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HPE",
     "nombre": "Hewlett Packard Enterprise",
     "regla": "ticker tal cual, .NYSE",
@@ -2983,6 +3283,7 @@
     "ticker": "HPE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HPQ",
     "nombre": "HP Inc.",
     "regla": "ticker tal cual, .NYSE",
@@ -2990,6 +3291,7 @@
     "ticker": "HPQ"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HRL",
     "nombre": "Hormel Foods",
     "regla": "ticker tal cual, .NYSE",
@@ -2997,6 +3299,7 @@
     "ticker": "HRL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HSIC",
     "nombre": "Henry Schein",
     "regla": "ticker tal cual, .NAS",
@@ -3004,6 +3307,7 @@
     "ticker": "HSIC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HST",
     "nombre": "Host Hotels & Resorts",
     "regla": "ticker tal cual, .NAS",
@@ -3011,6 +3315,7 @@
     "ticker": "HST"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HSY",
     "nombre": "Hershey Company (The)",
     "regla": "ticker tal cual, .NYSE",
@@ -3018,6 +3323,7 @@
     "ticker": "HSY"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HUBB",
     "nombre": "Hubbell Incorporated",
     "regla": "ticker tal cual, .NYSE",
@@ -3025,6 +3331,7 @@
     "ticker": "HUBB"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HUM",
     "nombre": "Humana",
     "regla": "ticker tal cual, .NYSE",
@@ -3032,6 +3339,7 @@
     "ticker": "HUM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "HWM",
     "nombre": "Howmet Aerospace",
     "regla": "ticker tal cual, .NYSE",
@@ -3039,6 +3347,7 @@
     "ticker": "HWM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "IBKR",
     "nombre": "Interactive Brokers",
     "regla": "ticker tal cual, .NAS",
@@ -3046,6 +3355,7 @@
     "ticker": "IBKR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "IBM",
     "nombre": "IBM",
     "regla": "ticker tal cual, .NYSE",
@@ -3053,6 +3363,7 @@
     "ticker": "IBM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ICE",
     "nombre": "Intercontinental Exchange",
     "regla": "ticker tal cual, .NYSE",
@@ -3060,6 +3371,7 @@
     "ticker": "ICE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "IDXX",
     "nombre": "Idexx Laboratories",
     "regla": "ticker tal cual, .NAS",
@@ -3067,6 +3379,7 @@
     "ticker": "IDXX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "IEX",
     "nombre": "IDEX Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -3074,6 +3387,7 @@
     "ticker": "IEX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "IFF",
     "nombre": "International Flavors & Fragrances",
     "regla": "ticker tal cual, .NYSE",
@@ -3081,6 +3395,7 @@
     "ticker": "IFF"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ILMN",
     "nombre": "Illumina, Inc.",
     "regla": "ticker tal cual, .NAS",
@@ -3088,6 +3403,7 @@
     "ticker": "ILMN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "INCY",
     "nombre": "Incyte",
     "regla": "ticker tal cual, .NAS",
@@ -3095,6 +3411,7 @@
     "ticker": "INCY"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "INTC",
     "nombre": "Intel",
     "regla": "ticker tal cual, .NAS",
@@ -3102,6 +3419,7 @@
     "ticker": "INTC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "INTU",
     "nombre": "Intuit",
     "regla": "ticker tal cual, .NAS",
@@ -3109,6 +3427,7 @@
     "ticker": "INTU"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "INVH",
     "nombre": "Invitation Homes",
     "regla": "ticker tal cual, .NYSE",
@@ -3116,6 +3435,7 @@
     "ticker": "INVH"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "IP",
     "nombre": "International Paper",
     "regla": "ticker tal cual, .NYSE",
@@ -3123,6 +3443,7 @@
     "ticker": "IP"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "IQV",
     "nombre": "IQVIA",
     "regla": "ticker tal cual, .NYSE",
@@ -3130,6 +3451,7 @@
     "ticker": "IQV"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "IR",
     "nombre": "Ingersoll Rand",
     "regla": "ticker tal cual, .NYSE",
@@ -3137,6 +3459,7 @@
     "ticker": "IR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "IRM",
     "nombre": "Iron Mountain",
     "regla": "ticker tal cual, .NYSE",
@@ -3144,6 +3467,7 @@
     "ticker": "IRM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ISRG",
     "nombre": "Intuitive Surgical",
     "regla": "ticker tal cual, .NAS",
@@ -3151,6 +3475,7 @@
     "ticker": "ISRG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "IT",
     "nombre": "Gartner",
     "regla": "ticker tal cual, .NYSE",
@@ -3158,6 +3483,7 @@
     "ticker": "IT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ITW",
     "nombre": "Illinois Tool Works",
     "regla": "ticker tal cual, .NYSE",
@@ -3165,6 +3491,7 @@
     "ticker": "ITW"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "IVZ",
     "nombre": "Invesco",
     "regla": "ticker tal cual, .NYSE",
@@ -3172,6 +3499,7 @@
     "ticker": "IVZ"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "J",
     "nombre": "Jacobs Solutions",
     "regla": "ticker tal cual, .NYSE",
@@ -3179,6 +3507,7 @@
     "ticker": "J"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "JBHT",
     "nombre": "J.B. Hunt",
     "regla": "ticker tal cual, .NAS",
@@ -3186,6 +3515,7 @@
     "ticker": "JBHT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "JBL",
     "nombre": "Jabil",
     "regla": "ticker tal cual, .NYSE",
@@ -3193,6 +3523,7 @@
     "ticker": "JBL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "JCI",
     "nombre": "Johnson Controls",
     "regla": "ticker tal cual, .NYSE",
@@ -3200,6 +3531,7 @@
     "ticker": "JCI"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "JKHY",
     "nombre": "Jack Henry & Associates",
     "regla": "ticker tal cual, .NAS",
@@ -3207,6 +3539,7 @@
     "ticker": "JKHY"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "JNJ",
     "nombre": "Johnson & Johnson",
     "regla": "ticker tal cual, .NYSE",
@@ -3214,6 +3547,7 @@
     "ticker": "JNJ"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "JPM",
     "nombre": "JPMorgan Chase",
     "regla": "ticker tal cual, .NYSE",
@@ -3221,6 +3555,7 @@
     "ticker": "JPM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "KDP",
     "nombre": "Keurig Dr Pepper",
     "regla": "ticker tal cual, .NAS",
@@ -3228,6 +3563,7 @@
     "ticker": "KDP"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "KEY",
     "nombre": "KeyCorp",
     "regla": "ticker tal cual, .NYSE",
@@ -3235,6 +3571,7 @@
     "ticker": "KEY"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "KEYS",
     "nombre": "Keysight Technologies",
     "regla": "ticker tal cual, .NYSE",
@@ -3242,6 +3579,7 @@
     "ticker": "KEYS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "KHC",
     "nombre": "Kraft Heinz",
     "regla": "ticker tal cual, .NYSE",
@@ -3249,6 +3587,7 @@
     "ticker": "KHC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "KIM",
     "nombre": "Kimco Realty",
     "regla": "ticker tal cual, .NYSE",
@@ -3256,6 +3595,7 @@
     "ticker": "KIM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "KKR",
     "nombre": "KKR & Co.",
     "regla": "ticker tal cual, .NYSE",
@@ -3263,6 +3603,7 @@
     "ticker": "KKR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "KLAC",
     "nombre": "KLA Corporation",
     "regla": "ticker tal cual, .NAS",
@@ -3270,6 +3611,7 @@
     "ticker": "KLAC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "KMB",
     "nombre": "Kimberly-Clark",
     "regla": "ticker tal cual, .NAS",
@@ -3277,6 +3619,7 @@
     "ticker": "KMB"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "KMI",
     "nombre": "Kinder Morgan",
     "regla": "ticker tal cual, .NYSE",
@@ -3284,6 +3627,7 @@
     "ticker": "KMI"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "KO",
     "nombre": "Coca-Cola Company (The)",
     "regla": "ticker tal cual, .NYSE",
@@ -3291,6 +3635,7 @@
     "ticker": "KO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "KR",
     "nombre": "Kroger",
     "regla": "ticker tal cual, .NYSE",
@@ -3298,6 +3643,7 @@
     "ticker": "KR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "L",
     "nombre": "Loews Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -3305,6 +3651,7 @@
     "ticker": "L"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "LDOS",
     "nombre": "Leidos",
     "regla": "ticker tal cual, .NYSE",
@@ -3312,6 +3659,7 @@
     "ticker": "LDOS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "LEN",
     "nombre": "Lennar",
     "regla": "ticker tal cual, .NYSE",
@@ -3319,6 +3667,7 @@
     "ticker": "LEN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "LH",
     "nombre": "Labcorp",
     "regla": "ticker tal cual, .NYSE",
@@ -3326,6 +3675,7 @@
     "ticker": "LH"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "LHX",
     "nombre": "L3Harris",
     "regla": "ticker tal cual, .NYSE",
@@ -3333,6 +3683,7 @@
     "ticker": "LHX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "LII",
     "nombre": "Lennox International",
     "regla": "ticker tal cual, .NYSE",
@@ -3340,6 +3691,7 @@
     "ticker": "LII"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "LIN",
     "nombre": "Linde plc",
     "regla": "ticker tal cual, .NAS",
@@ -3347,6 +3699,7 @@
     "ticker": "LIN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "LITE",
     "nombre": "Lumentum",
     "regla": "ticker tal cual, .NAS",
@@ -3354,6 +3707,7 @@
     "ticker": "LITE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "LLY",
     "nombre": "Lilly (Eli)",
     "regla": "ticker tal cual, .NYSE",
@@ -3361,6 +3715,7 @@
     "ticker": "LLY"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "LMT",
     "nombre": "Lockheed Martin",
     "regla": "ticker tal cual, .NYSE",
@@ -3368,6 +3723,7 @@
     "ticker": "LMT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "LNT",
     "nombre": "Alliant Energy",
     "regla": "ticker tal cual, .NAS",
@@ -3375,6 +3731,7 @@
     "ticker": "LNT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "LOW",
     "nombre": "Lowe's",
     "regla": "ticker tal cual, .NYSE",
@@ -3382,6 +3739,7 @@
     "ticker": "LOW"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "LRCX",
     "nombre": "Lam Research",
     "regla": "ticker tal cual, .NAS",
@@ -3389,6 +3747,7 @@
     "ticker": "LRCX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "LULU",
     "nombre": "Lululemon Athletica",
     "regla": "ticker tal cual, .NAS",
@@ -3396,6 +3755,7 @@
     "ticker": "LULU"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "LUV",
     "nombre": "Southwest Airlines",
     "regla": "ticker tal cual, .NYSE",
@@ -3403,6 +3763,7 @@
     "ticker": "LUV"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "LVS",
     "nombre": "Las Vegas Sands",
     "regla": "ticker tal cual, .NYSE",
@@ -3410,6 +3771,7 @@
     "ticker": "LVS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "LYB",
     "nombre": "LyondellBasell",
     "regla": "ticker tal cual, .NYSE",
@@ -3417,6 +3779,7 @@
     "ticker": "LYB"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "LYV",
     "nombre": "Live Nation Entertainment",
     "regla": "ticker tal cual, .NYSE",
@@ -3424,6 +3787,7 @@
     "ticker": "LYV"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MA",
     "nombre": "Mastercard",
     "regla": "ticker tal cual, .NYSE",
@@ -3431,6 +3795,7 @@
     "ticker": "MA"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MAA",
     "nombre": "Mid-America Apartment Communities",
     "regla": "ticker tal cual, .NYSE",
@@ -3438,6 +3803,7 @@
     "ticker": "MAA"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MAR",
     "nombre": "Marriott International",
     "regla": "ticker tal cual, .NAS",
@@ -3445,6 +3811,7 @@
     "ticker": "MAR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MAS",
     "nombre": "Masco",
     "regla": "ticker tal cual, .NYSE",
@@ -3452,6 +3819,7 @@
     "ticker": "MAS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MCD",
     "nombre": "McDonald's",
     "regla": "ticker tal cual, .NYSE",
@@ -3459,6 +3827,7 @@
     "ticker": "MCD"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MCHP",
     "nombre": "Microchip Technology",
     "regla": "ticker tal cual, .NAS",
@@ -3466,6 +3835,7 @@
     "ticker": "MCHP"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MCK",
     "nombre": "McKesson",
     "regla": "ticker tal cual, .NYSE",
@@ -3473,6 +3843,7 @@
     "ticker": "MCK"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MCO",
     "nombre": "Moody's Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -3480,6 +3851,7 @@
     "ticker": "MCO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MDLZ",
     "nombre": "Mondelez International",
     "regla": "ticker tal cual, .NAS",
@@ -3487,6 +3859,7 @@
     "ticker": "MDLZ"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MET",
     "nombre": "MetLife",
     "regla": "ticker tal cual, .NYSE",
@@ -3494,6 +3867,15 @@
     "ticker": "MET"
    },
    {
+    "clase": "acciones_us_24",
+    "etiqueta": "META",
+    "nombre": "Meta Platforms",
+    "regla": "solo -24 (decision usuario 2026-11-09), ticker tal cual, .NAS-24",
+    "simbolo": "META.NAS-24",
+    "ticker": "META"
+   },
+   {
+    "clase": "acciones_us",
     "etiqueta": "MGM",
     "nombre": "MGM Resorts",
     "regla": "ticker tal cual, .NYSE",
@@ -3501,6 +3883,7 @@
     "ticker": "MGM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MKC",
     "nombre": "McCormick & Company",
     "regla": "ticker tal cual, .NYSE",
@@ -3508,6 +3891,7 @@
     "ticker": "MKC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MLM",
     "nombre": "Martin Marietta Materials",
     "regla": "ticker tal cual, .NYSE",
@@ -3515,6 +3899,7 @@
     "ticker": "MLM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MMM",
     "nombre": "3M",
     "regla": "ticker tal cual, .NYSE",
@@ -3522,6 +3907,7 @@
     "ticker": "MMM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MNST",
     "nombre": "Monster Beverage",
     "regla": "ticker tal cual, .NAS",
@@ -3529,6 +3915,7 @@
     "ticker": "MNST"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MO",
     "nombre": "Altria",
     "regla": "ticker tal cual, .NYSE",
@@ -3536,6 +3923,7 @@
     "ticker": "MO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MOS",
     "nombre": "Mosaic Company (The)",
     "regla": "ticker tal cual, .NYSE",
@@ -3543,6 +3931,7 @@
     "ticker": "MOS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MPC",
     "nombre": "Marathon Petroleum",
     "regla": "ticker tal cual, .NYSE",
@@ -3550,6 +3939,7 @@
     "ticker": "MPC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MPWR",
     "nombre": "Monolithic Power Systems",
     "regla": "ticker tal cual, .NAS",
@@ -3557,6 +3947,7 @@
     "ticker": "MPWR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MRK",
     "nombre": "Merck & Co.",
     "regla": "ticker tal cual, .NYSE",
@@ -3564,6 +3955,7 @@
     "ticker": "MRK"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MRNA",
     "nombre": "Moderna",
     "regla": "ticker tal cual, .NAS",
@@ -3571,6 +3963,7 @@
     "ticker": "MRNA"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MRSH",
     "nombre": "Marsh McLennan",
     "regla": "ticker tal cual, .NYSE",
@@ -3578,6 +3971,7 @@
     "ticker": "MRSH"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MRVL",
     "nombre": "Marvell Technology",
     "regla": "ticker tal cual, .NAS",
@@ -3585,6 +3979,7 @@
     "ticker": "MRVL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MS",
     "nombre": "Morgan Stanley",
     "regla": "ticker tal cual, .NYSE",
@@ -3592,6 +3987,7 @@
     "ticker": "MS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MSCI",
     "nombre": "MSCI",
     "regla": "ticker tal cual, .NYSE",
@@ -3599,6 +3995,7 @@
     "ticker": "MSCI"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MSFT",
     "nombre": "Microsoft",
     "regla": "ticker tal cual, .NAS",
@@ -3606,6 +4003,7 @@
     "ticker": "MSFT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MSI",
     "nombre": "Motorola Solutions",
     "regla": "ticker tal cual, .NYSE",
@@ -3613,6 +4011,7 @@
     "ticker": "MSI"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MTB",
     "nombre": "M&T Bank",
     "regla": "ticker tal cual, .NYSE",
@@ -3620,6 +4019,7 @@
     "ticker": "MTB"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MTD",
     "nombre": "Mettler Toledo",
     "regla": "ticker tal cual, .NYSE",
@@ -3627,6 +4027,7 @@
     "ticker": "MTD"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "MU",
     "nombre": "Micron Technology",
     "regla": "ticker tal cual, .NAS",
@@ -3634,6 +4035,7 @@
     "ticker": "MU"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NCLH",
     "nombre": "Norwegian Cruise Line Holdings",
     "regla": "ticker tal cual, .NYSE",
@@ -3641,6 +4043,7 @@
     "ticker": "NCLH"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NDAQ",
     "nombre": "Nasdaq, Inc.",
     "regla": "ticker tal cual, .NAS",
@@ -3648,6 +4051,7 @@
     "ticker": "NDAQ"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NDSN",
     "nombre": "Nordson Corporation",
     "regla": "ticker tal cual, .NAS",
@@ -3655,6 +4059,7 @@
     "ticker": "NDSN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NEE",
     "nombre": "NextEra Energy",
     "regla": "ticker tal cual, .NYSE",
@@ -3662,6 +4067,7 @@
     "ticker": "NEE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NEM",
     "nombre": "Newmont",
     "regla": "ticker tal cual, .NYSE",
@@ -3669,6 +4075,7 @@
     "ticker": "NEM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NFLX",
     "nombre": "Netflix",
     "regla": "ticker tal cual, .NAS",
@@ -3676,6 +4083,7 @@
     "ticker": "NFLX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NI",
     "nombre": "NiSource",
     "regla": "ticker tal cual, .NYSE",
@@ -3683,6 +4091,7 @@
     "ticker": "NI"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NKE",
     "nombre": "Nike, Inc.",
     "regla": "ticker tal cual, .NYSE",
@@ -3690,6 +4099,7 @@
     "ticker": "NKE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NOC",
     "nombre": "Northrop Grumman",
     "regla": "ticker tal cual, .NYSE",
@@ -3697,6 +4107,7 @@
     "ticker": "NOC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NOW",
     "nombre": "ServiceNow",
     "regla": "ticker tal cual, .NYSE",
@@ -3704,6 +4115,7 @@
     "ticker": "NOW"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NRG",
     "nombre": "NRG Energy",
     "regla": "ticker tal cual, .NYSE",
@@ -3711,6 +4123,7 @@
     "ticker": "NRG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NSC",
     "nombre": "Norfolk Southern",
     "regla": "ticker tal cual, .NYSE",
@@ -3718,6 +4131,7 @@
     "ticker": "NSC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NTAP",
     "nombre": "NetApp",
     "regla": "ticker tal cual, .NAS",
@@ -3725,6 +4139,7 @@
     "ticker": "NTAP"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NTRS",
     "nombre": "Northern Trust",
     "regla": "ticker tal cual, .NAS",
@@ -3732,6 +4147,7 @@
     "ticker": "NTRS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NUE",
     "nombre": "Nucor",
     "regla": "ticker tal cual, .NYSE",
@@ -3739,6 +4155,7 @@
     "ticker": "NUE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NVDA",
     "nombre": "Nvidia",
     "regla": "ticker tal cual, .NAS",
@@ -3746,6 +4163,7 @@
     "ticker": "NVDA"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NVR",
     "nombre": "NVR, Inc.",
     "regla": "ticker tal cual, .NYSE",
@@ -3753,6 +4171,7 @@
     "ticker": "NVR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NWS",
     "nombre": "News Corp (Class B)",
     "regla": "ticker tal cual, .NAS",
@@ -3760,6 +4179,7 @@
     "ticker": "NWS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NWSA",
     "nombre": "News Corp (Class A)",
     "regla": "ticker tal cual, .NAS",
@@ -3767,6 +4187,7 @@
     "ticker": "NWSA"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "NXPI",
     "nombre": "NXP Semiconductors",
     "regla": "ticker tal cual, .NAS",
@@ -3774,6 +4195,7 @@
     "ticker": "NXPI"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "O",
     "nombre": "Realty Income",
     "regla": "ticker tal cual, .NYSE",
@@ -3781,6 +4203,7 @@
     "ticker": "O"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ODFL",
     "nombre": "Old Dominion",
     "regla": "ticker tal cual, .NAS",
@@ -3788,6 +4211,7 @@
     "ticker": "ODFL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "OKTA",
     "nombre": "Okta, Inc.",
     "regla": "ticker tal cual, .NAS",
@@ -3795,6 +4219,7 @@
     "ticker": "OKTA"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "OMC",
     "nombre": "Omnicom Group",
     "regla": "ticker tal cual, .NYSE",
@@ -3802,6 +4227,7 @@
     "ticker": "OMC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ON",
     "nombre": "ON Semiconductor",
     "regla": "ticker tal cual, .NAS",
@@ -3809,6 +4235,7 @@
     "ticker": "ON"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ORCL",
     "nombre": "Oracle Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -3816,6 +4243,7 @@
     "ticker": "ORCL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ORLY",
     "nombre": "O'Reilly Automotive",
     "regla": "ticker tal cual, .NAS",
@@ -3823,6 +4251,7 @@
     "ticker": "ORLY"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "OTIS",
     "nombre": "Otis Worldwide",
     "regla": "ticker tal cual, .NYSE",
@@ -3830,6 +4259,7 @@
     "ticker": "OTIS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "OXY",
     "nombre": "Occidental Petroleum",
     "regla": "ticker tal cual, .NYSE",
@@ -3837,6 +4267,7 @@
     "ticker": "OXY"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "P",
     "nombre": "Everpure",
     "regla": "ticker tal cual, .NYSE",
@@ -3844,6 +4275,7 @@
     "ticker": "P"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PANW",
     "nombre": "Palo Alto Networks",
     "regla": "ticker tal cual, .NYSE",
@@ -3851,6 +4283,7 @@
     "ticker": "PANW"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PAYX",
     "nombre": "Paychex",
     "regla": "ticker tal cual, .NAS",
@@ -3858,6 +4291,7 @@
     "ticker": "PAYX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PCAR",
     "nombre": "Paccar",
     "regla": "ticker tal cual, .NAS",
@@ -3865,6 +4299,7 @@
     "ticker": "PCAR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PCG",
     "nombre": "PG&E Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -3872,6 +4307,7 @@
     "ticker": "PCG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PEG",
     "nombre": "Public Service Enterprise Group",
     "regla": "ticker tal cual, .NYSE",
@@ -3879,6 +4315,7 @@
     "ticker": "PEG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PEP",
     "nombre": "PepsiCo",
     "regla": "ticker tal cual, .NAS",
@@ -3886,6 +4323,7 @@
     "ticker": "PEP"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PFE",
     "nombre": "Pfizer",
     "regla": "ticker tal cual, .NYSE",
@@ -3893,6 +4331,7 @@
     "ticker": "PFE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PFG",
     "nombre": "Principal Financial Group",
     "regla": "ticker tal cual, .NAS",
@@ -3900,6 +4339,7 @@
     "ticker": "PFG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PG",
     "nombre": "Procter & Gamble",
     "regla": "ticker tal cual, .NYSE",
@@ -3907,6 +4347,7 @@
     "ticker": "PG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PGR",
     "nombre": "Progressive Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -3914,6 +4355,7 @@
     "ticker": "PGR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PH",
     "nombre": "Parker Hannifin",
     "regla": "ticker tal cual, .NYSE",
@@ -3921,6 +4363,7 @@
     "ticker": "PH"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PHM",
     "nombre": "PulteGroup",
     "regla": "ticker tal cual, .NYSE",
@@ -3928,6 +4371,7 @@
     "ticker": "PHM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PKG",
     "nombre": "Packaging Corporation of America",
     "regla": "ticker tal cual, .NYSE",
@@ -3935,6 +4379,7 @@
     "ticker": "PKG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PLD",
     "nombre": "Prologis",
     "regla": "ticker tal cual, .NYSE",
@@ -3942,6 +4387,7 @@
     "ticker": "PLD"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PLTR",
     "nombre": "Palantir Technologies",
     "regla": "ticker tal cual, .NAS",
@@ -3949,6 +4395,7 @@
     "ticker": "PLTR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PM",
     "nombre": "Philip Morris International",
     "regla": "ticker tal cual, .NYSE",
@@ -3956,6 +4403,7 @@
     "ticker": "PM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PNC",
     "nombre": "PNC Financial Services",
     "regla": "ticker tal cual, .NYSE",
@@ -3963,6 +4411,7 @@
     "ticker": "PNC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PNR",
     "nombre": "Pentair",
     "regla": "ticker tal cual, .NYSE",
@@ -3970,6 +4419,7 @@
     "ticker": "PNR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PNW",
     "nombre": "Pinnacle West Capital",
     "regla": "ticker tal cual, .NYSE",
@@ -3977,6 +4427,7 @@
     "ticker": "PNW"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PODD",
     "nombre": "Insulet Corporation",
     "regla": "ticker tal cual, .NAS",
@@ -3984,6 +4435,7 @@
     "ticker": "PODD"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PPG",
     "nombre": "PPG Industries",
     "regla": "ticker tal cual, .NYSE",
@@ -3991,6 +4443,7 @@
     "ticker": "PPG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PPL",
     "nombre": "PPL Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -3998,6 +4451,7 @@
     "ticker": "PPL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PRU",
     "nombre": "Prudential Financial",
     "regla": "ticker tal cual, .NYSE",
@@ -4005,6 +4459,7 @@
     "ticker": "PRU"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PSA",
     "nombre": "Public Storage",
     "regla": "ticker tal cual, .NYSE",
@@ -4012,6 +4467,7 @@
     "ticker": "PSA"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PSX",
     "nombre": "Phillips 66",
     "regla": "ticker tal cual, .NYSE",
@@ -4019,6 +4475,7 @@
     "ticker": "PSX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PTC",
     "nombre": "PTC Inc.",
     "regla": "ticker tal cual, .NAS",
@@ -4026,6 +4483,7 @@
     "ticker": "PTC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PWR",
     "nombre": "Quanta Services",
     "regla": "ticker tal cual, .NYSE",
@@ -4033,6 +4491,7 @@
     "ticker": "PWR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "PYPL",
     "nombre": "PayPal",
     "regla": "ticker tal cual, .NAS",
@@ -4040,6 +4499,15 @@
     "ticker": "PYPL"
    },
    {
+    "clase": "acciones_us_24",
+    "etiqueta": "Q",
+    "nombre": "Qnity Electronics",
+    "regla": "solo -24 (decision usuario 2026-11-09), ticker tal cual, .NYSE-24",
+    "simbolo": "Q.NYSE-24",
+    "ticker": "Q"
+   },
+   {
+    "clase": "acciones_us",
     "etiqueta": "QCOM",
     "nombre": "Qualcomm",
     "regla": "ticker tal cual, .NAS",
@@ -4047,6 +4515,7 @@
     "ticker": "QCOM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "RCL",
     "nombre": "Royal Caribbean Group",
     "regla": "ticker tal cual, .NYSE",
@@ -4054,6 +4523,7 @@
     "ticker": "RCL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "RDDT",
     "nombre": "Reddit",
     "regla": "ticker tal cual, .NYSE",
@@ -4061,6 +4531,7 @@
     "ticker": "RDDT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "REG",
     "nombre": "Regency Centers",
     "regla": "ticker tal cual, .NAS",
@@ -4068,6 +4539,7 @@
     "ticker": "REG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "REGN",
     "nombre": "Regeneron Pharmaceuticals",
     "regla": "ticker tal cual, .NAS",
@@ -4075,6 +4547,7 @@
     "ticker": "REGN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "RF",
     "nombre": "Regions Financial Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -4082,6 +4555,7 @@
     "ticker": "RF"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "RJF",
     "nombre": "Raymond James Financial",
     "regla": "ticker tal cual, .NYSE",
@@ -4089,6 +4563,7 @@
     "ticker": "RJF"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "RL",
     "nombre": "Ralph Lauren Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -4096,6 +4571,7 @@
     "ticker": "RL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "RMD",
     "nombre": "ResMed",
     "regla": "ticker tal cual, .NYSE",
@@ -4103,6 +4579,7 @@
     "ticker": "RMD"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ROK",
     "nombre": "Rockwell Automation",
     "regla": "ticker tal cual, .NYSE",
@@ -4110,6 +4587,7 @@
     "ticker": "ROK"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ROL",
     "nombre": "Rollins, Inc.",
     "regla": "ticker tal cual, .NYSE",
@@ -4117,6 +4595,7 @@
     "ticker": "ROL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ROP",
     "nombre": "Roper Technologies",
     "regla": "ticker tal cual, .NAS",
@@ -4124,6 +4603,7 @@
     "ticker": "ROP"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ROST",
     "nombre": "Ross Stores",
     "regla": "ticker tal cual, .NAS",
@@ -4131,6 +4611,7 @@
     "ticker": "ROST"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "RSG",
     "nombre": "Republic Services",
     "regla": "ticker tal cual, .NYSE",
@@ -4138,6 +4619,7 @@
     "ticker": "RSG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "RTX",
     "nombre": "RTX Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -4145,6 +4627,7 @@
     "ticker": "RTX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "RVTY",
     "nombre": "Revvity",
     "regla": "ticker tal cual, .NYSE",
@@ -4152,6 +4635,7 @@
     "ticker": "RVTY"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "SBAC",
     "nombre": "SBA Communications",
     "regla": "ticker tal cual, .NAS",
@@ -4159,6 +4643,7 @@
     "ticker": "SBAC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "SBUX",
     "nombre": "Starbucks",
     "regla": "ticker tal cual, .NAS",
@@ -4166,6 +4651,7 @@
     "ticker": "SBUX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "SCHW",
     "nombre": "Charles Schwab Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -4173,6 +4659,15 @@
     "ticker": "SCHW"
    },
    {
+    "clase": "acciones_us_24",
+    "etiqueta": "SHW",
+    "nombre": "Sherwin-Williams",
+    "regla": "solo -24 (decision usuario 2026-11-09), ticker tal cual, .NYSE-24",
+    "simbolo": "SHW.NYSE-24",
+    "ticker": "SHW"
+   },
+   {
+    "clase": "acciones_us",
     "etiqueta": "SJM",
     "nombre": "J.M. Smucker Company (The)",
     "regla": "ticker tal cual, .NYSE",
@@ -4180,6 +4675,15 @@
     "ticker": "SJM"
    },
    {
+    "clase": "acciones_us_24",
+    "etiqueta": "SKYD",
+    "nombre": "Skydance",
+    "regla": "solo -24 (decision usuario 2026-11-09), ticker tal cual, .NYSE-24",
+    "simbolo": "SKYD.NYSE-24",
+    "ticker": "SKYD"
+   },
+   {
+    "clase": "acciones_us",
     "etiqueta": "SLB",
     "nombre": "Schlumberger",
     "regla": "ticker tal cual, .NYSE",
@@ -4187,6 +4691,7 @@
     "ticker": "SLB"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "SMCI",
     "nombre": "Supermicro",
     "regla": "ticker tal cual, .NAS",
@@ -4194,6 +4699,7 @@
     "ticker": "SMCI"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "SNA",
     "nombre": "Snap-on",
     "regla": "ticker tal cual, .NYSE",
@@ -4201,6 +4707,15 @@
     "ticker": "SNA"
    },
    {
+    "clase": "acciones_us_24",
+    "etiqueta": "SNDK",
+    "nombre": "Sandisk",
+    "regla": "solo -24 (decision usuario 2026-11-09), ticker tal cual, .NAS-24",
+    "simbolo": "SNDK.NAS-24",
+    "ticker": "SNDK"
+   },
+   {
+    "clase": "acciones_us",
     "etiqueta": "SNPS",
     "nombre": "Synopsys",
     "regla": "ticker tal cual, .NAS",
@@ -4208,6 +4723,7 @@
     "ticker": "SNPS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "SO",
     "nombre": "Southern Company",
     "regla": "ticker tal cual, .NYSE",
@@ -4215,6 +4731,7 @@
     "ticker": "SO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "SOLV",
     "nombre": "Solventum",
     "regla": "ticker tal cual, .NYSE",
@@ -4222,6 +4739,7 @@
     "ticker": "SOLV"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "SPG",
     "nombre": "Simon Property Group",
     "regla": "ticker tal cual, .NYSE",
@@ -4229,6 +4747,7 @@
     "ticker": "SPG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "SPGI",
     "nombre": "S&P Global",
     "regla": "ticker tal cual, .NYSE",
@@ -4236,6 +4755,7 @@
     "ticker": "SPGI"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "SRE",
     "nombre": "Sempra",
     "regla": "ticker tal cual, .NYSE",
@@ -4243,6 +4763,7 @@
     "ticker": "SRE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "STE",
     "nombre": "Steris",
     "regla": "ticker tal cual, .NYSE",
@@ -4250,6 +4771,7 @@
     "ticker": "STE"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "STLD",
     "nombre": "Steel Dynamics",
     "regla": "ticker tal cual, .NAS",
@@ -4257,6 +4779,7 @@
     "ticker": "STLD"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "STT",
     "nombre": "State Street Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -4264,6 +4787,7 @@
     "ticker": "STT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "STX",
     "nombre": "Seagate Technology",
     "regla": "ticker tal cual, .NAS",
@@ -4271,6 +4795,7 @@
     "ticker": "STX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "STZ",
     "nombre": "Constellation Brands",
     "regla": "ticker tal cual, .NYSE",
@@ -4278,6 +4803,7 @@
     "ticker": "STZ"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "SW",
     "nombre": "Smurfit Westrock",
     "regla": "ticker tal cual, .NYSE",
@@ -4285,6 +4811,7 @@
     "ticker": "SW"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "SWK",
     "nombre": "Stanley Black & Decker",
     "regla": "ticker tal cual, .NYSE",
@@ -4292,6 +4819,7 @@
     "ticker": "SWK"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "SWKS",
     "nombre": "Skyworks Solutions",
     "regla": "ticker tal cual, .NAS",
@@ -4299,6 +4827,7 @@
     "ticker": "SWKS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "SYF",
     "nombre": "Synchrony Financial",
     "regla": "ticker tal cual, .NYSE",
@@ -4306,6 +4835,7 @@
     "ticker": "SYF"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "SYK",
     "nombre": "Stryker Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -4313,6 +4843,7 @@
     "ticker": "SYK"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "SYY",
     "nombre": "Sysco",
     "regla": "ticker tal cual, .NYSE",
@@ -4320,6 +4851,7 @@
     "ticker": "SYY"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "T",
     "nombre": "AT&T",
     "regla": "ticker tal cual, .NYSE",
@@ -4327,6 +4859,7 @@
     "ticker": "T"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TDG",
     "nombre": "TransDigm Group",
     "regla": "ticker tal cual, .NYSE",
@@ -4334,6 +4867,7 @@
     "ticker": "TDG"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TDY",
     "nombre": "Teledyne Technologies",
     "regla": "ticker tal cual, .NYSE",
@@ -4341,6 +4875,7 @@
     "ticker": "TDY"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TECH",
     "nombre": "Bio-Techne",
     "regla": "ticker tal cual, .NAS",
@@ -4348,6 +4883,7 @@
     "ticker": "TECH"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TEL",
     "nombre": "TE Connectivity",
     "regla": "ticker tal cual, .NYSE",
@@ -4355,6 +4891,7 @@
     "ticker": "TEL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TER",
     "nombre": "Teradyne",
     "regla": "ticker tal cual, .NAS",
@@ -4362,6 +4899,7 @@
     "ticker": "TER"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TFC",
     "nombre": "Truist Financial",
     "regla": "ticker tal cual, .NYSE",
@@ -4369,6 +4907,7 @@
     "ticker": "TFC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TGT",
     "nombre": "Target Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -4376,6 +4915,7 @@
     "ticker": "TGT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TJX",
     "nombre": "TJX Companies",
     "regla": "ticker tal cual, .NYSE",
@@ -4383,6 +4923,7 @@
     "ticker": "TJX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TKO",
     "nombre": "TKO Group Holdings",
     "regla": "ticker tal cual, .NYSE",
@@ -4390,6 +4931,7 @@
     "ticker": "TKO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TMO",
     "nombre": "Thermo Fisher Scientific",
     "regla": "ticker tal cual, .NYSE",
@@ -4397,6 +4939,7 @@
     "ticker": "TMO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TMUS",
     "nombre": "T-Mobile US",
     "regla": "ticker tal cual, .NAS",
@@ -4404,6 +4947,7 @@
     "ticker": "TMUS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TPL",
     "nombre": "Texas Pacific Land Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -4411,6 +4955,7 @@
     "ticker": "TPL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TPR",
     "nombre": "Tapestry, Inc.",
     "regla": "ticker tal cual, .NYSE",
@@ -4418,6 +4963,7 @@
     "ticker": "TPR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TRGP",
     "nombre": "Targa Resources",
     "regla": "ticker tal cual, .NYSE",
@@ -4425,6 +4971,7 @@
     "ticker": "TRGP"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TRMB",
     "nombre": "Trimble Inc.",
     "regla": "ticker tal cual, .NAS",
@@ -4432,6 +4979,7 @@
     "ticker": "TRMB"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TROW",
     "nombre": "T. Rowe Price",
     "regla": "ticker tal cual, .NAS",
@@ -4439,6 +4987,7 @@
     "ticker": "TROW"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TRV",
     "nombre": "Travelers Companies (The)",
     "regla": "ticker tal cual, .NYSE",
@@ -4446,6 +4995,7 @@
     "ticker": "TRV"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TSCO",
     "nombre": "Tractor Supply",
     "regla": "ticker tal cual, .NAS",
@@ -4453,6 +5003,7 @@
     "ticker": "TSCO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TSLA",
     "nombre": "Tesla, Inc.",
     "regla": "ticker tal cual, .NAS",
@@ -4460,6 +5011,7 @@
     "ticker": "TSLA"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TSN",
     "nombre": "Tyson Foods",
     "regla": "ticker tal cual, .NYSE",
@@ -4467,6 +5019,7 @@
     "ticker": "TSN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TT",
     "nombre": "Trane Technologies",
     "regla": "ticker tal cual, .NYSE",
@@ -4474,6 +5027,7 @@
     "ticker": "TT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TTWO",
     "nombre": "Take-Two Interactive",
     "regla": "ticker tal cual, .NAS",
@@ -4481,6 +5035,7 @@
     "ticker": "TTWO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TWLO",
     "nombre": "Twilio",
     "regla": "ticker tal cual, .NYSE",
@@ -4488,6 +5043,7 @@
     "ticker": "TWLO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TXN",
     "nombre": "Texas Instruments",
     "regla": "ticker tal cual, .NAS",
@@ -4495,6 +5051,7 @@
     "ticker": "TXN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TXT",
     "nombre": "Textron",
     "regla": "ticker tal cual, .NYSE",
@@ -4502,6 +5059,7 @@
     "ticker": "TXT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "TYL",
     "nombre": "Tyler Technologies",
     "regla": "ticker tal cual, .NYSE",
@@ -4509,6 +5067,7 @@
     "ticker": "TYL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "UAL",
     "nombre": "United Airlines Holdings",
     "regla": "ticker tal cual, .NAS",
@@ -4516,6 +5075,7 @@
     "ticker": "UAL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "UBER",
     "nombre": "Uber",
     "regla": "ticker tal cual, .NYSE",
@@ -4523,6 +5083,7 @@
     "ticker": "UBER"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "UDR",
     "nombre": "UDR, Inc.",
     "regla": "ticker tal cual, .NYSE",
@@ -4530,6 +5091,7 @@
     "ticker": "UDR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "UHS",
     "nombre": "Universal Health Services",
     "regla": "ticker tal cual, .NYSE",
@@ -4537,6 +5099,7 @@
     "ticker": "UHS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ULTA",
     "nombre": "Ulta Beauty",
     "regla": "ticker tal cual, .NAS",
@@ -4544,6 +5107,7 @@
     "ticker": "ULTA"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "UNH",
     "nombre": "UnitedHealth Group",
     "regla": "ticker tal cual, .NYSE",
@@ -4551,6 +5115,7 @@
     "ticker": "UNH"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "UNP",
     "nombre": "Union Pacific Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -4558,6 +5123,7 @@
     "ticker": "UNP"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "UPS",
     "nombre": "United Parcel Service",
     "regla": "ticker tal cual, .NYSE",
@@ -4565,6 +5131,7 @@
     "ticker": "UPS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "URI",
     "nombre": "United Rentals",
     "regla": "ticker tal cual, .NYSE",
@@ -4572,6 +5139,7 @@
     "ticker": "URI"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "USB",
     "nombre": "U.S. Bancorp",
     "regla": "ticker tal cual, .NYSE",
@@ -4579,6 +5147,7 @@
     "ticker": "USB"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "V",
     "nombre": "Visa Inc.",
     "regla": "ticker tal cual, .NYSE",
@@ -4586,6 +5155,7 @@
     "ticker": "V"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "VEEV",
     "nombre": "Veeva Systems",
     "regla": "ticker tal cual, .NYSE",
@@ -4593,6 +5163,7 @@
     "ticker": "VEEV"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "VICI",
     "nombre": "Vici Properties",
     "regla": "ticker tal cual, .NYSE",
@@ -4600,6 +5171,7 @@
     "ticker": "VICI"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "VLO",
     "nombre": "Valero Energy",
     "regla": "ticker tal cual, .NYSE",
@@ -4607,6 +5179,7 @@
     "ticker": "VLO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "VLTO",
     "nombre": "Veralto",
     "regla": "ticker tal cual, .NYSE",
@@ -4614,6 +5187,7 @@
     "ticker": "VLTO"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "VMC",
     "nombre": "Vulcan Materials Company",
     "regla": "ticker tal cual, .NYSE",
@@ -4621,6 +5195,7 @@
     "ticker": "VMC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "VMRK",
     "nombre": "Vivmark Residential",
     "regla": "ticker tal cual, .NYSE",
@@ -4628,6 +5203,7 @@
     "ticker": "VMRK"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "VRSK",
     "nombre": "Verisk Analytics",
     "regla": "ticker tal cual, .NAS",
@@ -4635,6 +5211,7 @@
     "ticker": "VRSK"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "VRSN",
     "nombre": "Verisign",
     "regla": "ticker tal cual, .NAS",
@@ -4642,6 +5219,7 @@
     "ticker": "VRSN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "VRT",
     "nombre": "Vertiv",
     "regla": "ticker tal cual, .NYSE",
@@ -4649,6 +5227,7 @@
     "ticker": "VRT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "VRTX",
     "nombre": "Vertex Pharmaceuticals",
     "regla": "ticker tal cual, .NAS",
@@ -4656,6 +5235,7 @@
     "ticker": "VRTX"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "VST",
     "nombre": "Vistra Corp.",
     "regla": "ticker tal cual, .NYSE",
@@ -4663,6 +5243,7 @@
     "ticker": "VST"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "VTR",
     "nombre": "Ventas",
     "regla": "ticker tal cual, .NYSE",
@@ -4670,6 +5251,7 @@
     "ticker": "VTR"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "VTRS",
     "nombre": "Viatris",
     "regla": "ticker tal cual, .NAS",
@@ -4677,6 +5259,7 @@
     "ticker": "VTRS"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "VZ",
     "nombre": "Verizon",
     "regla": "ticker tal cual, .NYSE",
@@ -4684,6 +5267,7 @@
     "ticker": "VZ"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "WAB",
     "nombre": "Wabtec",
     "regla": "ticker tal cual, .NYSE",
@@ -4691,6 +5275,7 @@
     "ticker": "WAB"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "WAT",
     "nombre": "Waters Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -4698,6 +5283,7 @@
     "ticker": "WAT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "WDAY",
     "nombre": "Workday, Inc.",
     "regla": "ticker tal cual, .NAS",
@@ -4705,6 +5291,15 @@
     "ticker": "WDAY"
    },
    {
+    "clase": "acciones_us_24",
+    "etiqueta": "WDC",
+    "nombre": "Western Digital",
+    "regla": "solo -24 (decision usuario 2026-11-09), ticker tal cual, .NAS-24",
+    "simbolo": "WDC.NAS-24",
+    "ticker": "WDC"
+   },
+   {
+    "clase": "acciones_us",
     "etiqueta": "WEC",
     "nombre": "WEC Energy Group",
     "regla": "ticker tal cual, .NYSE",
@@ -4712,6 +5307,7 @@
     "ticker": "WEC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "WELL",
     "nombre": "Welltower",
     "regla": "ticker tal cual, .NYSE",
@@ -4719,6 +5315,7 @@
     "ticker": "WELL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "WFC",
     "nombre": "Wells Fargo",
     "regla": "ticker tal cual, .NYSE",
@@ -4726,6 +5323,7 @@
     "ticker": "WFC"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "WM",
     "nombre": "Waste Management",
     "regla": "ticker tal cual, .NYSE",
@@ -4733,6 +5331,7 @@
     "ticker": "WM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "WMB",
     "nombre": "Williams Companies",
     "regla": "ticker tal cual, .NYSE",
@@ -4740,6 +5339,7 @@
     "ticker": "WMB"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "WMT",
     "nombre": "Walmart",
     "regla": "ticker tal cual, .NAS",
@@ -4747,6 +5347,7 @@
     "ticker": "WMT"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "WRB",
     "nombre": "W. R. Berkley Corporation",
     "regla": "ticker tal cual, .NYSE",
@@ -4754,6 +5355,7 @@
     "ticker": "WRB"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "WSM",
     "nombre": "Williams-Sonoma, Inc.",
     "regla": "ticker tal cual, .NYSE",
@@ -4761,6 +5363,7 @@
     "ticker": "WSM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "WST",
     "nombre": "West Pharmaceutical Services",
     "regla": "ticker tal cual, .NYSE",
@@ -4768,6 +5371,7 @@
     "ticker": "WST"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "WTW",
     "nombre": "Willis Towers Watson",
     "regla": "ticker tal cual, .NAS",
@@ -4775,6 +5379,7 @@
     "ticker": "WTW"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "WY",
     "nombre": "Weyerhaeuser",
     "regla": "ticker tal cual, .NYSE",
@@ -4782,6 +5387,7 @@
     "ticker": "WY"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "WYNN",
     "nombre": "Wynn Resorts",
     "regla": "ticker tal cual, .NAS",
@@ -4789,6 +5395,7 @@
     "ticker": "WYNN"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "XEL",
     "nombre": "Xcel Energy",
     "regla": "ticker tal cual, .NAS",
@@ -4796,6 +5403,7 @@
     "ticker": "XEL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "XOM",
     "nombre": "ExxonMobil",
     "regla": "ticker tal cual, .NYSE",
@@ -4803,6 +5411,7 @@
     "ticker": "XOM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "XYL",
     "nombre": "Xylem Inc.",
     "regla": "ticker tal cual, .NYSE",
@@ -4810,6 +5419,7 @@
     "ticker": "XYL"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "XYZ",
     "nombre": "Block, Inc.",
     "regla": "ticker tal cual, .NYSE",
@@ -4817,6 +5427,7 @@
     "ticker": "XYZ"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "YUM",
     "nombre": "Yum! Brands",
     "regla": "ticker tal cual, .NYSE",
@@ -4824,6 +5435,7 @@
     "ticker": "YUM"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ZBH",
     "nombre": "Zimmer Biomet",
     "regla": "ticker tal cual, .NYSE",
@@ -4831,6 +5443,7 @@
     "ticker": "ZBH"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ZBRA",
     "nombre": "Zebra Technologies",
     "regla": "ticker tal cual, .NAS",
@@ -4838,6 +5451,7 @@
     "ticker": "ZBRA"
    },
    {
+    "clase": "acciones_us",
     "etiqueta": "ZTS",
     "nombre": "Zoetis",
     "regla": "ticker tal cual, .NYSE",
@@ -4847,118 +5461,34 @@
   ],
   "sin_casar": [
    {
-    "motivo": "solo existe la version -24",
-    "nombre": "Ares Management",
-    "ticker": "ARES",
-    "version_24": "ARES.NYSE-24"
-   },
-   {
-    "motivo": "solo existe la version -24",
-    "nombre": "Becton Dickinson",
-    "ticker": "BDX",
-    "version_24": "BDX.NYSE-24"
-   },
-   {
-    "motivo": "solo existe la version -24",
-    "nombre": "Corpay",
-    "ticker": "CPAY",
-    "version_24": "CPAY.NYSE-24"
-   },
-   {
-    "motivo": "solo existe la version -24",
-    "nombre": "CRH plc",
-    "ticker": "CRH",
-    "version_24": "CRH.NYSE-24"
-   },
-   {
-    "motivo": "solo existe la version -24",
-    "nombre": "EchoStar",
-    "ticker": "ECHO",
-    "version_24": "ECHO.NAS-24"
-   },
-   {
     "motivo": "el broker no lo tiene",
     "nombre": "FedEx Freight",
-    "ticker": "FDXF",
-    "version_24": null
-   },
-   {
-    "motivo": "solo existe la version -24",
-    "nombre": "Ferguson Enterprises",
-    "ticker": "FERG",
-    "version_24": "FERG.NYSE-24"
-   },
-   {
-    "motivo": "solo existe la version -24",
-    "nombre": "Comfort Systems USA",
-    "ticker": "FIX",
-    "version_24": "FIX.NYSE-24"
+    "ticker": "FDXF"
    },
    {
     "motivo": "el broker no lo tiene",
     "nombre": "Alphabet Inc. (Class A)",
-    "ticker": "GOOGL",
-    "version_24": null
+    "ticker": "GOOGL"
    },
    {
     "motivo": "el broker no lo tiene",
     "nombre": "Honeywell Aerospace",
-    "ticker": "HONA",
-    "version_24": null
+    "ticker": "HONA"
    },
    {
     "motivo": "el broker no lo tiene",
     "nombre": "Medtronic",
-    "ticker": "MDT",
-    "version_24": null
-   },
-   {
-    "motivo": "solo existe la version -24",
-    "nombre": "Meta Platforms",
-    "ticker": "META",
-    "version_24": "META.NAS-24"
+    "ticker": "MDT"
    },
    {
     "motivo": "el broker no lo tiene",
     "nombre": "Oneok",
-    "ticker": "OKE",
-    "version_24": null
-   },
-   {
-    "motivo": "solo existe la version -24",
-    "nombre": "Qnity Electronics",
-    "ticker": "Q",
-    "version_24": "Q.NYSE-24"
-   },
-   {
-    "motivo": "solo existe la version -24",
-    "nombre": "Sherwin-Williams",
-    "ticker": "SHW",
-    "version_24": "SHW.NYSE-24"
-   },
-   {
-    "motivo": "solo existe la version -24",
-    "nombre": "Skydance",
-    "ticker": "SKYD",
-    "version_24": "SKYD.NYSE-24"
-   },
-   {
-    "motivo": "solo existe la version -24",
-    "nombre": "Sandisk",
-    "ticker": "SNDK",
-    "version_24": "SNDK.NAS-24"
+    "ticker": "OKE"
    },
    {
     "motivo": "el broker no lo tiene",
     "nombre": "Vylor",
-    "ticker": "VYLR",
-    "version_24": null
-   },
-   {
-    "motivo": "solo existe la version -24",
-    "nombre": "Western Digital",
-    "ticker": "WDC",
-    "version_24": "WDC.NAS-24"
+    "ticker": "VYLR"
    }
   ]
  }
