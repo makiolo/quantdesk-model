@@ -794,3 +794,21 @@ Decisiones de la raíz (A14) para llenar las tres plazas:
     revisiones, así que lo publicado no cambia. (`--simular` no consulta qn y por eso cuenta todo como nuevo.)
   - Intento BDD 131 aceptado.
   - Descarga local en 1d de `@us_grandes` lanzada, a `E:/quantdesk-lab/data/mt5/us_grandes_1d_20261109`.
+- **Usuario, 2026-11-09:** incluir las 13 del S&P 500 que sólo existen en `-24`. Más adelante pedirá 1h, 5m y 1m: en
+  local cuando lo pida; en qn, con OK previo de network. La tarea programada la registró el usuario.
+- **`run_scheduler.cmd` (`4cd1237`, raíz):** registra o actualiza de forma idempotente las tareas
+  `scripts/*_tarea.xml`.
+  - Motivo: `schtasks` exige el XML en UTF-16 y el del repo es UTF-8 («unable to switch the encoding»).
+  - `scripts/registrar_tareas.ps1` registra una copia temporal en UTF-16 con `/F`; con `-Listar` sólo consulta.
+  - El usuario lo ejecutó: `quantdesk\publicador_mt5` CREADA, estado Ready, modo interactivo, primera ejecución el
+    2026-11-10 a las 00:00.
+- **Sub-entrega -24 (`f9dcd0c`) — ACEPTADA.**
+  - `@us_grandes` pasa a 497: las 484 más 13 (ARES, BDX, CPAY, CRH, ECHO, FERG, FIX, META, Q, SHW, SKYD, SNDK, WDC).
+    La sesión normal tiene preferencia cuando existe.
+  - Clase nueva `acciones_us_24`: calendario NYSE y misma regla 1d, con cierre a las 17:00 de Nueva York.
+  - Sin comprobar todavía si salen velas con fecha de sábado. Lo dirá el contador `sesiones_fin_de_semana` en la
+    primera descarga.
+  - Verificación de la raíz sobre `git archive f9dcd0c`: los dos selftests ok, la suite 11 OK y ninguna función de
+    órdenes.
+  - Intento BDD 132 aceptado.
+  - Las 13 se bajan a una `--salida` aparte cuando termine la descarga de las 484.
