@@ -12,7 +12,7 @@
 > **Prioridad y motivo:** no hay look-ahead, pero la tabla de cabecera del banco usa una serie con la fecha corrida un
 > día y con artefactos de captura\
 > **Responsable:** raíz del laboratorio; el arreglo en origen lo decide el usuario con el backend\
-> **Seguimiento:** SPRINT-02, fila 2 (TS-00-BENCH, ampliación): repetir la tabla FX sobre el 1d de MT5
+> **Seguimiento:** SPRINT-02, fila 1b de [next/SPRINT.md](../next/SPRINT.md) (TI-02-DATA-V2 y repetición de la tabla FX sobre el 1d de MT5, en dos tablas): usuario, 2026-11-10, revisión de planes (D2, D15). Sustituye el seguimiento anterior «fila 2», que no contenía este trabajo
 
 **Snapshot al cierre de SPRINT-01 (2026-11-09, NO RESUELTA):** [archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-LAGO-FX-1D-CLOSE.md](../archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-LAGO-FX-1D-CLOSE.md)
 
@@ -55,7 +55,10 @@ sigue la ficha del backend ISSUE-FX-1D-CLOSE-YFINANCE. Opciones que el backend p
 ## 5. Criterios de aceptación y resolución
 
 - [ ] 1. La tabla FX de TS-00-BENCH se repite sobre el 1d de MT5 (`source=mt5`, con cuadre exacto contra su 1m) y pasa
-      a ser la tabla de cabecera. El informe declara esta incidencia sobre la tabla anterior.
+      a ser la tabla de cabecera. El informe declara esta incidencia sobre la tabla anterior. **En dos tablas (usuario,
+      2026-11-10, revisión de planes, D15):** la de cabecera con la misma ventana y rejilla que hoy (desde 2024-11),
+      comparable con los umbrales, y una de ampliación con toda la historia MT5 1d desde 2000 (para TS-06-FT y la
+      brecha sintético-real), sin mover umbrales. Hecha antes del punto de control de 20 M (D14).
 - [ ] 2. Los umbrales de TS-00-OBJ (relativos a GARCH) se revisan con la tabla nueva; si cambia la conclusión, se avisa
       al usuario.
 - [ ] 3. ~~Cuando el backend corrija el origen, un nuevo corte del lago da `open == close` en < 5 % de las filas y el
@@ -66,7 +69,7 @@ sigue la ficha del backend ISSUE-FX-1D-CLOSE-YFINANCE. Opciones que el backend p
 
 ## 6. Resolución y verificación
 
-- **Sprint de resolución:** pendiente (SPRINT-02 del laboratorio, previsto).
+- **Sprint de resolución:** pendiente (SPRINT-02 del laboratorio, fila 1b; usuario, 2026-11-10, revisión de planes, D2).
 - **Fecha de resolución:** pendiente.
 - **Commit(s) / diagnóstico:** `fdfa3a7` (cuadre); backend `c68547d` (su ficha).
 - **Verificación:** pendiente.

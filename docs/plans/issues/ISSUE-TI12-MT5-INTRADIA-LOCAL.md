@@ -39,9 +39,16 @@ Límite del bróker (`maxbars`), no del código: el extractor ya soporta `--inte
 
 - [ ] 1. Dos descargas del mismo rango dan el mismo SHA-256.
 - [ ] 2. Reanudable: la siguiente descarga sólo añade barras nuevas, sin huecos salvo fines de semana y festivos del bróker.
+      **El incremental es fuera de sprint, ya, en esta ficha** (usuario, 2026-11-10, revisión de planes, D3): la fila 5 de
+      [next/SPRINT.md](../next/SPRINT.md) se reduce a «más símbolos y periodos» y ya no lo recoge.
 - [ ] 3. Manifiesto con símbolo, periodo, primera y última barra, filas y hash.
 - [ ] 4. Periodicidad que no pierda barras de 1m por `maxbars` (documentada; si es una tarea programada, la registra el usuario).
 - [ ] 5. Nada se publica en qn y el extractor no envía órdenes; credenciales fuera del repo y del chat.
+- [ ] 6. **Acciones (D3b, usuario, 2026-11-10, revisión de planes):** medir la profundidad y el volumen de m1 y m5 de las
+      484 acciones de `@us_grandes` con el inventario del extractor (`--simular`, sólo lectura) y anotar la cifra aquí;
+      incluirlas en esta descarga si la cifra es razonable frente al presupuesto de disco de 100 GB (el continuo gastó
+      1,2 GiB), y si no, dejarlo escrito con el motivo. Las 13 de sólo `-24` quedan fuera de la medición salvo que la
+      cifra lo aconseje.
 
 ## 6. Resolución y verificación
 
@@ -63,4 +70,7 @@ Límite del bróker (`maxbars`), no del código: el extractor ya soporta `--inte
     nuevas. Hasta entonces, las barras más viejas del bróker se van perdiendo y conviene repetir la descarga cada
     pocas semanas, a otra `--salida` o reanudando.
   - Criterio 1 sobre `@continuo` completo.
+  - Criterio 6: medir las acciones con `--simular` y decidir con la cifra (D3b). Hasta entonces las acciones no tienen
+    intradía local y, si el bróker les aplica el mismo tope de ~100 000 barras, su profundidad se va perdiendo (SIN
+    VERIFICAR: no medido).
   - La publicación en qn se pide al planificar SPRINT-04 del laboratorio.

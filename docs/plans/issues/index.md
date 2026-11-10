@@ -7,6 +7,7 @@ el archivo; archivado no significa resuelto.
 | ID | Estado | Severidad | Destino | Ficha |
 |---|---|---|---|---|
 | ISSUE-TI09-SONDA-CADENAS | Abierto | Media | Fuera de sprint — urgente (puerta de usuario: token de lectura) | [ficha](ISSUE-TI09-SONDA-CADENAS.md) |
-| ISSUE-TI12-MT5-INTRADIA-LOCAL | En investigación (descarga m1/m5 de @continuo en curso, 2026-11-09) | Media | Fuera de sprint — urgente | [ficha](ISSUE-TI12-MT5-INTRADIA-LOCAL.md) |
-| ISSUE-TI12-MT5-VELA-A-MEDIAS | En resolución (guarda hecha; republicar 23 velas tras el bloqueo) | Alta | Fuera de sprint — urgente | [ficha](ISSUE-TI12-MT5-VELA-A-MEDIAS.md) |
-| ISSUE-LAGO-FX-1D-CLOSE | Abierto | Media | Backlog (SPRINT-02) | [ficha](ISSUE-LAGO-FX-1D-CLOSE.md) |
+| ISSUE-TI12-MT5-INTRADIA-LOCAL | Abierto (primera descarga m1/m5 de @continuo hecha el 2026-11-09; incremental ya y medición de acciones decididos el 2026-11-10: D3, D3b) | Media | Fuera de sprint — urgente | [ficha](ISSUE-TI12-MT5-INTRADIA-LOCAL.md) |
+| ISSUE-TI12-MT5-VELA-A-MEDIAS | En resolución (guarda hecha; 23 velas republicadas y verificadas, `b9cbbbe`; falta reactivar la tarea); se fusionará con ISSUE-TI12-MT5-SYNC al cerrar | Alta | Fuera de sprint — urgente | [ficha](ISSUE-TI12-MT5-VELA-A-MEDIAS.md) |
+| ISSUE-TI12-MT5-SYNC | En resolución vía VELA-A-MEDIAS (D1, usuario 2026-11-10: 23 velas republicadas; carga de @continuo aplazada) | Alta | Fuera de sprint — urgente | [ficha](ISSUE-TI12-MT5-SYNC.md) |
+| ISSUE-LAGO-FX-1D-CLOSE | Abierto | Media | Backlog (SPRINT-02, fila 1b de `next/SPRINT.md`; D2) | [ficha](ISSUE-LAGO-FX-1D-CLOSE.md) |
