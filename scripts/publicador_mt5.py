@@ -77,6 +77,10 @@ def argumentos(argv) -> argparse.Namespace:
                    help="tope de objetos enviados en cualquier ventana de 5 min (carga historica); sin tope por defecto")
     p.add_argument("--max-objetos", type=int, default=None,
                    help="tope de objetos por ejecucion; el resto queda para la siguiente pasada; sin tope por defecto")
+    p.add_argument("--pausa-serie-s", type=float, default=5.0,
+                   help="pausa entre simbolos al leer MT5 (2026-11-10: el broker bloqueo la cuenta por exceso de descargas)")
+    p.add_argument("--republicar-revisiones", action="store_true",
+                   help="republica las velas de la cola que qn tiene con otro contenido (por defecto solo se cuentan)")
     return p.parse_args(argv)
 
 
@@ -153,6 +157,8 @@ def ejecutar(argv, fabrica=LT.importar_paquete, cargar_cred=X.cargar_credenciale
             if not a.simular and (not a.topic or MARCADOR_TOPIC in a.topic):
                 raise ValueError("falta --topic: el topic nuevo (tags symbol, interval y source) lo decide el usuario")
             ritmo = N.Ritmo(a.max_objetos_por_5min, a.max_objetos, reloj=monotono, dormir=dormir)
+            if a.pausa_serie_s < 0:
+                raise ValueError("--pausa-serie-s no puede ser negativa")
             cred = cargar_cred(a)
             token = None if a.simular else cargar_token()
         except (ValueError, LT.TerminalNoDisponible) as e:
@@ -161,7 +167,8 @@ def ejecutar(argv, fabrica=LT.importar_paquete, cargar_cred=X.cargar_credenciale
             return guardar(2)
         secretos = LT.Secretos(cred, token)
         cfg = N.Config(urls=list(urls if urls is not None else urls_de_entorno()), env=os.environ.get("QN_ENV") or "main",
-                       topic=a.topic, fuente=a.fuente, hilos=a.hilos, ventana=a.ventana, espera_max_s=espera_max_s)
+                       topic=a.topic, fuente=a.fuente, hilos=a.hilos, ventana=a.ventana, espera_max_s=espera_max_s,
+                       republicar_revisiones=a.republicar_revisiones)
         registro["topic"] = cfg.topic
         cliente = None
         if not a.simular:
@@ -206,8 +213,10 @@ def ejecutar(argv, fabrica=LT.importar_paquete, cargar_cred=X.cargar_credenciale
             return guardar(2)
         ahora = int(reloj())
         codigo = 0
-        for sim in elegidos:
-            info = {"punto": todos[sim]["punto"], "digitos": todos[sim]["digitos"], "precio_velas": todos[sim]["precio_velas"]}
+        for n_sim, sim in enumerate(elegidos):
+            if n_sim and a.pausa_serie_s:
+                dormir(a.pausa_serie_s)  # dosificar las consultas al broker
+            info ={"punto": todos[sim]["punto"], "digitos": todos[sim]["digitos"], "precio_velas": todos[sim]["precio_velas"]}
             for iv in intervalos:
                 if ritmo.agotado and cliente is not None:  # tope por ejecucion: el resto, en la siguiente pasada
                     registro["series"].append({"simbolo": UNI.etiqueta(sim, todos[sim]["base"], universos),

@@ -40,7 +40,7 @@ class Banco:
     """Lanza `ejecutar` del CLI con MT5 falso, credenciales y token falsos, un reloj fijo y la flota de qn falsa."""
 
     def __init__(self, ejecutar, raiz: str) -> None:
-        self.ejecutar, self.raiz, self.salidas, self.falsos = ejecutar, raiz, [], []
+        self.ejecutar, self.raiz, self.salidas, self.falsos, self.pausas = ejecutar, raiz, [], [], []
 
     def __call__(self, flota: QF.Flota | None, ahora: int, extra=(), token=TOKEN, modo="--ejecutar", topic=QF.TOPIC,
                  falso: dict | None = None, **kw) -> tuple[int, str]:
@@ -59,9 +59,10 @@ class Banco:
             return token
 
         argv = [modo, "--simbolos", ",".join(SIMS), "--intervalos", ",".join(INTERVALOS), "--desde", DESDE,
-                "--hilos", "4", "--ventana", "16", *(["--topic", topic] if topic else []), *extra]
+                "--hilos", "4", "--ventana", "16", "--pausa-serie-s", "0", *(["--topic", topic] if topic else []), *extra]
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
+            kw.setdefault("dormir", self.pausas.append)
             c = self.ejecutar(argv, fabrica=fabrica, cargar_cred=lambda a: LT.Credenciales(**CRED),
                               cargar_token=cargar_token, urls=flota.urls if flota else [], reloj=lambda: float(ahora),
                               runs=os.path.join(self.raiz, "runs"), guarda=lambda: None, espera_max_s=0.01, **kw)
@@ -421,11 +422,27 @@ def prueba_extremo_a_extremo(ejecutar, raiz: str) -> dict:
             o = max((x for x in alm.objetos if x["tags"]["symbol"] == "EURUSD" and x["tags"]["interval"] == "1d"),
                     key=lambda x: x["ts"])
             o["obj"] = {**o["obj"], "close": o["obj"]["close"] + 0.001}
+            # Otro contenido, otro batch_id (como en qn real, donde la version buena nunca se publico)
+            alm.por_id.pop(o["batch_id"])
+            o["batch_id"] = "00000000-0000-5000-8000-0000000a0ed1"
+            alm.por_id[o["batch_id"]] = json.dumps({"tags": o["tags"], "obj": o["obj"], "ts": o["ts"]}, sort_keys=True)
         posts = sum(n for (r, m), n in alm.peticiones.items() if m == "POST")
         c, out = b(flota, ahora3)
         s = next(x for x in b.ultimo()["series"] if x["simbolo"] == "EURUSD" and x["intervalo"] == "1d")
         assert c == 0 and s["revisiones_detectadas"] == 1 and s["publicadas"] == 0, s
         assert sum(n for (r, m), n in alm.peticiones.items() if m == "POST") == posts
+        # 6b. Con --republicar-revisiones se publica el contenido de MT5 como version nueva (ISSUE-TI12-MT5-VELA-A-MEDIAS),
+        #     con la pausa entre simbolos; la pasada siguiente compara con la version vigente y ya no ve revision.
+        n_pausas = len(b.pausas)
+        c, out = b(flota, ahora3, extra=("--republicar-revisiones", "--pausa-serie-s", "7"))
+        s = next(x for x in b.ultimo()["series"] if x["simbolo"] == "EURUSD" and x["intervalo"] == "1d")
+        assert c == 0 and s["revisiones_a_republicar"] == 1 and s["publicadas"] == 1 and s["nuevas"] == 0, s
+        assert b.pausas[n_pausas:] == [7.0] * (len(SIMS) - 1), b.pausas[n_pausas:]
+        c, out = b(flota, ahora3)
+        s = next(x for x in b.ultimo()["series"] if x["simbolo"] == "EURUSD" and x["intervalo"] == "1d")
+        assert c == 0 and s["revisiones_detectadas"] == 0 and s["publicadas"] == 0, s
+        with alm.cerrojo:
+            alm.objetos.remove(o)  # la version a medias sobra para el resto de la prueba
         # 7. Candado: con otra ejecucion viva no se hace nada; uno caducado se recupera.
         lock = os.path.join(raiz, "runs", "publicador.lock")
         with open(lock, "w", encoding="utf-8") as f:

@@ -56,6 +56,9 @@ class Config:
     ventana: int = 64
     espera_max_s: float = 30.0
     caducidad_candado_s: int = 3 * 3600
+    # Republicar las velas de la cola que qn tiene con otro contenido (por defecto solo se cuentan; fase-b.md). Se usa a
+    # mano para corregir velas publicadas a medias (ISSUE-TI12-MT5-VELA-A-MEDIAS).
+    republicar_revisiones: bool = False
 
 
 class Candado:
@@ -214,20 +217,29 @@ def serie(cfg: Config, cliente: Q.ClienteQn | None, term, simbolo: str, simbolo_
         cola = [i for i in np.nonzero(ts <= ultimo)[0][-(cfg.ventana + 1):]]
         if cola:
             filas = cliente.objetos(cfg.topic, tags_serie, int(ts[cola[0]]) * 1_000_000, ultimo * 1_000_000 + 1)
-            en_qn = {}
+            # Por ts, la version vigente de qn: la de mayor (recv_ts, batch_id), como `latest`.
+            mejor = {}
             for f in filas:
-                en_qn.setdefault(Q.ts_fila_ns(f) // 1_000_000, f)
+                k = Q.ts_fila_ns(f) // 1_000_000
+                clave = (Q.ts_ns_de(f.get("_recv_ts", 0)), str(f.get("_batch_id", "")))
+                if k not in mejor or clave > mejor[k][0]:
+                    mejor[k] = (clave, f)
+            en_qn = {k: f for k, (_, f) in mejor.items()}
             # Hueco = vela de MT5 de la cola que falta en qn y no es anterior a la fecha inicial configurada (lo anterior
             # nunca se pidio). Cubre tambien una primera ventana de carga inicial que fallo por el principio.
             cota_ms = cota_inicial_s(cfg, intervalo, ahora_s, desde) * 1000
             huecos = [i for i in cola if int(ts[i]) >= cota_ms and int(ts[i]) not in en_qn]
             r["huecos_cola_rellenados"] = len(huecos)
-            r["revisiones_detectadas"] = sum(
-                1 for i in cola if int(ts[i]) in en_qn and not _igual(en_qn[int(ts[i])], objeto(cfg, simbolo_tag, intervalo, b, i)[1]))
+            revisadas = [i for i in cola if int(ts[i]) in en_qn
+                         and not _igual(en_qn[int(ts[i])], objeto(cfg, simbolo_tag, intervalo, b, i)[1])]
+            r["revisiones_detectadas"] = len(revisadas)
+            if cfg.republicar_revisiones:
+                r["revisiones_a_republicar"] = len(revisadas)
+                huecos = sorted(huecos + revisadas)  # en orden de ts, antes de las nuevas
         else:
             huecos = []
         pendientes = huecos + [int(i) for i in np.nonzero(ts > ultimo)[0]]
-    r["nuevas"] = len(pendientes) - r["huecos_cola_rellenados"]
+    r["nuevas"] = len(pendientes) - r["huecos_cola_rellenados"] - r.get("revisiones_a_republicar", 0)
     r["retenidas_sin_historia"] = b["retenidas"]
     # Huecos de mercado del tramo de esta ejecucion (desde la ultima vela que qn tenia): se informan, no se rellenan.
     tramo = b["ts_utc_ms"] if ultimo is None else b["ts_utc_ms"][b["ts_utc_ms"] >= ultimo]
