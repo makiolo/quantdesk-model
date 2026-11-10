@@ -90,7 +90,8 @@ class MT5Falso:
     def __init__(self, ahora_utc_s: int, regla: str = "ny+7", fallar_tras: int | None = None, abierto: bool = True,
                  cuenta: dict | None = None, trampas: tuple = (), maxbars: int = 5_000_000, simbolos=None,
                  fallos_call_failed: int = 0, fallos_arranque: tuple = (), retraso_conexion: int = 0,
-                 cuenta_abierta: dict | None = None, dias_sin_datos: dict | None = None) -> None:
+                 cuenta_abierta: dict | None = None, dias_sin_datos: dict | None = None,
+                 historia_hasta: dict | None = None) -> None:
         """Fallos del terminal real que reproduce (entrega 6):
         - `fallos_call_failed` = N: las N primeras consultas de datos de cada (funcion, simbolo, periodo) devuelven None con
           (-1, 'Terminal: Call failed'), como un terminal que aun sincroniza esa historia.
@@ -101,7 +102,11 @@ class MT5Falso:
         - `cuenta_abierta`: la cuenta con la que esta abierto un terminal que ya estaba en marcha (por defecto, la del
           fichero de credenciales).
         - `dias_sin_datos`: simbolo -> fechas (dt.date, del servidor) sin ninguna vela ni tick: un hueco de mercado que no
-          es fin de semana ni festivo (fase C)."""
+          es fin de semana ni festivo (fase C).
+        - `historia_hasta`: simbolo -> instante UTC (s) hasta el que el terminal tiene la historia al dia. No devuelve
+          ninguna vela abierta despues: un simbolo fuera del Market Watch cuya historia no se ha sincronizado
+          (incidencia del 2026-11-09: la vela diaria de ese dia salio a medias en 23 pares)."""
+        self.historia_hasta = {k: int(v) for k, v in (historia_hasta or {}).items()}
         self.__version__ = VERSION
         for n, v in globals().items():
             if n.isupper() and isinstance(v, int):
@@ -304,6 +309,8 @@ class MT5Falso:
         s = np.arange(s0, int(s_fin) + 1, paso, dtype=np.int64)
         # Como el terminal real, incluye la vela en curso (abierta antes de "ahora" y aun sin cerrar).
         s = s[(s >= self.regla.utc_a_servidor(HISTORIA[tf])) & (s <= self.regla.utc_a_servidor(self.ahora_utc_s))]
+        if nombre in self.historia_hasta:
+            s = s[s <= self.regla.utc_a_servidor(self.historia_hasta[nombre])]
         s, u = self._reales(s)
         s = s[self._abierto(nombre, u, paso)]
         u = self.regla.servidor_a_utc(s)[0]

@@ -6,7 +6,8 @@ Una serie es (simbolo, intervalo) con la fuente fija (`source=mt5` por defecto).
 1. `L` = `ts` de la ultima barra de la serie que qn confirma (`latest` filtrado por los tres tags). Sin nada en qn, se
    empieza en la fecha inicial del intervalo.
 2. Se leen de MT5 las velas CERRADAS (apertura + intervalo <= ahora) desde un poco antes de `L` hasta ahora; la hora del
-   servidor se pasa a UTC con la regla del extractor.
+   servidor se pasa a UTC con la regla del extractor. Guarda de historia al dia: solo cuentan las cerradas que MT5
+   confirma con la vela siguiente (ver `barras_cerradas`).
 3. Comprobacion de la cola: de las `ventana` velas de MT5 con ts <= L se pregunta a qn cuales tiene (`/objects`). Las que
    faltan son huecos de una ejecucion anterior cortada a mitad de una ventana y se publican; las que estan pero con otro
    contenido se cuentan como revisiones y NO se republican (decision documentada en fase-b.md).
@@ -120,10 +121,19 @@ def cota_inicial_s(cfg: Config, intervalo: str, ahora_s: int, desde: dt.date | N
 
 
 def barras_cerradas(term, simbolo: str, info: dict, intervalo: str, regla: HR.Regla, desde_s: int, ahora_s: int) -> dict:
-    """Velas cerradas de MT5 con `ts` publicado en [desde_s, ...) y cierre <= ahora_s, en orden. Arrays numpy."""
+    """Velas cerradas de MT5 con `ts` publicado en [desde_s, ...) y cierre <= ahora_s, en orden. Arrays numpy, mas
+    `retenidas` (int): velas cerradas por la hora que la guarda de historia al dia deja para otra pasada.
+
+    Guarda de historia al dia (2026-11-10): una vela solo se publica si MT5 devuelve tambien alguna vela que abre en su
+    cierre o despues (la siguiente, aunque este en curso). Un simbolo fuera del Market Watch devuelve la historia que el
+    terminal tenia guardada, sin sincronizar: el 2026-11-09 la vela diaria de ese dia salio a medias en 23 de 28 pares,
+    y en todos ellos faltaba la vela siguiente. Coste: la ultima vela antes de un cierre de mercado (viernes, festivo)
+    espera a que abra la siguiente sesion."""
     periodo, paso = INTERVALOS[intervalo], PASO_S[intervalo]
     ini = dt.datetime.fromtimestamp(desde_s, tz=dt.timezone.utc).date()
-    fin = dt.datetime.fromtimestamp(ahora_s, tz=dt.timezone.utc).date() + dt.timedelta(days=1)
+    # +2 dias: el trozo tiene que incluir la vela en curso (en 1d, la de la sesion siguiente abre a las 17:00 de Nueva
+    # York y cierra al dia siguiente), que es la que confirma la guarda.
+    fin = dt.datetime.fromtimestamp(ahora_s, tz=dt.timezone.utc).date() + dt.timedelta(days=2)
     partes = [D.bajar_trozo(term, simbolo, periodo, a, b, regla, info)[0]
               for a, b in D.trozos(ini, fin, D.PERIODOS[periodo]["trozo"])]
     cols = ("ts_utc_ms", "time_servidor", "open", "high", "low", "close", "tick_volume")
@@ -136,9 +146,12 @@ def barras_cerradas(term, simbolo: str, info: dict, intervalo: str, regla: HR.Re
         ts, cierre = apertura, apertura + paso * 1000
     # Se publica solo la vela CERRADA de verdad (en 1d, cuando el servidor pasa al dia siguiente: 17:00 de Nueva York,
     # no `ts` + 1 d). El rango inicial se aplica sobre el `ts` publicado (en 1d, la fecha de la sesion).
-    ok = (ts >= desde_s * 1000) & (cierre <= ahora_s * 1000)
+    cerrada = (ts >= desde_s * 1000) & (cierre <= ahora_s * 1000)
+    confirmada = cierre <= (int(apertura.max()) if apertura.size else -1)  # guarda de historia al dia
+    ok = cerrada & confirmada
     out = {c: v[ok] for c, v in out.items()}
     out["ts_utc_ms"], out["apertura_utc_ms"] = ts[ok], apertura[ok]
+    out["retenidas"] = int(np.count_nonzero(cerrada & ~confirmada))
     if out["ts_utc_ms"].size > 1 and not np.all(np.diff(out["ts_utc_ms"]) > 0):
         raise D.ErrorFormato(f"{simbolo} {intervalo}: velas fuera de orden o repetidas")
     return out
@@ -215,6 +228,7 @@ def serie(cfg: Config, cliente: Q.ClienteQn | None, term, simbolo: str, simbolo_
             huecos = []
         pendientes = huecos + [int(i) for i in np.nonzero(ts > ultimo)[0]]
     r["nuevas"] = len(pendientes) - r["huecos_cola_rellenados"]
+    r["retenidas_sin_historia"] = b["retenidas"]
     # Huecos de mercado del tramo de esta ejecucion (desde la ultima vela que qn tenia): se informan, no se rellenan.
     tramo = b["ts_utc_ms"] if ultimo is None else b["ts_utc_ms"][b["ts_utc_ms"] >= ultimo]
     clase, bolsa = calendario

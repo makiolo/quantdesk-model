@@ -506,7 +506,9 @@ def prueba_regla_1d_igual_que_v2() -> None:
     env = LT.TerminalSoloLectura(FA.MT5Falso(ahora_utc_s=utc(2026, 11, 20), cuenta=dict(CRED)))
     env.initialize(path=CRED["path"])
     env.login(CRED["login"], password=CRED["password"], server=CRED["server"])
-    vistos = 0
+    # Con la guarda de historia al dia (2026-11-10) la unica diferencia admitida es la ultima vela antes del cierre de
+    # fin de semana: v2 la publicaba en cuanto cerraba y ahora espera a que MT5 tenga la de la sesion siguiente.
+    vistos, retenidas = 0, 0
     for dia0 in (utc(2026, 3, 1), utc(2026, 10, 25)):
         for k in range(21):
             for media in range(19 * 2, 24 * 2):  # de 19:00 a 23:30 UTC
@@ -514,10 +516,46 @@ def prueba_regla_1d_igual_que_v2() -> None:
                 for sim in SIMS:
                     nuevo = N.barras_cerradas(env, sim, _info(sim), "1d", REGLA, dia0 - 20 * 86400, ahora)
                     viejo = barras_v2(env, sim, _info(sim), dia0 - 20 * 86400, ahora)
+                    n, r = nuevo["ts_utc_ms"].size, nuevo["retenidas"]
+                    assert r in (0, 1) and n + r == viejo["ts_utc_ms"].size, (sim, HR.iso(ahora * 1000), n, r)
+                    if r:
+                        dia_semana = dt.datetime.fromtimestamp(ahora, tz=dt.timezone.utc).weekday()
+                        assert dia_semana in (4, 5, 6), (sim, HR.iso(ahora * 1000))  # viernes tarde, sabado o domingo
+                        retenidas += 1
                     for c in ("ts_utc_ms", "open", "high", "low", "close", "tick_volume"):
-                        assert np.array_equal(nuevo[c], viejo[c]), (sim, HR.iso(ahora * 1000), c)
+                        assert np.array_equal(nuevo[c], viejo[c][:n]), (sim, HR.iso(ahora * 1000), c)
                     vistos += 1
-    assert vistos == 2 * 21 * 10 * len(SIMS)
+    assert vistos == 2 * 21 * 10 * len(SIMS) and retenidas > 0
+
+
+def prueba_guarda_historia() -> None:
+    """Incidencia del 2026-11-09: a las 23:01 UTC (lunes) USDJPY tiene la historia guardada solo hasta las 20:00 UTC
+    (vela del dia a medias, sin la del dia siguiente) y EURUSD.a la tiene al dia. La vela a medias no se publica; la del
+    viernes, que ya tiene siguiente, si. Cuando la historia se sincroniza, sale la del lunes completa."""
+    ahora, desde = utc(2026, 11, 9) + 23 * 3600 + 60, utc(2026, 10, 26)
+    lunes, viernes = utc(2026, 11, 9) * 1000, utc(2026, 11, 6) * 1000
+
+    def barras(historia_hasta):
+        env = LT.TerminalSoloLectura(FA.MT5Falso(ahora_utc_s=ahora, cuenta=dict(CRED), historia_hasta=historia_hasta))
+        env.initialize(path=CRED["path"])
+        env.login(CRED["login"], password=CRED["password"], server=CRED["server"])
+        return {sim: N.barras_cerradas(env, sim, _info(sim), "1d", REGLA, desde, ahora) for sim in SIMS}
+    a = barras({"USDJPY": utc(2026, 11, 9) + 20 * 3600})
+    assert int(a["EURUSD.a"]["ts_utc_ms"][-1]) == lunes and a["EURUSD.a"]["retenidas"] == 0
+    assert int(a["USDJPY"]["ts_utc_ms"][-1]) == viernes and a["USDJPY"]["retenidas"] == 1
+    b = barras({})
+    assert int(b["USDJPY"]["ts_utc_ms"][-1]) == lunes and b["USDJPY"]["retenidas"] == 0
+    # Lo publicado antes de la sincronizacion coincide con lo de despues (nada a medias)
+    n = a["USDJPY"]["ts_utc_ms"].size
+    for c in ("ts_utc_ms", "open", "high", "low", "close", "tick_volume"):
+        assert np.array_equal(a["USDJPY"][c], b["USDJPY"][c][:n]), c
+    # Sabado: la del viernes espera a la vela del lunes; el domingo tras la apertura ya sale
+    sab = utc(2026, 11, 7) + 12 * 3600
+    env = LT.TerminalSoloLectura(FA.MT5Falso(ahora_utc_s=sab, cuenta=dict(CRED)))
+    env.initialize(path=CRED["path"])
+    env.login(CRED["login"], password=CRED["password"], server=CRED["server"])
+    s = N.barras_cerradas(env, "USDJPY", _info("USDJPY"), "1d", REGLA, desde, sab)
+    assert int(s["ts_utc_ms"][-1]) == utc(2026, 11, 5) * 1000 and s["retenidas"] == 1
 
 
 def prueba_ritmo_unitario() -> None:
@@ -693,7 +731,10 @@ def prueba_tarea_xml() -> None:
     ns = {"t": "http://schemas.microsoft.com/windows/2004/02/mit/task"}
     raiz = ET.parse(os.path.join(SCRIPTS, "publicador_mt5_tarea.xml")).getroot()
     v = lambda ruta: raiz.find(ruta, ns).text  # noqa: E731
-    assert v("t:Triggers/t:TimeTrigger/t:Repetition/t:Interval") == "PT15M"
+    # Una vez al dia tras el cierre de NY (2026-11-10: el broker bloqueo la cuenta por exceso de descargas).
+    assert raiz.find("t:Triggers/t:TimeTrigger", ns) is None
+    assert v("t:Triggers/t:CalendarTrigger/t:ScheduleByDay/t:DaysInterval") == "1"
+    assert v("t:Triggers/t:CalendarTrigger/t:StartBoundary").endswith("T23:30:00")
     assert raiz.find("t:Triggers/t:LogonTrigger", ns) is not None
     assert v("t:Settings/t:StartWhenAvailable") == "true" and v("t:Settings/t:MultipleInstancesPolicy") == "IgnoreNew"
     assert v("t:Settings/t:RunOnlyIfNetworkAvailable") == "true" and v("t:Settings/t:WakeToRun") == "false"
@@ -713,7 +754,7 @@ def correr(ejecutar) -> int:
     previa = LT.configurar_reintentos(esperas_s=(1.0, 2.0, 4.0, 8.0), dormir=lambda s: None, espera_conexion_s=5)
     try:
         for p in (prueba_codificacion, prueba_contrato_v2, prueba_cliente_reintentos_y_errores, prueba_tarea_xml,
-                  prueba_regla_1d_igual_que_v2, prueba_ritmo_unitario):
+                  prueba_regla_1d_igual_que_v2, prueba_guarda_historia, prueba_ritmo_unitario):
             p()
             print(f"ok  {p.__name__}")
         prueba_candado(raiz)
