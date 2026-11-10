@@ -1,7 +1,7 @@
 # [ISSUE-TI12-MT5-VELA-A-MEDIAS] El publicador MT5 publicó la vela 1d del 2026-11-09 a medias en 23 de 28 pares
 
 > **Tipo:** Incidencia\
-> **Estado:** En resolución (guarda hecha; falta republicar las 23 velas)\
+> **Estado:** En resolución (guarda hecha y 23 velas republicadas; falta la comprobación del backend y reactivar la tarea)\
 > **Fecha de detección:** 2026-11-10\
 > **Origen:** publicador MT5 → qn (TI-12-MT5, fase B), ejecución de las 23:01 UTC del 2026-11-09\
 > **Componente afectado:** `scripts/publicador_mt5_lib/nucleo.py` (`barras_cerradas`); objetos 1d del 2026-11-09 en
@@ -37,14 +37,21 @@ después. El publicador daba la vela por cerrada solo por la hora (cierre de las
 ## 4. Criterios de aceptación
 
 - [x] 1. El selftest del publicador y el del extractor pasan con la guarda.
-- [ ] 2. Acabado el bloqueo: republicar las 23 velas del 2026-11-09 con su contenido de MT5 ya sincronizado, despacio
+- [x] 2. Acabado el bloqueo: republicar las 23 velas del 2026-11-09 con su contenido de MT5 ya sincronizado, despacio
       (una a una), y avisar al backend para que compruebe ClickHouse (network y backend dieron el visto bueno).
+      **Hecho el 2026-11-10 ~09:35 UTC** con `--republicar-revisiones` (`9e2a9eb`): `publicador_mt5.py --ejecutar
+      --sin-credenciales --topic market.ohlcv.v2 --intervalos 1d --ventana 8 --pausa-serie-s 10
+      --republicar-revisiones` → 23 publicadas, 5 sin revisión, 0 errores. En qn (`E:/quantdesk-lab/tmp/
+      verif_republicacion.py`, solo lectura): las 23 tienen 2 versiones y `latest` da la nueva (AUDCAD close 0,9768 →
+      0,97762, volumen 68 104 → 75 560); 28/28 correctas. Backend y network avisados; falta que el backend confirme
+      ClickHouse (`fx_spot_1d`, criterio 4 de [ISSUE-TI12-MT5-SYNC](ISSUE-TI12-MT5-SYNC.md)).
 - [ ] 3. Reactivar la tarea (`run_scheduler.cmd`) y comprobar en `ultimo.json` de la primera pasada nocturna que no
       hay `revisiones_detectadas` nuevas.
 
 ## 5. Resolución y verificación
 
-- **Commit(s):** `1fff755` (horario); el de la guarda.
+- **Commit(s):** `1fff755` (horario), `2ac3f8f` (guarda), `9e2a9eb` (`--republicar-revisiones`, comparación con la
+  versión vigente de qn y `--pausa-serie-s`, 5 s por defecto).
 - **Verificación:** `.venv/Scripts/python -X utf8 scripts/publicador_mt5.py --selftest` y
   `scripts/extractor_mt5.py --selftest`, ambos «selftest ok» (2026-11-10).
-- **Pendientes:** criterios 2 y 3 (esperan al fin del bloqueo de la cuenta).
+- **Pendientes:** criterio 3 (reactivar la tarea) y la comprobación del backend en ClickHouse.
