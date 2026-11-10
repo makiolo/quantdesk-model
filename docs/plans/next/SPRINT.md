@@ -69,3 +69,8 @@ La de [SPRINT-01](../archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md#8-definit
 ## 8. Capacidad y presupuesto
 
 «rellenar al planificar».
+
+Modelos: el LAUNCH de este sprint aplica la decisión del usuario del 2026-11-10 (Haiku 5.5 ni autor ni revisor;
+L3–L6 con Sonnet 5.5 high o gpt-6.1-sol high hasta L5; tabla «caso borde → test» y revisión obligatoria en L3–L4
+hasta el 2026-11-24), recogida en [SPRINT_PROJECT §6](../SPRINT_PROJECT.md#6-delegación). Al iniciar, se anota
+en EXECUTION como decisión del usuario retransmitida.

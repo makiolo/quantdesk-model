@@ -78,7 +78,8 @@ Reglas de separación (backlog §1, decididas por el usuario el 2026-11-07):
 
 - Esquema de dificultad: L1–L4 por defecto (execute-plan §2.1); los niveles de los planes de **Sustituido el 2026-11-07 por `difficulty-v3-10` (L1–L10, ver abajo); se conserva para el histórico.**
   `quantdesk` (L3…L8) se respetan como referencia de riesgo.
-- Tabla de modelos y revisores: la de execute-plan §2.1.
+- Tabla de modelos y revisores: la del criterio global (`niveles-y-modelos.md` §1, abajo); la de execute-plan §2.1
+  queda sólo como histórico.
 - Herramientas de cuota/ruta: ninguna propia.
 - Cupo por defecto: raíz + 3 descendientes activos.
 
@@ -87,6 +88,18 @@ Reglas de separación (backlog §1, decididas por el usuario el 2026-11-07):
   fijo), revisión siempre en la nube, ranuras de GPU obligatorias y arenas de L9/L10. Este proyecto no lo redefine.
 - Esquema de dificultad: **`difficulty-v3-10` (L1–L10)**, el mismo en los cuatro proyectos (usuario, 2026-11-07);
   la dificultad no se deduce del modelo ni baja al partir una tarea.
+- **Haiku 5.5 fuera como autor y como revisor; refuerzo L3–L4** (decisión del usuario del 2026-11-10 ~15:30 para
+  todos los proyectos, retransmitida por la raíz de `quantdesk`, relevo 44; ya en la skill global y en quantdesk
+  `866b11bb`). Motivo: en L3–L4 ninguna de las 4 entregas de Haiku 5.5 del 7–9 nov pasó la primera revisión (dos
+  eran de este proyecto: TI-01-INV, rehecha con Opus, y LAB-00-ENV-A).
+  - Vía Claude: L3–L6 con Sonnet 5.5 high; L7–L8 siguen con Sonnet 5.5 xhigh. Vía Codex: L3–L5 con gpt-6.1-sol high;
+    luna y terra sólo revisan. Donde revisaba Haiku, revisa Codex luna o Flash. Flash sigue primero en L1–L5 si hay
+    cuota; el grado local:haiku (Qwen) no cambia. `claude-or route` ya devuelve estas rutas.
+  - Fichas L3–L4: listan los casos borde concretos del dominio (fechas y zona horaria, formatos, sesión y permisos,
+    límites). El informe del autor trae la tabla «caso borde → test que lo cubre»; un caso sin test deja la entrega
+    BLOQUEADA.
+  - Revisión obligatoria en L3–L4 hasta el 2026-11-24 aunque haya holgura; ese día se mide la aceptación en primera
+    revisión con la BDD de sprints, así que cada intento se sigue registrando allí.
 
 ## 7. Costes
 
