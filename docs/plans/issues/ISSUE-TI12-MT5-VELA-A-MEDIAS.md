@@ -45,6 +45,11 @@ después. El publicador daba la vela por cerrada solo por la hora (cierre de las
       verif_republicacion.py`, solo lectura): las 23 tienen 2 versiones y `latest` da la nueva (AUDCAD close 0,9768 →
       0,97762, volumen 68 104 → 75 560); 28/28 correctas. Backend y network avisados; falta que el backend confirme
       ClickHouse (`fx_spot_1d`, criterio 4 de [ISSUE-TI12-MT5-SYNC](ISSUE-TI12-MT5-SYNC.md)).
+      **Horizonte de revisión** (network, 2026-11-10; criterio 5 de ISSUE-TI12-MT5-SYNC): `QN_BARS_REVISION_HORIZON_MS`
+      (6 h por defecto) solo afecta a las barras que calcula qn. `market.ohlcv.v2` no declara `timeframes`, así que no
+      le aplica: los objetos crudos se aceptan con cualquier `ts` en vivo, en `latest`, en el log y en el lago, que solo
+      añade y conserva las dos versiones. Si algún día se piden barras de qn sobre este topic, sí aplicaría (subirlo,
+      con máximo 7 d, o republicar dentro de las 6 h).
 - [ ] 3. Reactivar la tarea (`run_scheduler.cmd`) y comprobar en `ultimo.json` de la primera pasada nocturna que no
       hay `revisiones_detectadas` nuevas.
 
