@@ -5,7 +5,10 @@
     run_scheduler.cmd        (raiz del repo; idempotente, convierte este XML a UTF-16, que es lo que exige schtasks)
 
   Que hace, en claro:
-  - Disparadores: cada 15 minutos sin fin (desde la fecha de StartBoundary) y al iniciar sesion el usuario.
+  - Disparadores: una vez al dia a las 23:30 hora local (30-90 min despues del cierre diario de las 17:00 de Nueva York)
+    y al iniciar sesion el usuario. Antes era cada 15 minutos; se bajo el 2026-11-10 porque el broker bloqueo la
+    cuenta un tiempo por exceso de descargas (peticion del usuario: «descarga mas despacio y mas prudentemente»).
+    Con solo 1d no hace falta mas: la vela diaria cambia una vez al dia.
   - StartWhenAvailable: si la maquina estaba apagada en una hora programada, se lanza en cuanto se puede.
   - MultipleInstancesPolicy IgnoreNew: si la anterior sigue corriendo, no arranca otra (el publicador ademas tiene
     su propio candado).
@@ -30,14 +33,13 @@
     <URI>\quantdesk\publicador_mt5</URI>
   </RegistrationInfo>
   <Triggers>
-    <TimeTrigger>
-      <StartBoundary>2026-11-10T00:00:00</StartBoundary>
+    <CalendarTrigger>
+      <StartBoundary>2026-11-10T23:30:00</StartBoundary>
       <Enabled>true</Enabled>
-      <Repetition>
-        <Interval>PT15M</Interval>
-        <StopAtDurationEnd>false</StopAtDurationEnd>
-      </Repetition>
-    </TimeTrigger>
+      <ScheduleByDay>
+        <DaysInterval>1</DaysInterval>
+      </ScheduleByDay>
+    </CalendarTrigger>
     <LogonTrigger>
       <Enabled>true</Enabled>
       <Delay>PT2M</Delay>
