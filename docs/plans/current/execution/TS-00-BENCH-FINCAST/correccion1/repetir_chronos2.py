@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 repo = Path(__file__).resolve().parents[6]
 os.chdir(repo)
+os.environ['HF_HUB_OFFLINE'] = '1'
 sys.path.insert(0, str(repo / 'scripts'))
 from banco_walkforward_lib import banco, datos, modelos, rutas
 out=Path('E:/quantdesk-lab/runs/TS-00-BENCH-FINCAST/correccion1/chronos2')

@@ -1,0 +1,37 @@
+{
+  "commit_probado": "ce1150dbbff2e769e848299d1ef54165b0d2ac4e",
+  "archive_zip_sha256": "c21bd505029bffebba599e46bfbc87e3b45bba22dd36c86a7163f36525aabfc1",
+  "scripts_archive_sha256": "7258cd2a4bde11f6a740e1ce069438d6d6e05854d2eb73c197f05bfa6f082d8e",
+  "tablas_regeneradas_desde_archive_identicas_byte_a_byte": true,
+  "principal_sha256": "9b8ab8b073e012ec7e7530f56258c74c8fc6c4eb6f9e9c873878a88b1b558294",
+  "limpia_sha256": "8dd0dc0f880a674b1def213c46292bd20002bddda81b8db8c5aa493cdd14c8d7",
+  "logs": {
+    "selftest-banco": {
+      "archivo": "selftest-banco.log",
+      "sha256": "50c53830e2ae90cd2cd9507e81d4b5e6f32f81085ac96601be7d813851f908de",
+      "exit_code": 0
+    },
+    "selftests": {
+      "archivo": "selftests.log",
+      "sha256": "6e70bb21569aff6512b15a3f36a3cfc2f1f20dfeb89bad901614c3211b82ae94",
+      "exit_code": 0
+    },
+    "tablas": {
+      "archivo": "tablas.log",
+      "sha256": "37de85af792e7dbc49f35819c1ef252dc994436414fc5e988def5b93c9d7d096",
+      "exit_code": 0
+    }
+  },
+  "fuentes_archive_intactas_tras_suite": true,
+  "fuentes_banco_sin_cambios_desde_archive": true,
+  "solo_rutas_autorizadas_en_ce1150d": true,
+  "head_tras_gate": "e211f31b5306d7626e106e643d8c53b953e16319",
+  "cambios_scripts_ajenos_commiteados_durante_gate": [
+    "scripts/exportar_market_history.py",
+    "scripts/exportar_market_history_lib/fuentes.py",
+    "scripts/exportar_market_history_lib/limpieza.py",
+    "scripts/exportar_market_history_lib/selftests.py"
+  ],
+  "fuentes_scripts_coincidian_con_arbol_al_regenerar_tablas": true,
+  "fuentes_scripts_coinciden_con_arbol_actual": false
+}

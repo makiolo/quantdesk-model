@@ -1,0 +1,20 @@
+metricas: pinball, CRPS_q, Kupiec, Christoffersen, varianza y QLIKE contra valores a mano: ok
+look-ahead: dato tardio x1000 fuera del contexto y sin efecto en hmm/garch/trivial; default_lag_ms 0/1 ms; 9 origenes sin barra nueva omitidos: ok
+GARCH(1,1)-t simulado (alpha .08, beta .90, nu 6): estimado alpha 0.076, beta 0.897, nu 5.32: ok
+reproducibilidad: dos corridas de 7 origenes x 3 modelos con semilla 20261101: predicciones y metricas identicas (148ce8372ed459d4): ok
+toto: venv ausente -> SALTADO sin romper la corrida; trabajador falso por subproceso con el mismo contrato de cuantiles, semilla y errores (4 origenes): ok
+crps_deciles: normal exacta contra 9 pinball escalares independientes: ok
+ventana limpia: corte UTC estricto, vacia declarada, origenes comunes y mascara FinCast: ok
+fincast: trabajador aislado falso, deciles/z, venv/pesos ausentes, timeout y errores por origen: ok
+banco: cuantiles FinCast no monotonos fallan explicitamente; CPU externa fallida conservada: ok
+informe limpio: union de corridas, mascara, determinismo y vacio explicito, sin mezclar datasets: ok
+  FALLO SINT 1760918400000 fincast: TimeoutError: FinCast timeout tras 0.25 s; trabajador terminado
+  SINT: 2/2 origenes, 0 s
+timeout persistido: un origen fallido, siguiente valido, recuento en meta y en informe: ok
+ventana limpia vacia persistida: dataset antiguo, CSV con cabecera y motivo en meta: ok
+interpolacion asimetrica: pares adyacentes y extremos en z, decil cruzado rechazado: ok
+puertas FinCast: sha256/codigo/weights_only -> BLOQUEADO; paquete solo desde src sin sombreado: ok
+  SINT: 2/2 origenes, 0 s
+cruces SPRINT-01: fila Chronos-2 archivada puntuada intacta; cuatro modelos conservan y cuentan: ok
+seleccion FinCast: n por activo/h y efecto CRPS deciles antes/despues contra calculo a mano: ok
+selftest ok

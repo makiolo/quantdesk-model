@@ -1,0 +1,13 @@
+OK     scripts/banco_precision.py: selftest ok
+OK     scripts/banco_walkforward.py: selftest ok
+OK     scripts/build_wheels.py: selftest OK
+OK     scripts/cuadre_mt5.py: selftest ok
+OK     scripts/descarga_lago.py: selftest ok
+OK     scripts/exportar_market_history.py: selftest ok
+OK     scripts/extractor_mt5.py: selftest ok
+OK     scripts/ingesta_publica.py: selftest ok
+OK     scripts/inventario_options_chain.py: selftest ok
+OK     scripts/publicador_mt5.py: selftest ok
+OK     scripts/setup_env.py: setup_env selftest ok
+OK     scripts/smoke_env.py: smoke_env: OK (21 comprobaciones; 0 SALTADAS)
+run_selftests: 12 OK, 0 FALLO

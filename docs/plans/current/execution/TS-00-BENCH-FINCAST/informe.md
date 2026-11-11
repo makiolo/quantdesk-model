@@ -191,7 +191,9 @@ Se contrasta la suma directa de los nueve pinball; no una integral continua con 
 | Unión de corridas con distinto hash de dataset se rechaza | `prueba_informe_limpia` |
 | Cruces en archivos antiguos: se conservan, puntúan y cuentan; solo FinCast los rechaza | `prueba_informe_limpia`, `prueba_cruces_sprint01` |
 
-Los tests previos no se modifican ni se borran; se añaden funciones e invocaciones en el selftest del banco.
+Los tests existentes en `934d9af` no se modifican ni se borran; se añaden funciones e invocaciones en el selftest.
+Corrección 1 actualiza las dos pruebas de integración FinCast que exigían rechazar cruces de modelos base,
+porque esa expectativa queda sustituida expresamente por A12; sus nuevos casos comprueban conservación y recuento.
 La implementación abarca proceso, métricas e informe con más de 400 líneas porque el contrato atraviesa esas
 tres capas; se separan el commit funcional verificado y el dossier de corridas/evidencia, sin delegar fuera
 de esta sub-entrega. La revisión independiente corresponde a la raíz que integra A.
@@ -317,3 +319,8 @@ Sigue declarada la CPU irrecuperable de cinco fallos del primer driver FX y su p
 
 Reproducción sin inferencia: `.venv/Scripts/python -X utf8 docs/plans/current/execution/TS-00-BENCH-FINCAST/correccion1/verificar.py`.
 La aceptación de los commits se registra en [correccion1/aceptacion.md](correccion1/aceptacion.md); la evidencia del gate anterior permanece histórica.
+
+Aceptación final sobre `git archive ce1150d`: selftest del banco **OK** y `run_selftests.py` **12 OK, 0 FALLO**.
+Los CSV regenerados desde el archivo son idénticos byte a byte a los entregados; fuentes del archivo intactas tras el gate.
+El código del banco sigue igual; el commit ajeno `e211f31`, incorporado durante el gate, no pertenece al archivo probado.
+Logs y hashes en [aceptacion.md](correccion1/aceptacion.md) y [archive.json](correccion1/archive.json).
