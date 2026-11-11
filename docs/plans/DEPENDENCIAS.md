@@ -19,10 +19,13 @@ sprint N de `quantdesk`», salvo SPRINT-01, que es lo que se puede hacer ya (sin
 
 ## Dependencias de entrada
 
+SPRINT-02 no tiene dependencia de entrada desde el 2026-11-11: el usuario lo partió para activarlo sin esperar a
+quantdesk SPRINT-02, y las filas que la necesitaban (antes «SPRINT-02 ← quantdesk SPRINT-02 cerrado», decidido el
+2026-11-07) pasaron a SPRINT-03 como filas S02-1…S02-4.
+
 | Sprint local | Depende de | Condición | Motivo | Estado |
 |---|---|---|---|---|
-| SPRINT-02 | quantdesk SPRINT-02 | cerrado | Rueda versionada (E-RELEASE-WF), filtro HMM causal (E15-filter), corpus FG-16-hmmcop, universo59 | decidido (usuario, 2026-11-07) |
-| SPRINT-03 | quantdesk SPRINT-03 | cerrado | TI-03-FMT, TI-00-ADR, TS-01-SIM, TS-02-GEN (para TS-02-DISC), DL-02-GATES | decidido (usuario, 2026-11-07) |
+| SPRINT-03 | quantdesk SPRINT-03 | cerrado | TI-03-FMT, TI-00-ADR, TS-01-SIM, TS-02-GEN (para TS-02-DISC), DL-02-GATES; y, desde el 2026-11-11, las filas S02-1…S02-4 (rueda E-RELEASE-WF, E15-filter, FG-16-hmmcop, universo59), que necesitan quantdesk SPRINT-02 cerrado (lo cubre el cierre de su SPRINT-03) | decidido (usuario, 2026-11-07; ampliado 2026-11-11) |
 | SPRINT-04 | quantdesk SPRINT-04 | cerrado | DL-07-TRAIN, TI-06-CLI, TI-14-REG, TS-05-PREC (escalera de entrenamiento) | decidido (usuario, 2026-11-07) |
 
 ## Dependencias de tarea

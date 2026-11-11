@@ -5,6 +5,29 @@
 **Inicio:** pendiente
 **Fin:** pendiente
 
+## 0. Filas recibidas de SPRINT-02 (usuario, 2026-11-11)
+
+Al partir SPRINT-02 del laboratorio para activarlo sin esperar a quantdesk SPRINT-02, las filas que necesitan sus
+entregas pasan aquí con su texto íntegro y la etiqueta `S02-n` (n = su fila original). Se ejecutan **antes** que las
+de §3. Si alguna entrega queda arrastrada en quantdesk, su fila sale de este sprint y lo demás sigue.
+
+| Entrega de quantdesk SPRINT-02 | Para qué le sirve al laboratorio |
+|---|---|
+| E-RELEASE-WF (-probes): ruedas cp312/cp313/cp314 reparadas e instaladas en venvs limpios por `run_release` | Sustituir la rueda `69fdb39d` construida a mano en SPRINT-01 por una rueda versionada en `requirements.lock` |
+| E15-filter: filtro predictivo de régimen HMM (probabilidad filtrada en `t` con datos ≤ `t`) expuesto a Python | Referencia HMM **causal** en el banco, además del muestreo condicionado de SPRINT-01 |
+| FG-16-hmmcop: corpus HMM/cópula/GBM_P con oráculos independientes | Datos sintéticos con verdad conocida para TS-00-PREC (medida 1: probabilidades de régimen) y para validar la referencia HMM |
+| G-MKT05-RAW-a: manifiesto y hashes del universo59 (59 series diarias, 2016–2026) | Cruce de TI-02-DATA con el histórico local de `quantdesk` |
+
+Estado el 2026-11-11: E-RELEASE-WF-tu hecha; -probes y -perf esperando; E15-filter, FG-16-hmmcop y G-MKT05-RAW-a sin
+entregar. En S02-1, «en lugar del editable» se lee «en lugar de la rueda `69fdb39d`» (C-27, revisión del 2026-11-09).
+
+| Orden | ID | Qué se hace aquí | Aceptación | Depende de |
+|---|---|---|---|---|
+| S02-1 | **LAB-00-ENV** (re-fijado) | Rueda cp312 de la release de SPRINT-02 en el lock en lugar del editable | Venv limpio desde el lock; los informes de SPRINT-01 se reproducen con el mismo hash de dataset y métricas dentro de la tolerancia declarada (o se explica la diferencia) | quantdesk SPRINT-02 cerrado |
+| S02-2 | **TS-00-BENCH** (ampliación) | Referencia HMM filtrada causal (E15-filter); validación de la referencia HMM con el corpus FG-16-hmmcop; más activos y horizontes con los datos nuevos | Tabla ampliada con las mismas métricas; prueba de que perturbar el futuro no cambia la señal pasada del HMM filtrado | LAB-00-ENV (re-fijado), TI-02-DATA, **fila 1b** |
+| S02-3 | **TS-00-PREC** (ampliación) | Medida 1 de §4.5 con regímenes conocidos del corpus FG-16-hmmcop | Recuperación de probabilidades de régimen por tipo, con dispersión entre semillas | LAB-00-ENV (re-fijado) |
+| S02-4 | **TI-02-DATA** (ampliación) | Cruce con el manifiesto del universo59 (G-MKT05-RAW-a); nuevas fuentes de TI-12/TI-13 | Diferencias con el universo59 explicadas; mismas garantías de hash y look-ahead | **fila 1b** (TI-02-DATA-V2) |
+
 ## 1. Objetivo
 
 Lo que el laboratorio puede hacer **cuando cierre SPRINT-03 de `quantdesk`** (alcance en
@@ -40,7 +63,7 @@ al usuario.
 
 | Sprint local | Depende de | Condición | Estado |
 |---|---|---|---|
-| SPRINT-03 | quantdesk SPRINT-03 | cerrado | decidido (usuario, 2026-11-07) |
+| SPRINT-03 | quantdesk SPRINT-03 | cerrado | decidido (usuario, 2026-11-07); cubre también las filas S02-* (quantdesk cierra sus sprints en orden) |
 
 ## 5. Exclusiones
 
@@ -51,7 +74,7 @@ al usuario.
 
 ## 6. Orden
 
-Re-exportación primero (los bancos citan hashes de dataset); TS-00-PREC y TS-02-DISC en paralelo después.
+Las filas S02-* primero, empezando por S02-1 (rueda re-fijada: barrera de las demás). Re-exportación primero (los bancos citan hashes de dataset); TS-00-PREC y TS-02-DISC en paralelo después.
 
 ## 7. Definition of Done
 
