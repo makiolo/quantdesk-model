@@ -39,12 +39,17 @@ def _detalle_limpieza(t: dict) -> list:
     d = c["detalle"]
     if "nulo_o_nan_por_columna" in d:
         out.append(f"  - Nulos o NaN por columna: {d['nulo_o_nan_por_columna']}.")
-    for k in ("version_posterior_descartada", "version_anterior_descartada", "duplicado"):
+    for k in ("version_posterior_descartada", "version_anterior_descartada", "version_mt5_revisada", "duplicado"):
         if k in d:
             extra = f", diferencia relativa maxima de `close` {d[k]['max_dif_relativa_close']:.3g}" \
                 if "max_dif_relativa_close" in d[k] else ""
             out.append(f"  - Versiones repetidas de una misma barra o dato ({k}): {d[k]['descartadas']} descartadas, "
                        f"{d[k]['con_valores_distintos']} con valores distintos de la conservada{extra}.")
+    if "version_mt5_revisada" in d:
+        for r in d["version_mt5_revisada"]["pares_y_fechas"]:
+            out.append(f"  - version_mt5_revisada: {r['instrument']} {iso_ms(r['ts_ms'])}, "
+                       f"{r['versiones_completas']} versiones completas hasta el corte; elegida recepcion "
+                       f"{iso_ms(r['recv_elegida_ms'])}, disponible en recepcion {iso_ms(r['available_at_recepcion_ms'])}.")
     if c.get("ejemplos"):
         out.append("  - Ejemplos de filas excluidas: " + "; ".join(
             f"{m}: {e[:2]}" for m, e in sorted(c["ejemplos"].items())) + ".")

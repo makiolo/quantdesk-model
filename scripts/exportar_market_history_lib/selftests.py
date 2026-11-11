@@ -647,12 +647,12 @@ def prueba_fuentes_v2(tmp: str) -> None:
     assert t['carga']['source'] == {'mt5': 2} and t['carga']['seleccion_fuentes']['excluidas_por_source'] == {'market_scraper': 1}
     df = pq.read_table(os.path.join(raiz, nombre, 'lago_ohlcv_1d.parquet')).to_pandas()
     assert df['close'].tolist() == [1.1, 1.1] and df['available_at_ms'].tolist() == [ms(10, 28, 0, 10), ms(10, 29, 0, 10)]
-    assert p['origenes'][0]['fuente']['politica_fuentes']['version'] == 'ti-02-data.fuentes/v2'
+    assert p['origenes'][0]['fuente']['politica_fuentes']['version'] == 'ti-02-data.fuentes/v3'
     man = json.load(open(os.path.join(raiz, nombre, 'manifest.json'), encoding='utf-8'))
     assert "fuentes por tag source {'mt5': 2}" in man['description']
     from . import informe
     md = informe.generar(raiz, runs, [nombre])
-    assert 'market_scraper' in md and 'fuente_excluida_por_regla 1' in md and 'ti-02-data.fuentes/v2' in md
+    assert 'market_scraper' in md and 'fuente_excluida_por_regla 1' in md and 'ti-02-data.fuentes/v3' in md
     # Mismas entradas y corte: mismos hashes de todos los ficheros y hash del motor.
     r2 = os.path.join(tmp, 'v2_repetida')
     c, out, err = cli('--lago', dump, '--corte', CORTE, '--nombre', nombre, '--salida-raiz', r2, '--repeticion', runs=runs)
@@ -691,15 +691,15 @@ def prueba_fuentes_v2(tmp: str) -> None:
     escribir_volcado(viejo, {'market.ohlcv.v2'.removesuffix('.v2'): [serie('DE40', 'mt5')]})
     c, _, err = cli('--lago', viejo, '--corte', CORTE, '--salida-raiz', os.path.join(tmp, 'v1_out'), runs=runs)
     assert c == 2 and 'v1 esta congelado' in err and '0e67465' in err, err
-    # Republicaciones de UNA fuente: primera recibida >= cierre; se preserva incluso si cambia el close.
+    # A12 correccion 3: las republicaciones MT5 1d sustituyen la version completa anterior.
     versiones = [barra(ns(10, 27), ns(10, 27, 12), c=1.0), normal(10, 27, c=1.1),
                  barra(ns(10, 27), ns(10, 29), c=1.15)]
     c, _, err, raiz, nombre, _ = exportar('versiones_mt5', [serie('EURUSD', 'mt5', versiones)])
     assert c == 0, err
     t = leer(raiz, nombre)['tablas'][0]
-    assert t['limpieza']['excluidas'] == {'version_en_curso': 1, 'version_posterior_descartada': 1}
+    assert t['limpieza']['excluidas'] == {'version_en_curso': 1, 'version_mt5_revisada': 1}
     fila = pq.read_table(os.path.join(raiz, nombre, 'lago_ohlcv_1d.parquet')).to_pandas().iloc[0]
-    assert fila['close'] == 1.1 and fila['available_at_ms'] == ms(10, 28, 0, 10)
+    assert fila['close'] == 1.15 and fila['available_at_ms'] == ms(10, 29)
     # Inicio de ventana: elimina y cuenta solo las barras anteriores al inicio, con el cierre intacto.
     c, _, err, raiz, nombre, _ = exportar('ventana_mt5', [serie('EURUSD', 'mt5', filas_mt5)], '--desde', '2026-10-28')
     assert c == 0, err
@@ -722,7 +722,7 @@ def prueba_fx_iso_y_tags_v2(tmp: str) -> None:
         c, out, err = cli('--lago', dump, '--corte', CORTE, '--nombre', caso, '--salida-raiz', raiz, runs=runs)
         return c, out, err, raiz
 
-    for i, symbol in enumerate(('USDMXN', 'USDTRY', 'EURUSD=X', 'EUR/USD', 'eurusd')):
+    for i, symbol in enumerate(('USDMXN', 'USDTRY', 'EURUSD=X', 'EUR/USD', 'eurusd', 'USDCNH', 'EURCNH')):
         series = [({'symbol': symbol, 'interval': '1d', 'source': source},
                    [{**normal(10, 27), 'symbol': symbol, 'interval': '1d', 'source': source}])
                   for source in ('mt5', 'market_scraper')]
@@ -792,7 +792,7 @@ def prueba_cierre_real_mt5(tmp: str) -> None:
             v = json.load(open(os.path.join(runs, caso + '.json'), encoding='utf-8'))['validacion']
             assert v['ok'] and v['default_lag_ms'] == 0 and v['lookahead']['violaciones_por_fila'] == 0
 
-    # Una republicacion no sustituye a la primera completa, aunque esta se reciba antes del fin nominal.
+    # A12 correccion 3: la republicacion sustituye a la primera completa recibida antes del fin nominal.
     et = {'symbol': 'EURUSD', 'interval': '1d', 'source': 'mt5'}
     versiones = [barra(ns(1, 13), ns(1, 13, 21, 59), c=1.), barra(ns(1, 13), ns(1, 13, 23, 1), c=1.1),
                  barra(ns(1, 13), ns(1, 14, 1), c=1.15)]
@@ -800,8 +800,8 @@ def prueba_cierre_real_mt5(tmp: str) -> None:
     escribir_volcado(dump, {'market.ohlcv.v2': [(et, [{**r, **et} for r in versiones])]})
     t = S.cargar_lago(dump, True)['tablas'][0]
     f = L.limpiar_ohlcv(t['frame'], ms(11, 1), 'recepcion', t['contador'], disp_cierre=True)
-    assert f['close'].tolist() == [1.1]
-    assert t['contador']['excluidas'] == {'version_en_curso': 1, 'version_posterior_descartada': 1}
+    assert f['close'].tolist() == [1.15]
+    assert t['contador']['excluidas'] == {'version_en_curso': 1, 'version_mt5_revisada': 1}
     cambio = t['contador']['detalle']['version_mayor_diferencia']
     assert cambio['solo_cerradas'] and cambio['recv_primera_ms'] == ms(1, 13, 23, 1)
     # Un 1d market_scraper recibido tras el cierre de NY pero antes de ts + 1d sigue en curso.
@@ -812,7 +812,7 @@ def prueba_cierre_real_mt5(tmp: str) -> None:
 
 
 def prueba_disponibilidad_recepcion_mt5(tmp: str) -> None:
-    """A12: la disponibilidad respeta el fin nominal sin adelantar recepciones tardias ni cambiar la primera version."""
+    """A12: la disponibilidad respeta el fin nominal sin adelantar la recepcion de la revision elegida."""
     et = {'symbol': 'EURUSD', 'interval': '1d', 'source': 'mt5'}
     runs = os.path.join(tmp, 'a12_runs')
     for m, d, hora in ((1, 13, 22), (7, 14, 21)):
@@ -839,7 +839,7 @@ def prueba_disponibilidad_recepcion_mt5(tmp: str) -> None:
                     assert f['available_at_ms'].isna().all() and v['default_lag_ms'] == 0
                     assert v['politica_con_lag_admitido']['ok']
 
-    # La disponibilidad ajustada no cambia que se elija la primera version completa por recv_ms.
+    # A12 correccion 3: la disponibilidad usa la recepcion de la ultima revision completa antes del corte.
     from . import fuentes as S
     versiones = [barra(ns(1, 13), ns(1, 13, 21, 59), c=1.), barra(ns(1, 13), ns(1, 13, 22, 30), c=1.1),
                  barra(ns(1, 13), ns(1, 14, 1), c=1.15)]
@@ -847,13 +847,13 @@ def prueba_disponibilidad_recepcion_mt5(tmp: str) -> None:
     escribir_volcado(dump, {'market.ohlcv.v2': [(et, [{**r, **et} for r in versiones])]})
     t = S.cargar_lago(dump)['tablas'][0]
     f = L.limpiar_ohlcv(t['frame'], ms(11, 1), 'recepcion', t['contador'])
-    assert f['close'].tolist() == [1.1] and f['available_at_ms'].tolist() == [ms(1, 14)]
-    assert t['contador']['excluidas'] == {'version_en_curso': 1, 'version_posterior_descartada': 1}
+    assert f['close'].tolist() == [1.15] and f['available_at_ms'].tolist() == [ms(1, 14, 1)]
+    assert t['contador']['excluidas'] == {'version_en_curso': 1, 'version_mt5_revisada': 1}
     # Un corte anterior al fin nominal sigue excluyendo la barra aunque haya llegado tras el cierre real.
     contador = L.nuevo_contador(3)
     f = L.limpiar_ohlcv(t['frame'], ms(1, 13, 23), 'recepcion', contador)
     assert f.empty and contador['excluidas'] == {
-        'version_en_curso': 1, 'version_posterior_descartada': 1, 'posterior_al_corte_por_fecha': 1}
+        'version_en_curso': 1, 'posterior_al_corte_por_fecha': 2}
 
 
 def prueba_corte_v2_posterior_migracion(tmp: str) -> None:
@@ -883,6 +883,108 @@ def prueba_corte_v2_posterior_migracion(tmp: str) -> None:
     assert v['ok'] and v['lookahead']['violaciones_por_fila'] == 0
 
 
+def prueba_revisiones_mt5(tmp: str) -> None:
+    """A12 correccion 3: caso real AUDCAD, cortes entre revisiones y motor sobre los parquet resultantes."""
+    import exportar_market_history as E
+    from . import fuentes as S, informe
+
+    et = {'symbol': 'AUDCAD', 'interval': '1d', 'source': 'mt5'}
+    primera = barra(ns(11, 9), ns(11, 9, 23, 1), o=.976, h=.97713, l=.975, c=.9768, v=68104)
+    segunda = barra(ns(11, 9), ns(11, 10, 9, 35), o=.976, h=.97831, l=.975, c=.97762, v=75560)
+    tercera = barra(ns(11, 9), ns(11, 10, 12), o=.976, h=.979, l=.975, c=.978, v=76000)
+    futura = barra(ns(11, 9), ns(11, 11, 1), o=.976, h=.99, l=.975, c=.99, v=80000)
+    runs = os.path.join(tmp, 'revision_runs')
+    for caso, filas, corte, close, volumen, recv, revisiones in (
+        ('audcad_revisor', [primera, segunda], ms(11, 11), .97762, 75560, ms(11, 10, 9, 35), 1),
+        ('audcad_intermedio', [primera, segunda], ms(11, 10, 5), .9768, 68104, ms(11, 9, 23, 1), 0),
+        ('audcad_tres', [tercera, primera, futura, segunda], ms(11, 11), .978, 76000, ms(11, 10, 12), 2),
+        ('audcad_tres_intermedio', [tercera, primera, futura, segunda], ms(11, 10, 10), .97762, 75560, ms(11, 10, 9, 35), 1),
+        ('audcad_corte_exacto', [primera, segunda], ms(11, 10, 9, 35), .97762, 75560, ms(11, 10, 9, 35), 1),
+    ):
+        dump = os.path.join(tmp, caso + '_dump')
+        escribir_volcado(dump, {'market.ohlcv.v2': [(et, [{**r, **et} for r in filas])]})
+        for modo in ('recepcion', 'cierre'):
+            t = S.cargar_lago(dump, modo == 'cierre')['tablas'][0]
+            f = L.limpiar_ohlcv(t['frame'], corte, 'recepcion', t['contador'], disp_cierre=modo == 'cierre')
+            assert f['close'].tolist() == [close] and f['volume'].tolist() == [volumen], (caso, modo, f)
+            assert f['available_at_ms'].isna().all() if modo == 'cierre' else f['available_at_ms'].tolist() == [max(recv, ms(11, 10))]
+            c = t['contador']
+            assert c['excluidas'].get('version_mt5_revisada', 0) == revisiones
+            assert 'version_posterior_descartada' not in c['excluidas']
+            assert c['filas_origen'] == c['filas_finales'] + sum(c['excluidas'].values())
+            if revisiones:
+                r = c['detalle']['version_mt5_revisada']
+                assert r['barras'] == 1 and r['pares_y_fechas'] == [{
+                    'instrument': 'AUDCAD', 'ts_ms': ms(11, 9), 'versiones_completas': revisiones + 1,
+                    'recv_elegida_ms': recv, 'available_at_recepcion_ms': max(recv, ms(11, 10))}]
+                md = '\n'.join(informe._detalle_limpieza({**t, 'limpieza': c}))
+                assert 'version_mt5_revisada' in md and 'AUDCAD 2026-11-09T00:00:00Z' in md
+            # El motor verifica tambien los cortes intradia sin ampliar la sintaxis CLI de --corte.
+            nombre, raiz = caso + '_' + modo, os.path.join(tmp, 'revisiones_motor')
+            destino = os.path.join(raiz, nombre)
+            m = F.escribir_dataset(destino, nombre, caso, 'UTC', [{'table_id': t['table_id'], 'schema': t['schema'], 'frame': f}],
+                                   0 if modo == 'cierre' else None)
+            v = V.validar(destino, raiz, nombre, m['tables'], corte, E.hash_dataset(m['tables']))
+            assert v['ok'] and v['lookahead']['violaciones_por_fila'] == 0 and not v['lookahead']['violaciones'], v
+            assert v['politica']['ok'] if modo == 'recepcion' else v['politica_con_lag_admitido']['ok']
+        if caso == 'audcad_revisor':
+            for modo in ('recepcion', 'cierre'):
+                nombre, raiz = caso + '_cli_' + modo, os.path.join(tmp, 'revision_cli')
+                c, out, err = cli('--lago', dump, '--corte', '2026-11-11', '--nombre', nombre, '--salida-raiz', raiz,
+                                  '--disponibilidad-ohlcv', modo, runs=runs)
+                assert c == 0, (out, err)
+                f = pq.read_table(os.path.join(raiz, nombre, 'lago_ohlcv_1d.parquet')).to_pandas()
+                assert f['close'].tolist() == [.97762] and f['volume'].tolist() == [75560.]
+                p = leer(raiz, nombre)
+                assert p['tablas'][0]['limpieza']['excluidas'] == {'version_mt5_revisada': 1}
+                m = json.load(open(os.path.join(raiz, nombre, 'manifest.json'), encoding='utf8'))
+                assert 'version_mt5_revisada: 1 barras, 1 versiones' in m['description'] and 'AUDCAD 2026-11-09' in m['description']
+                assert 'version_mt5_revisada' in informe.generar(raiz, runs, [nombre])
+                # Una revision posterior al corte no cambia ni los valores ni el manifest del dataset.
+                futuro_dump, futuro_raiz = dump + '_futuro', raiz + '_futuro'
+                escribir_volcado(futuro_dump, {'market.ohlcv.v2': [(et, [{**r, **et} for r in filas + [futura]])]})
+                c, out, err = cli('--lago', futuro_dump, '--corte', '2026-11-11', '--nombre', nombre, '--salida-raiz', futuro_raiz,
+                                  '--disponibilidad-ohlcv', modo, runs=runs)
+                assert c == 0, (out, err)
+                assert leer(futuro_raiz, nombre)['dataset_hash'] == p['dataset_hash']
+                for archivo in ('manifest.json', 'lago_ohlcv_1d.parquet'):
+                    assert sha256_fichero(os.path.join(raiz, nombre, archivo)) == sha256_fichero(os.path.join(futuro_raiz, nombre, archivo))
+
+    # Resto de fuentes e intervalos: primera completa, aunque haya dos o mas completas antes del corte.
+    for source, intervalo in (('market_scraper', DIA), ('mt5', H)):
+        f = marco([('DE40', ms(11, 9), 1., 1.2, .9, close, 0., recv, None)
+                   for close, recv in ((1.1, ms(11, 10, 0, 10)), (1.15, ms(11, 10, 9, 35)))])
+        f['source'], f['interval_ms'] = source, intervalo
+        c = L.nuevo_contador(2)
+        f = L.limpiar_ohlcv(f, ms(11, 11), 'recepcion', c)
+        assert f['close'].tolist() == [1.1] and f['available_at_ms'].tolist() == [ms(11, 10, 0, 10)]
+        assert c['excluidas'] == {'version_posterior_descartada': 1} and 'version_mt5_revisada' not in c['detalle']
+
+
+def prueba_rejilla_mt5(tmp: str) -> None:
+    """MT5 1d exige medianoche UTC exacta, antes de truncar ns o descartar valores invalidos."""
+    for i, ts in enumerate((ns(11, 9, 1), ns(11, 9) + 10**6, ns(11, 9) + 1,
+                            ms(11, 9) * 1000 + 1, '2026-11-09T00:00:00.000001Z', ms(11, 9) + .25)):
+        et = {'symbol': 'AUDCAD', 'interval': '1d', 'source': 'mt5'}
+        dump, raiz = os.path.join(tmp, f'rejilla_dump_{i}'), os.path.join(tmp, f'rejilla_out_{i}')
+        escribir_volcado(dump, {'market.ohlcv.v2': [(et, [{**barra(ts, ns(11, 10), c='NaN'), **et}])]})
+        c, _, err = cli('--lago', dump, '--corte', '2026-11-11', '--salida-raiz', raiz, runs=os.path.join(tmp, 'rejilla_runs'))
+        assert c == 2 and 'source=mt5 1d exige ts exactamente a las 00:00Z' in err, err
+        assert not os.path.exists(raiz)
+    f = marco([('AUDCAD', ms(11, 9, 1), 1., 1.2, .9, 1.1, 0., ms(11, 10, 2), None)])
+    f['source'] = 'mt5'
+    try:
+        L.limpiar_ohlcv(f, ms(11, 11), 'recepcion', L.nuevo_contador(1))
+    except ValueError as e:
+        assert 'source=mt5 1d exige ts exactamente a las 00:00Z' in str(e)
+    else:
+        raise AssertionError('MT5 1d fuera de medianoche no rechazo la barra')
+    f['source'] = 'market_scraper'
+    assert len(L.limpiar_ohlcv(f, ms(11, 11), 'recepcion', L.nuevo_contador(1))) == 1
+    f['source'], f['interval_ms'] = 'mt5', H
+    assert len(L.limpiar_ohlcv(f, ms(11, 11), 'recepcion', L.nuevo_contador(1))) == 1
+
+
 def correr() -> None:
     os.makedirs(LAB_TMP, exist_ok=True)
     tmp = tempfile.mkdtemp(prefix="selftest-", dir=LAB_TMP)
@@ -904,6 +1006,8 @@ def correr() -> None:
         prueba_cierre_real_mt5(tmp)
         prueba_disponibilidad_recepcion_mt5(tmp)
         prueba_corte_v2_posterior_migracion(tmp)
+        prueba_revisiones_mt5(tmp)
+        prueba_rejilla_mt5(tmp)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print("selftest ok")

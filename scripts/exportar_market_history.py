@@ -22,7 +22,7 @@ Reglas (el detalle y las cifras de cada exportacion quedan en `procedencia.json`
   `default_lag_ms` queda en null.
 - Limpieza contada, sin rellenar huecos ni aproximar: nulos, no finitos, precios <= 0, volumen < 0, high < low (se excluyen),
   open/close fuera de [low, high] (se conservan y se cuentan), versiones repetidas de una barra (se queda la primera ya
-  cerrada segun la recepcion en qn), filas posteriores al corte.
+  cerrada segun la recepcion en qn, salvo MT5 1d: ultima completa recibida hasta el corte), filas posteriores al corte.
 - Universo: lo que hay hoy en la fuente, con el sesgo de supervivencia declarado (D-07) en el manifest y en `procedencia.json`.
 - Fuentes v2: politica versionada en descarga_lago.py; FX 1d solo mt5, sin regla una sola fuente por simbolo/intervalo.
 - Ventana opcional: --desde AAAA-MM-DD excluye y cuenta filas anteriores (por ts_ms); --corte conserva su significado.
@@ -114,6 +114,12 @@ def describir(origenes: list, corte: str, tablas: list, vistas: list, default_la
                   "(disponibles al cierre, sin ningun campo que lo respalde) y sus valores son la version de cada barra que qn "
                   f"recibio DESPUES del corte ({rango}), no la visible al cierre. No es causal "
                   "en sentido estricto; el dataset estricto es el que usa _recv_ts."]
+        if any(t["table_id"] == "lago_ohlcv_1d" and "mt5" in t["carga"]["source"] for t in proxies):
+            partes = [f"Exportacion TI-02-DATA ({MOTOR}) con corte {corte}T00:00:00Z. ATENCION, DISPONIBILIDAD PROXY: "
+                      "available_at_ms nulo y default_lag_ms = 0 declaran el cierre nominal sin evidencia de disponibilidad "
+                      "al cierre. MT5 1d usa la ultima version completa recibida hasta el corte; otras fuentes e intervalos "
+                      "conservan la primera completa, que puede recibirse despues del corte. No es causal en sentido estricto; "
+                      "el dataset estricto es el que usa _recv_ts."]
     else:
         partes = [f"Exportacion TI-02-DATA ({MOTOR}) con corte {corte}T00:00:00Z: ninguna fila tiene su cierre ni su "
                   "available_at_ms declarado posteriores al corte."]
@@ -121,6 +127,15 @@ def describir(origenes: list, corte: str, tablas: list, vistas: list, default_la
         partes.append(f"Fuente {o['nombre']}, licencia: {o['licencia']}. Universo: {o['universo']['texto']}")
     for t, v in zip(tablas, vistas):
         d = t["disponibilidad"]
+        revisadas = t["contador"]["detalle"].get("version_mt5_revisada")
+        if revisadas:
+            finales = set(zip(v["instrument"], v["ts_ms"]))
+            afectadas = [r for r in revisadas["pares_y_fechas"] if (r["instrument"], r["ts_ms"]) in finales]
+            if afectadas:
+                pares = ", ".join(f"{r['instrument']} {S.iso_ms(r['ts_ms'])}" for r in afectadas)
+                sustituidas = sum(r["versiones_completas"] - 1 for r in afectadas)
+                partes.append(f"version_mt5_revisada: {len(afectadas)} barras, {sustituidas} versiones "
+                              f"anteriores sustituidas; pares y fechas: {pares}.")
         partes.append(f"{t['table_id']}: {v['instrument'].nunique()} instrumentos con datos hasta el corte; disponibilidad "
                       f"{d['declarada']}; campo: {d['campo'] or 'ninguno'}"
                       + (", no consumible causalmente." if d["tipo"] == "no declarada" else "."))

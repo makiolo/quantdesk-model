@@ -247,10 +247,14 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: b
                 a["fuentes_excluidas"][source] += 1
                 serie["filas_excluidas_por_fuente"] += 1
                 continue
-            ts = a_ms(r.get("_ts"))
+            ts_original = r.get("_ts")
+            ts = a_ms(ts_original)
             if ts is None:
                 a["sin_ts"] += 1
                 continue
+            if source == "mt5" and iv == "1d" and (ts % MS_DIA != 0 or a_ms(ts_original, arriba=True) != ts
+                                                   or isinstance(ts_original, float) and not ts_original.is_integer()):
+                raise ValueError(f"{fich['ruta']}: source=mt5 1d exige ts exactamente a las 00:00Z")
             a["sub_ms"] += sub_ms(r.get("_ts"))
             recv = a_ms(r.get("_recv_ts"), arriba=True)
             a["con_recv"] += recv is not None
@@ -317,14 +321,23 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: b
                     "El topic market.ohlcv.v2 identifica la fuente por el tag source; `_ts` es la marca de la barra. "
                     "El unico instante respaldado en que el dato existia en el "
                     "sistema es `_recv_ts` (recepcion en qn). Las barras se republican mientras estan abiertas, asi que se "
-                    "conserva la primera version recibida con `_recv_ts` >= cierre real (MT5 1d: 17:00 America/New_York "
-                    "de la fecha UTC de `_ts`; resto: inicio + intervalo) y se "
+                    "conserva la ultima version MT5 1d completa recibida hasta el corte; para otras fuentes e intervalos, "
+                    "la primera completa. Completa significa `_recv_ts` >= cierre real (MT5 1d: 17:00 America/New_York "
+                    "de la fecha UTC de `_ts`; resto: inicio + intervalo). Se "
                     "declara max(_recv_ts, _ts + intervalo) como disponibilidad (A12, DPOL-AVL-002). Para MT5 1d en vivo "
                     "es el fin nominal a las 00:00 UTC del dia siguiente, 2-3 h despues del cierre real. Es conservador: "
                     "un relleno historico queda disponible desde la fecha del relleno, nunca antes." if con_recv else
                     "Las filas no traen `_recv_ts` y el productor no guarda ningun otro instante de publicacion de las barras: "
                     "no hay base para declarar disponibilidad ni para fijar un default_lag_ms, asi que queda sin declarar y la "
                     "tabla NO es consumible causalmente (DPOL-AVL-001 / W-NO-AVAILABILITY).")}})
+    for t in tablas:
+        if disp_cierre and t["table_id"] == "lago_ohlcv_1d" and "mt5" in t["carga"]["source"]:
+            t["disponibilidad"] = {**DISP_OHLCV_PROXY, "justificacion": (
+                "PROXY elegido con --disponibilidad-ohlcv cierre: available_at_ms nulo y default_lag_ms = 0, cierre nominal. "
+                "MT5 1d usa la ultima version completa recibida hasta el corte, nunca una revision posterior al corte. "
+                "Su recepcion puede ser posterior al cierre nominal, por lo que el proxy no demuestra disponibilidad "
+                "al cierre. Las otras fuentes e intervalos conservan la primera completa. Para disponibilidad respaldada "
+                "por la recepcion se usa el modo recepcion.")}
     return tablas, orden
 
 

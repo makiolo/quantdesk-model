@@ -65,21 +65,24 @@ TOPIC_OHLCV = "market.ohlcv.v2"
 TOPICS_DEFECTO = (TOPIC_OHLCV,)
 # Politica unica, compartida con el exportador. Se deja aqui para que el paso 1 siga siendo un solo fichero stdlib.
 POLITICA_FUENTES = {
-    "version": "ti-02-data.fuentes/v2",
+    "version": "ti-02-data.fuentes/v3",
     # SIX (agencia ISO 4217), List One publicada 2026-09-17, consultada 2026-11-11:
     # https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-one.xml
-    # Incluye codigos monetarios de fondos. De los X**, solo XAF/XCD/XCG/XOF/XPF son divisas;
+    # Excluye fondos de List Two (list-two.doc): BOV CHE CHW CLF COU MXV USN UYI UYW XAD;
+    # tambien XSU, XUA y las demas unidades de cuenta no monetarias.
+    # CNH (yuan offshore) es una excepcion explicita no ISO 4217. De los X**, solo XAF/XCD/XCG/XOF/XPF son divisas;
     # quedan fuera metales, unidades de cuenta, pruebas y ausencia de moneda (XAD, XDR, XSU, XUA, XTS, XXX...).
     "divisas_fx": tuple("""
-        AED AFN ALL AMD AOA ARS AUD AWG AZN BAM BBD BDT BHD BIF BMD BND BOB BOV BRL BSD BTN BWP BYN BZD
-        CAD CDF CHE CHF CHW CLF CLP CNY COP COU CRC CUP CVE CZK DJF DKK DOP DZD EGP ERN ETB EUR FJD FKP
+        AED AFN ALL AMD AOA ARS AUD AWG AZN BAM BBD BDT BHD BIF BMD BND BOB BRL BSD BTN BWP BYN BZD
+        CAD CDF CHF CLP CNH CNY COP CRC CUP CVE CZK DJF DKK DOP DZD EGP ERN ETB EUR FJD FKP
         GBP GEL GHS GIP GMD GNF GTQ GYD HKD HNL HTG HUF IDR ILS INR IQD IRR ISK JMD JOD JPY KES KGS KHR
         KMF KPW KRW KWD KYD KZT LAK LBP LKR LRD LSL LYD MAD MDL MGA MKD MMK MNT MOP MRU MUR MVR MWK MXN
-        MXV MYR MZN NAD NGN NIO NOK NPR NZD OMR PAB PEN PGK PHP PKR PLN PYG QAR RON RSD RUB RWF SAR SBD
+        MYR MZN NAD NGN NIO NOK NPR NZD OMR PAB PEN PGK PHP PKR PLN PYG QAR RON RSD RUB RWF SAR SBD
         SCR SDG SEK SGD SHP SLE SOS SRD SSP STN SVC SYP SZL THB TJS TMT TND TOP TRY TTD TWD TZS UAH UGX
-        USD USN UYI UYU UYW UZS VED VES VND VUV WST XAF XCD XCG XOF XPF YER ZAR ZMW ZWG
+        USD UYU UZS VED VES VND VUV WST XAF XCD XCG XOF XPF YER ZAR ZMW ZWG
     """.split()),
-    "clasificacion": "FX: dos divisas ISO 4217 vigentes distintas; solo para clasificar se quitan espacios exteriores, "
+    "clasificacion": "FX: dos divisas ISO 4217 vigentes distintas, excluidos fondos y unidades de cuenta; "
+                     "CNH (yuan offshore) admitida como excepcion no ISO 4217; solo para clasificar se quitan espacios exteriores, "
                      "se pasa a mayusculas y se admiten AAABBB, AAA/BBB y sufijo =X; instrument conserva el tag original",
     "reglas": ({"clase": "fx", "interval": "1d", "source": "mt5", "motivo": "ISSUE-LAGO-FX-1D-CLOSE"},),
     "sin_regla": "una sola fuente por (symbol, interval); multiples fuentes son un error, incluso sin solape temporal",
@@ -839,9 +842,9 @@ def selftest() -> None:
 def prueba_clasificacion_fx() -> None:
     """ISO vigente completa, normalizacion solo para clasificar y exclusiones no monetarias/cripto."""
     divisas = POLITICA_FUENTES["divisas_fx"]
-    assert len(divisas) == len(set(divisas)) == 164
+    assert len(divisas) == len(set(divisas)) == 156  # 164 anteriores - 9 fondos + CNH
     for symbol in ("USDMXN", "USDTRY", "EURUSD=X", "EUR/USD", "eurusd", " eur/usd=x ",
-                   "USDXAF", "USDXCD", "USDXCG", "USDXOF", "USDXPF", "USDZWG"):
+                   "USDXAF", "USDXCD", "USDXCG", "USDXOF", "USDXPF", "USDZWG", "USDCNH", "EURCNH", "CNHUSD"):
         assert regla_fuente(symbol, "1d")["source"] == "mt5", symbol
         aceptadas, excluidas = seleccionar_series([
             {"symbol": symbol, "interval": "1d", "source": s} for s in ("mt5", "market_scraper")])
@@ -850,6 +853,11 @@ def prueba_clasificacion_fx() -> None:
     for symbol in ("XAUUSD", "XAGUSD", "XPTUSD", "XPDUSD", "XADUSD", "XDRUSD", "XSUUSD", "XUAUSD", "XTSUSD", "XXXUSD",
                    "XBAUSD", "XBBUSD", "XBCUSD", "XBDUSD", "BTCUSD", "ETHUSD", "USDBGN", "USDZWL", "EUR//USD", "EURUSD.a"):
         assert regla_fuente(symbol, "1d") is None, symbol
+    # Lista de fondos vigente y otras unidades de cuenta: ninguna orientacion crea una clase FX.
+    for codigo in ("BOV", "CHE", "CHW", "CLF", "COU", "MXV", "USN", "UYI", "UYW", "XSU", "XUA",
+                   "XBA", "XBB", "XBC", "XBD", "XDR", "XAD", "USS"):
+        assert codigo not in divisas, codigo
+        assert regla_fuente(codigo + "USD", "1d") is None and regla_fuente("USD" + codigo, "1d") is None, codigo
 
 
 def prueba_tags_v2(tmp: str) -> None:
