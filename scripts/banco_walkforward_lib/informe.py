@@ -510,8 +510,11 @@ def escribir(runs, repeticiones, destino, pilotos=None, totos=None, fincasts=Non
     limpia.to_csv(os.path.join(destino, "metricas_limpia.csv"), index=False, float_format="%.10g")
     with open(os.path.join(destino, "ventana_limpia.json"), "w", encoding="utf-8") as f:
         json.dump(estados, f, ensure_ascii=False, indent=1)
+    with open(os.path.join(destino, "meta.json"), "w", encoding="utf-8") as f:
+        json.dump({"motor": banco.MOTOR_COMMIT, "semilla": banco.SEMILLA, "corte_utc": banco.CORTE_LIMPIO,
+                   "datasets": estados}, f, ensure_ascii=False, indent=1)
     with open(os.path.join(destino, "informe.md"), "w", encoding="utf-8", newline="\n") as f:
-        f.write("\n".join(L) + "\n")
+        f.write("\n".join(L).rstrip() + "\n")
     print(f"informe: {os.path.join(destino, 'informe.md')} ({sum(len(x) + 1 for x in L)} bytes); metricas.csv "
           f"{os.path.getsize(os.path.join(destino, 'metricas.csv'))} bytes")
     return 0
@@ -544,7 +547,10 @@ def cargar_limpia(runs):
             raise ValueError(f"{k}: objetivo/contexto distinto entre corridas de la tabla limpia")
     ms = sorted({m for meta in metas for m in meta["config"]["modelos"]})
     met = banco.metricas_tabla(pred, ms, limpia=True)
-    return met, banco.estado_limpia(pred, met, ms), metas
+    estado = banco.estado_limpia(pred, met, ms)
+    estado["dataset_hash"] = base["dataset"]["dataset_hash"]
+    estado["cruces_todos_origenes"] = banco.contar_cruces(pred)
+    return met, estado, metas
 
 
 def seccion_limpia(runs):
@@ -563,6 +569,12 @@ def seccion_limpia(runs):
          f"Origen estrictamente posterior a **{banco.CORTE_LIMPIO}**; el contexto puede ser anterior. "
          "Todos los modelos de cada tabla usan los mismos origenes validos comunes. La tabla principal "
          "conserva los origenes de sus modelos sin recortar por FinCast.", "",
+         "**Comparacion condicionada:** cuando entra FinCast, solo se puntuan los origenes donde no falla. "
+         "La cobertura por activo/h y el efecto de esa seleccion sobre los modelos base se declaran abajo; "
+         "no es una muestra aleatoria de la ventana posterior al corte. Los cruces de hmm/garch/chronos2/toto "
+         "se conservan y puntuan como en SPRINT-01, sin reordenar ni descartar. Solo FinCast los rechaza. "
+         "La columna cruces_cuantiles cuenta origenes cruzados realmente puntuados por celda; el anexo "
+         "cuenta tambien los suministrados antes de la interseccion.", "",
          "`crps_deciles` = 2 × media de los pinball en 0.1, 0.2, …, 0.9, para todos los modelos. "
          "No es el CRPS continuo ni el de 21 niveles. FinCast solo aporta `crps_deciles` y QLIKE "
          "(varianza = ((q90-q10)/(2 Phi^-1(0.9)))²). CRPS de 21 niveles, pinball 1 %/99 %, excedencias, "
@@ -606,15 +618,44 @@ def seccion_limpia(runs):
         validacion = estado["validacion_predicciones"]
         if validacion["origenes_modelo_excluidos"]:
             L += [f"**Predicciones archivadas invalidas:** {validacion['origenes_modelo_excluidos']} pares "
-                  f"origen-modelo ({validacion['por_modelo']}) con cuantiles no finitos/no monotonos, "
+                  f"origen-modelo ({validacion['por_modelo']}) con cuantiles no finitos o FinCast no monotono, "
                   "excluidos de TODOS los horizontes de la comparacion limpia. No se reparan cuantiles ni se "
                   "reescriben predicciones o criterios de las tablas principales historicas. La validacion "
                   "cuenta todos los origenes limpios suministrados antes de tomar la interseccion; n es "
                   "el numero comun realmente puntuado por celda. La validacion "
-                  "del archivo solo puede comprobar los horizontes almacenados (1/5/20); una corrida nueva "
+                  "del archivo solo puede comprobar los horizontes almacenados (1/5/20); FinCast nuevo "
                   "comprueba los 20 horizontes. Ejemplos: " + str(validacion["ejemplos"]) + ".", ""]
+        L += ["Anexo de cruces conservados (por dataset/modelo/h; filas ok antes de la interseccion). "
+              "Solo se conocen los horizontes almacenados 1/5/20 en los archivos de SPRINT-01; "
+              "FinCast valida los 20 al inferir.", "",
+              "| modelo | h | n todos | cruces todos | n posteriores al corte | cruces posteriores al corte |",
+              "|---|---:|---:|---:|---:|---:|"]
+        limpios = {(r["modelo"], r["h"]): r for r in estado["cruces_cuantiles"]["por_modelo_h"]}
+        for r in estado["cruces_todos_origenes"]["por_modelo_h"]:
+            c = limpios.get((r["modelo"], r["h"]), {})
+            L.append(f"| {r['modelo']} | {r['h']} | {r['n_validos']} | {r['origenes_con_cruce']} | "
+                     f"{c.get('n_validos', 0)} | {c.get('origenes_con_cruce', 0)} |")
+        L.append("")
+        seleccion = estado["seleccion_fincast"]
+        if seleccion["condicionada"]:
+            L += ["Cobertura de la comparacion condicionada a FinCast. n_base: origenes intentados por FinCast "
+                  "con todos los modelos base validos; n_comun: subconjunto donde FinCast es valido. "
+                  "Los fallos FinCast se declaran aunque un origen ya carezca de algun modelo base.", "",
+                  "| activo | h | intentos FinCast | fallos FinCast | n_base | n_comun |",
+                  "|---|---:|---:|---:|---:|---:|"]
+            for r in seleccion["cobertura"]:
+                L.append(f"| {r['instrument']} | {r['h']} | {r['intentos_fincast']} | {r['fallos_fincast']} | "
+                         f"{r['n_base']} | {r['n_comun']} |")
+            L += ["", "Efecto medido de la seleccion sobre CRPS deciles de modelos base: " + seleccion["metodo"] + ". "
+                  "Es un diagnostico descriptivo de seleccion, sin interpretacion causal.", "",
+                  "| modelo | h | n_base | n_comun | CRPS deciles base | CRPS deciles comun | variacion % |",
+                  "|---|---:|---:|---:|---:|---:|---:|"]
+            for r in seleccion["efecto_crps_deciles"]:
+                L.append(f"| {r['modelo']} | {r['h']} | {r['n_base']} | {r['n_comun']} | "
+                         f"{_f(r['base'], 8)} | {_f(r['comun'], 8)} | {_f(r['variacion_pct'], 6)} |")
+            L.append("")
         if not met.empty:
-            cols = ["instrument", "h", "modelo", *banco.metricas.COLUMNAS_RESUMEN, "crps_deciles"]
+            cols = ["instrument", "h", "modelo", *banco.metricas.COLUMNAS_RESUMEN, "crps_deciles", "cruces_cuantiles"]
             L += ["| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
             for _, r in met.iterrows():
                 L.append("| " + " | ".join(str(r[c]) if c in banco.CLAVES_METRICAS else _f(r[c], 8)

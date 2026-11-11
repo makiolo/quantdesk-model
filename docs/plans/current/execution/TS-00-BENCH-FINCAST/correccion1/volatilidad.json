@@ -1,0 +1,107 @@
+{
+  "metodo": "sd poblacional de los 20 log-retornos visibles anteriores; media por par activo-origen",
+  "por_activo": [
+    {
+      "instrument": "ADAUSDT",
+      "ok": false,
+      "size": 5,
+      "mean": 0.03645446600504811
+    },
+    {
+      "instrument": "ADAUSDT",
+      "ok": true,
+      "size": 8,
+      "mean": 0.04332975335752953
+    },
+    {
+      "instrument": "BNBUSDT",
+      "ok": true,
+      "size": 13,
+      "mean": 0.025583633569027372
+    },
+    {
+      "instrument": "BTCUSDT",
+      "ok": false,
+      "size": 3,
+      "mean": 0.015162320156501428
+    },
+    {
+      "instrument": "BTCUSDT",
+      "ok": true,
+      "size": 10,
+      "mean": 0.02279826086708548
+    },
+    {
+      "instrument": "DOGEUSDT",
+      "ok": false,
+      "size": 2,
+      "mean": 0.022893423697130273
+    },
+    {
+      "instrument": "DOGEUSDT",
+      "ok": true,
+      "size": 11,
+      "mean": 0.03948132421523042
+    },
+    {
+      "instrument": "ETHUSDT",
+      "ok": true,
+      "size": 13,
+      "mean": 0.030520396403481174
+    },
+    {
+      "instrument": "LINKUSDT",
+      "ok": true,
+      "size": 13,
+      "mean": 0.03627654523975738
+    },
+    {
+      "instrument": "LTCUSDT",
+      "ok": true,
+      "size": 13,
+      "mean": 0.02975479603102951
+    },
+    {
+      "instrument": "SOLUSDT",
+      "ok": false,
+      "size": 2,
+      "mean": 0.025174597628427404
+    },
+    {
+      "instrument": "SOLUSDT",
+      "ok": true,
+      "size": 11,
+      "mean": 0.03510708151946594
+    },
+    {
+      "instrument": "TRXUSDT",
+      "ok": false,
+      "size": 8,
+      "mean": 0.012310759690920334
+    },
+    {
+      "instrument": "TRXUSDT",
+      "ok": true,
+      "size": 5,
+      "mean": 0.012723608412432658
+    },
+    {
+      "instrument": "XRPUSDT",
+      "ok": true,
+      "size": 13,
+      "mean": 0.031823372925206574
+    }
+  ],
+  "total": [
+    {
+      "ok": false,
+      "size": 20,
+      "mean": 0.021119070533661143
+    },
+    {
+      "ok": true,
+      "size": 110,
+      "mean": 0.03145613468059491
+    }
+  ]
+}

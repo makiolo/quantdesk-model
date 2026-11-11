@@ -93,7 +93,7 @@ def correr_serie(serie, cortes, modelos, semilla, progreso=None):
                 Q = np.asarray(Q, float)
                 if Q.shape != (HMAX, len(QCOLS)) or not np.all(np.isfinite(Q)):
                     raise ValueError(f"salida invalida {Q.shape}")
-                if np.any(np.diff(Q, axis=1) < 0):
+                if m.nombre == "fincast" and np.any(np.diff(Q, axis=1) < 0):
                     raise ValueError("cuantiles no monotonos (se exige orden no decreciente)")
                 err = None
             except Exception as exc:  # noqa: BLE001 -- se cuenta y se informa, nunca se oculta
@@ -117,7 +117,7 @@ def metricas_tabla(pred, modelos, limpia=False):
     modelos = list(dict.fromkeys(m for m in modelos if limpia or m != "fincast"))
     columnas = CLAVES_METRICAS + list(metricas.COLUMNAS_RESUMEN)
     if limpia:
-        columnas += ["crps_deciles", "criterios_no_aplicables"]
+        columnas += ["crps_deciles", "criterios_no_aplicables", "cruces_cuantiles"]
     if pred.empty or not modelos:
         return pd.DataFrame(columns=columnas)
     pred = pred[pred["modelo"].isin(modelos)]
@@ -142,6 +142,8 @@ def metricas_tabla(pred, modelos, limpia=False):
                 if limpia:
                     r["crps_deciles"] = float(np.mean(metricas.crps_deciles(gm["y"].to_numpy(), gm[QCOLS].to_numpy())))
                     r["criterios_no_aplicables"] = ""
+            if limpia:
+                r["cruces_cuantiles"] = int((np.diff(gm[QCOLS].to_numpy(float), axis=1) < 0).any(axis=1).sum())
             filas.append({"instrument": ins, "h": int(h), "modelo": m, **r})
     return pd.DataFrame(filas, columns=columnas)
 
@@ -154,12 +156,65 @@ def estado_limpia(pred, met, modelos):
             "modelos": list(modelos), "estado": "vacia" if met.empty else "calculada", "celdas": len(met),
             "motivo": ("sin origenes posteriores al corte" if not hay else "sin origenes comunes validos")
                       if met.empty else "", "exclusiones_fincast": metricas.MOTIVO_FINCAST,
-            "validacion_predicciones": validacion}
+            "validacion_predicciones": validacion, "cruces_cuantiles": contar_cruces(seleccion),
+            "seleccion_fincast": seleccion_fincast(seleccion, modelos)}
+
+
+def contar_cruces(pred):
+    """Cuenta filas con al menos un cruce, sin ordenar ni descartar modelos de SPRINT-01.
+    El dataset lo identifica el meta contenedor; solo se cuentan h almacenados, no se infieren los demas.
+    """
+    filas = []
+    if not pred.empty:
+        for (m, h), g in pred.groupby(["modelo", "h"], sort=True):
+            q = g.loc[g["ok"], QCOLS].to_numpy(float)
+            filas.append({"modelo": m, "h": int(h), "n_validos": len(q),
+                          "origenes_con_cruce": int((np.diff(q, axis=1) < 0).any(axis=1).sum())})
+    return {"politica": "A12: solo FinCast rechaza cruces; los modelos SPRINT-01 se puntuan sin reparacion",
+            "alcance": "filas ok, horizontes almacenados; antes de la interseccion de modelos", "por_modelo_h": filas}
+
+
+def seleccion_fincast(pred, modelos):
+    """Efecto descriptivo de condicionar a FinCast sobre la misma submuestra intentada.
+    CRPS deciles agrupado por pares activo-origen (peso uno por par), antes/despues de sus fallos.
+    """
+    estado = {"condicionada": "fincast" in modelos, "cobertura": [], "efecto_crps_deciles": [],
+              "metodo": "media por par activo-origen; base = comunes de modelos base en intentos FinCast; "
+                        "comun = base donde FinCast es valido; variacion = 100*(comun/base-1)"}
+    if not estado["condicionada"] or pred.empty:
+        return estado
+    pred, _ = validar_predicciones_limpias(pred)
+    claves = ["instrument", "origen_ms", "h"]
+    fc = pred[pred.modelo == "fincast"]
+    bases = [m for m in modelos if m != "fincast"]
+    base = pred[pred.modelo.isin(bases)].merge(fc[claves], on=claves, how="inner")
+    if bases:
+        ok = base.groupby(claves).ok.agg(lambda s: bool(s.all()) and len(s) == len(bases))
+        comunes = ok[ok].reset_index()[claves]
+    else:
+        comunes = fc[claves]
+    disponibles = fc.merge(comunes, on=claves, how="inner")
+    for (ins, h), g in fc.groupby(["instrument", "h"], sort=True):
+        b = disponibles[(disponibles.instrument == ins) & (disponibles.h == h)]
+        estado["cobertura"].append({"instrument": ins, "h": int(h), "intentos_fincast": len(g),
+                                   "fallos_fincast": int((~g.ok).sum()), "n_base": len(b),
+                                   "n_comun": int(b.ok.sum())})
+    base = base.merge(comunes, on=claves, how="inner")
+    valida = fc.loc[fc.ok, claves]
+    for (m, h), g in base.groupby(["modelo", "h"], sort=True):
+        gc = g.merge(valida, on=claves, how="inner")
+        a = float(np.mean(metricas.crps_deciles(g.y.to_numpy(), g[QCOLS].to_numpy())))
+        b = float(np.mean(metricas.crps_deciles(gc.y.to_numpy(), gc[QCOLS].to_numpy()))) if len(gc) else None
+        estado["efecto_crps_deciles"].append({"modelo": m, "h": int(h), "n_base": len(g), "n_comun": len(gc),
+                                             "base": a, "comun": b,
+                                             "variacion_pct": 100 * (b / a - 1) if b is not None and a else None})
+    return estado
 
 
 def validar_predicciones_limpias(pred):
     """Valida tambien previsiones archivadas antes de formar la nueva comparacion limpia.
-    Un cruce en cualquier h almacenado invalida el origen-modelo entero, como correr_serie.
+    Solo FinCast rechaza cruces. Los modelos SPRINT-01 conservan su semantica sin reparacion.
+    Un fallo de finitud (cualquier modelo) o cruce FinCast invalida el origen-modelo entero.
     No repara cuantiles ni modifica el archivo de predicciones ni sus criterios principales historicos.
     """
     estado = {"origenes_modelo_excluidos": 0, "por_modelo": {}, "ejemplos": [],
@@ -168,7 +223,8 @@ def validar_predicciones_limpias(pred):
         return pred, estado
     buenas = pred.loc[pred["ok"]]
     Q = buenas[QCOLS].to_numpy(float)
-    malas = buenas.loc[~np.isfinite(Q).all(axis=1) | (np.diff(Q, axis=1) < 0).any(axis=1)]
+    malas = buenas.loc[~np.isfinite(Q).all(axis=1) |
+                       ((buenas["modelo"] == "fincast") & (np.diff(Q, axis=1) < 0).any(axis=1))]
     claves = ["instrument", "origen_ms", "modelo"]
     invalidos = malas[claves].drop_duplicates()
     if invalidos.empty:
@@ -178,7 +234,7 @@ def validar_predicciones_limpias(pred):
     out = pred.copy()
     marca = pd.MultiIndex.from_frame(out[claves]).isin(pd.MultiIndex.from_frame(invalidos))
     out.loc[marca, "ok"] = False
-    out.loc[marca, "error"] = "salida archivada invalida: cuantiles no finitos o no monotonos; excluida de ventana limpia"
+    out.loc[marca, "error"] = "salida archivada invalida: cuantiles no finitos o FinCast no monotono; excluida de ventana limpia"
     estado.update(origenes_modelo_excluidos=len(invalidos), por_modelo=invalidos.groupby("modelo").size().to_dict(),
                   ejemplos=invalidos.head(10).to_dict("records"))
     return out, estado
@@ -268,6 +324,7 @@ def ejecutar(dataset, out, nombres_modelos, activos, max_origenes, semilla, hilo
     limpia = metricas_tabla(pred, [m.nombre for m in modelos], limpia=True)
     limpia.to_csv(os.path.join(out, "metricas_limpia.csv"), index=False, float_format="%.10g")
     meta["ventana_limpia"] = estado_limpia(pred, limpia, [m.nombre for m in modelos])
+    meta["cruces_cuantiles"] = contar_cruces(pred)
     meta["ventana_limpia"]["metricas_sha256"] = hashlib.sha256(
         limpia.to_csv(index=False, float_format="%.10g").encode()).hexdigest()
     p1 = pred[pred["h"] == HORIZONTES[0]]

@@ -246,6 +246,10 @@ def selftest() -> int:
     prueba_informe_limpia()
     prueba_timeout_persistido()
     prueba_ventana_vacia_persistida()
+    prueba_interpolacion_asimetrica()
+    prueba_puertas_fincast()
+    prueba_cruces_sprint01()
+    prueba_seleccion_fincast()
     print("selftest ok")
     return 0
 
@@ -376,16 +380,17 @@ def prueba_monotonia_banco():
     import pandas as pd
 
     class Roto:
-        nombre = "hmm"
+        nombre = "fincast"
 
         def predecir(self, precios, semilla, hmax):
             Q = np.tile(np.arange(21, dtype=float), (hmax, 1))
-            Q[0, 1] = -1
+            Q[1, 1] = -1  # h=2 no se almacena: FinCast debe validar los 20 al inferir
             return Q, {}
 
     close = np.exp(np.arange(80) * 0.001)
-    s = datos.series_desde_tabla(_tabla(80, close), None)["SINT"]
-    cortes, _ = datos.cortes_de_serie(s, [T0 + 40 * DIA], 30, banco.HMAX)
+    ts0 = banco.CORTE_LIMPIO_MS + DIA
+    s = datos.series_desde_tabla(_tabla(80, close, ts0=ts0), None)["SINT"]
+    cortes, _ = datos.cortes_de_serie(s, [ts0 + 40 * DIA], 30, banco.HMAX)
     p = pd.DataFrame(banco.correr_serie(s, cortes, [Roto()], banco.SEMILLA))
     assert not p.ok.any() and p.error.str.contains("monoton").all()
 
@@ -397,7 +402,7 @@ def prueba_monotonia_banco():
 
     p = pd.DataFrame(banco.correr_serie(s, cortes, [ErrorCPU()], banco.SEMILLA))
     assert not p.ok.any() and (p.cpu_s >= 7.25).all(), "CPU externa de una respuesta fallida perdida"
-    print("banco: cuantiles no monotonos fallan explicitamente para cualquier modelo: ok")
+    print("banco: cuantiles FinCast no monotonos fallan explicitamente; CPU externa fallida conservada: ok")
 
 
 def prueba_informe_limpia():
@@ -430,17 +435,25 @@ def prueba_informe_limpia():
         texto, tabla, _ = informe.seccion_limpia(archivos)
         assert "no aplicables" in "\n".join(texto) and "extrapolacion" in "\n".join(texto)
         assert tabla[tabla.modelo == "fincast"].pinball_01.isna().all()
-        # Los archivos SPRINT-01 pueden contener cruces antes aceptados. La nueva tabla limpia los
-        # excluye por origen-modelo entero, los declara y conserva intactos los criterios principales.
+        # A12: los cruces de SPRINT-01 se puntuan intactos y se cuentan; solo FinCast los rechaza.
         p = Path(archivos[0], "predicciones.parquet")
         original = pd.read_parquet(p)
         roto = original.copy()
         roto.loc[0, "q01"] = roto.loc[0, "q00"] - 1
         roto.to_parquet(p, index=False)
         tabla_rota, estado_roto, _ = informe.cargar_limpia(archivos)
-        assert tabla_rota.empty and estado_roto["validacion_predicciones"]["por_modelo"] == {"hmm": 1}
+        assert len(tabla_rota) == 9 and not estado_roto["validacion_predicciones"]["por_modelo"]
+        assert tabla_rota.loc[(tabla_rota.modelo == "hmm") & (tabla_rota.h == 1), "cruces_cuantiles"].item() == 1
         assert len(banco.metricas_tabla(roto, ["hmm"])) == 3
         original.to_parquet(p, index=False)
+        pfc = Path(archivos[-1], "predicciones.parquet")
+        fc_original = pd.read_parquet(pfc)
+        fc_roto = fc_original.copy()
+        fc_roto.loc[0, "q04"] = fc_roto.loc[0, "q02"] - 1
+        fc_roto.to_parquet(pfc, index=False)
+        tabla_rota, estado_roto, _ = informe.cargar_limpia(archivos)
+        assert tabla_rota.empty and estado_roto["validacion_predicciones"]["por_modelo"] == {"fincast": 1}
+        fc_original.to_parquet(pfc, index=False)
         # La comparacion FinCast comprueba tambien la tabla limpia (la principal esta vacia).
         comp = banco.comparar(archivos[-1], archivos[-1])
         assert comp["predicciones_identicas"] and comp["metricas_limpias_identicas"]
@@ -524,3 +537,188 @@ def prueba_ventana_vacia_persistida():
         assert "posteriores" in meta["ventana_limpia"]["motivo"]
         assert pd.read_csv(Path(tmp, "metricas_limpia.csv")).empty
     print("ventana limpia vacia persistida: dataset antiguo, CSV con cabecera y motivo en meta: ok")
+
+
+def prueba_interpolacion_asimetrica():
+    from statistics import NormalDist
+    from . import fincast_trabajador as ft
+
+    # Pendientes diferentes en cada intervalo: una normal afin en z no detectaria el par equivocado.
+    nativos = np.array([[-0.17, -0.09, -0.065, -0.01, 0.002, 0.04, 0.11, 0.13, 0.31]])
+    q, _ = ft.expandir_deciles(nativos)
+    pares = {0.01: (0, 1), 0.05: (0, 1), 0.15: (0, 1), 0.25: (1, 2), 0.35: (2, 3),
+             0.45: (3, 4), 0.55: (4, 5), 0.65: (5, 6), 0.75: (6, 7), 0.85: (7, 8),
+             0.95: (7, 8), 0.99: (7, 8)}
+    z = NormalDist().inv_cdf
+    for p, (i, j) in pares.items():
+        w = (z(p) - z(ft.DECILES[i])) / (z(ft.DECILES[j]) - z(ft.DECILES[i]))
+        esperado = (1 - w) * nativos[0, i] + w * nativos[0, j]
+        _cerca(q[0, ft.NIVELES.index(p)], esperado, 1e-15, f"par asimetrico {p}")
+    assert np.array_equal(q[:, metricas.IDECILES], nativos)
+    cruzado = nativos.copy()
+    cruzado[0, 5] = cruzado[0, 4] - 0.01
+    try:
+        ft.expandir_deciles(cruzado)
+        raise AssertionError("un decil nativo cruzado debe fallar")
+    except ValueError as exc:
+        assert "nativos no monotonos" in str(exc)
+    print("interpolacion asimetrica: pares adyacentes y extremos en z, decil cruzado rechazado: ok")
+
+
+def prueba_puertas_fincast():
+    """Protocolo real de arranque con pesos/codigo pequenos y torch falso: nunca abre pesos reales."""
+    import contextlib
+    import hashlib
+    import io
+    import json
+    import sys
+    import tempfile
+    from pathlib import Path
+    from types import ModuleType
+    from unittest.mock import Mock, patch
+    from . import fincast_trabajador as ft, rutas
+
+    os.makedirs(rutas.TMP_FINCAST, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="puertas-", dir=rutas.TMP_FINCAST) as tmp:
+        raiz = Path(tmp)
+        pesos = raiz / "v1.pth"
+        pesos.write_bytes(b"pesos falsos pequenos, no pickle")
+        fuentes = {
+            "st_moe_pytorch/__init__.py": "from st_moe_pytorch.st_moe_pytorch import MoE\n",
+            "st_moe_pytorch/st_moe_pytorch.py": "from st_moe_pytorch.distributed import MoE\n",
+            "st_moe_pytorch/distributed.py": "MoE = 'solo desde src'\n",
+            "ffm/pytorch_patched_decoder_MOE.py":
+                "from st_moe_pytorch import MoE\nclass FFMConfig:\n"
+                "    def __init__(self, **kw):\n"
+                f"        self.quantiles = {ft.DECILES!r}\n",
+        }
+        for relativo, contenido in fuentes.items():
+            p = raiz / "src" / relativo
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(contenido, encoding="utf-8")
+        # Si src se anadiera a sys.path, una importacion tardia quedaria sombreada.
+        (raiz / "src" / "sombra_fincast_prueba.py").write_text("raise RuntimeError('sombreado')\n", encoding="utf-8")
+        huellas = {n: hashlib.sha256((raiz / "src" / n).read_bytes()).hexdigest() for n in fuentes}
+        falso = ModuleType("torch")
+        for n in ("set_num_threads", "use_deterministic_algorithms", "manual_seed"):
+            setattr(falso, n, Mock())
+        falso.load = Mock(side_effect=RuntimeError("weights_only rechazo el archivo falso"))
+        argv = [ft.__file__, "--codigo", tmp, "--pesos", str(pesos), "--sha256", ft.sha256(pesos)]
+        # Un paquete preexistente fuera de src tampoco puede prevalecer en sys.modules.
+        ajeno = ModuleType("st_moe_pytorch")
+        ajeno.MoE = "fuera de src"
+        with patch.dict(sys.modules, {"torch": falso, "st_moe_pytorch": ajeno}), \
+                patch.object(ft, "CODIGO_HUELLAS", huellas), patch.object(sys, "argv", argv):
+            def bloqueado(mensaje):
+                salida = io.StringIO()
+                with contextlib.redirect_stdout(salida), contextlib.redirect_stderr(io.StringIO()):
+                    assert ft.main() == 1
+                hola = json.loads(salida.getvalue())
+                assert not hola["listo"] and "BLOQUEADO" in hola["error"] and mensaje in hola["error"], hola
+
+            originales = pesos.read_bytes()
+            pesos.write_bytes(b"sha256 diferente")
+            bloqueado("sha256 de v1.pth distinto")
+            falso.load.assert_not_called()
+            pesos.write_bytes(originales)
+            p = raiz / "src" / "st_moe_pytorch/distributed.py"
+            original = p.read_bytes()
+            p.write_bytes(original + b"# alterado\n")
+            bloqueado("codigo distinto de la revision auditada")
+            falso.load.assert_not_called()
+            p.write_bytes(original)
+            camino = list(sys.path)
+            bloqueado("weights_only rechazo")
+            falso.load.assert_called_once_with(str(pesos), map_location="cpu", weights_only=True)
+            assert sys.path == camino, "src no debe entrar en sys.path"
+            assert sys.modules["st_moe_pytorch"].MoE == "solo desde src"
+            assert sys.modules["fincast_decoder_auditado"].MoE == "solo desde src"
+            assert ft.importlib.util.find_spec("sombra_fincast_prueba") is None
+            for nombre in ("st_moe_pytorch", "st_moe_pytorch.st_moe_pytorch", "st_moe_pytorch.distributed"):
+                assert Path(sys.modules[nombre].__file__).is_relative_to(raiz / "src")
+    print("puertas FinCast: sha256/codigo/weights_only -> BLOQUEADO; paquete solo desde src sin sombreado: ok")
+
+
+def prueba_cruces_sprint01():
+    import json
+    import tempfile
+    from pathlib import Path
+    from unittest.mock import patch
+    import pandas as pd
+    from . import rutas
+
+    # Fila archivada SPRINT-01: AUDCHF / 1789603200000 / chronos2 / h=1, cruce q35 > q40.
+    q = np.array([-0.01109920730781333, -0.005101668741223975, -0.0034524678249336915,
+                  -0.002505707647321387, -0.0018402217884041505, -0.0012804745693184572,
+                  -0.0005676030178047853, -5.851974677817395e-05, -8.224239539877942e-05,
+                  0.0006951809864066405, 0.001005780790331201, 0.001210403535845117,
+                  0.0014448286037467284, 0.0018338085155509276, 0.002376031969072656,
+                  0.002587807271959619, 0.0031515480022452635, 0.0037435413341544432,
+                  0.004656148050310449, 0.005801630113603906, 0.009366047475817041])
+    r = {"instrument": "AUDCHF", "origen_ms": 1789603200000, "h": 1, "k": 483, "modelo": "chronos2",
+         "ok": True, "y": 0.0023463510363763707, "rv": 5.505363185904469e-06, **dict(zip(banco.QCOLS, q))}
+    p = pd.DataFrame([r])
+    original = p.copy(deep=True)
+    for limpia in (False, True):
+        m = banco.metricas_tabla(p, ["chronos2"], limpia=limpia).iloc[0]
+        assert m.n == 1
+        _cerca(m.crps, 0.000959225938625, 5e-16, "CRPS archivado S01")
+        _cerca(m.qlike, -10.962015044244035, 1e-14, "QLIKE archivado S01")
+        if limpia:
+            assert m.cruces_cuantiles == 1
+    assert p.equals(original), "ni ordenar ni mutar la prediccion archivada"
+    for nombre in ("hmm", "garch", "chronos2", "toto"):
+        class Cruzado:
+            def predecir(self, precios, semilla, hmax):
+                return np.tile(q, (hmax, 1)), {}
+        modelo = Cruzado()
+        modelo.nombre = nombre
+        s = datos.series_desde_tabla(_tabla(80, np.exp(np.arange(80) * .001)), None)["SINT"]
+        cortes, _ = datos.cortes_de_serie(s, [T0 + 40 * DIA], 30, banco.HMAX)
+        nuevo = pd.DataFrame(banco.correr_serie(s, cortes, [modelo], banco.SEMILLA))
+        assert nuevo.ok.all() and np.array_equal(nuevo[banco.QCOLS], np.tile(q, (3, 1)))
+        assert [r["origenes_con_cruce"] for r in banco.contar_cruces(nuevo)["por_modelo_h"]] == [1, 1, 1]
+    # Recuento persistido en meta.json y tabla limpia, manteniendo todas las filas principales.
+    modelo.nombre = "chronos2"
+    ts0 = datos.rejilla_origenes("2025-01-01", "2025-01-01", 1)[0]
+    series = datos.series_desde_tabla(_tabla(500, np.exp(np.arange(500) * .001), ts0=ts0), None)
+    meta_ds = {"dataset_id": "sintetico_cruces", "dataset_hash": "sha256:cruces",
+               "intervalos_ms": [DIA], "proxy": False}
+    with tempfile.TemporaryDirectory(prefix="cruces-", dir=rutas.TMP_FINCAST) as tmp:
+        with patch.object(datos, "cargar_dataset", return_value=(series, meta_ds)):
+            pred, principal, meta = banco.ejecutar("lago_cierre_c20261101", tmp, ["chronos2"], None, 2,
+                                                 banco.SEMILLA, 1, "selftest cruces sin pesos", False,
+                                                 lambda nombres, hilos: ([modelo], {}))
+        assert pred.ok.all() and (principal.n == 2).all() and meta["fallos"] == {"chronos2": 0}
+        persistido = json.loads(Path(tmp, "meta.json").read_text(encoding="utf-8"))
+        assert [r["origenes_con_cruce"] for r in persistido["cruces_cuantiles"]["por_modelo_h"]] == [2, 2, 2]
+        assert (pd.read_csv(Path(tmp, "metricas_limpia.csv")).cruces_cuantiles == 2).all()
+    print("cruces SPRINT-01: fila Chronos-2 archivada puntuada intacta; cuatro modelos conservan y cuentan: ok")
+
+
+def prueba_seleccion_fincast():
+    import pandas as pd
+
+    filas = []
+    q = np.linspace(-.1, .1, 21)
+    for j in range(3):
+        for m in ("hmm", "fincast"):
+            for h in banco.HORIZONTES:
+                filas.append({"instrument": "SINT", "origen_ms": banco.CORTE_LIMPIO_MS + (j + 1) * DIA,
+                              "k": j, "h": h, "modelo": m, "ok": m != "fincast" or j != 0,
+                              "y": float(j), "rv": .01, **dict(zip(banco.QCOLS, q))})
+    p = pd.DataFrame(filas)
+    met = banco.metricas_tabla(p, ["hmm", "fincast"], limpia=True)
+    estado = banco.estado_limpia(p, met, ["hmm", "fincast"])
+    seleccion = estado["seleccion_fincast"]
+    assert seleccion["condicionada"] and (met.n == 2).all()
+    assert all(r["n_base"] == 3 and r["n_comun"] == 2 and r["fallos_fincast"] == 1
+               for r in seleccion["cobertura"])
+    scores = [2 / 9 * sum(max(p * (y - v), (p - 1) * (y - v))
+                         for p, v in zip(metricas.DECILES, q[metricas.IDECILES])) for y in (0., 1., 2.)]
+    a, b = sum(scores) / 3, sum(scores[1:]) / 2
+    for r in seleccion["efecto_crps_deciles"]:
+        _cerca(r["base"], a, 1e-15, "base sin condicionar")
+        _cerca(r["comun"], b, 1e-15, "comun condicionado")
+        _cerca(r["variacion_pct"], 100 * (b / a - 1), 1e-12, "efecto de seleccion")
+    print("seleccion FinCast: n por activo/h y efecto CRPS deciles antes/despues contra calculo a mano: ok")

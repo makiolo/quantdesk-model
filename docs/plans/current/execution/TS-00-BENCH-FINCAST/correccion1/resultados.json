@@ -1,0 +1,54 @@
+{
+  "principal_byte_a_byte_S01": true,
+  "principal_sha256": "9b8ab8b073e012ec7e7530f56258c74c8fc6c4eb6f9e9c873878a88b1b558294",
+  "limpia_sha256": "8dd0dc0f880a674b1def213c46292bd20002bddda81b8db8c5aa493cdd14c8d7",
+  "limpia_filas": 570,
+  "n_comunes_por_dataset_h": [
+    {
+      "dataset": "binance_c20261101",
+      "h": 1,
+      "n": 110
+    },
+    {
+      "dataset": "binance_c20261101",
+      "h": 5,
+      "n": 110
+    },
+    {
+      "dataset": "binance_c20261101",
+      "h": 20,
+      "n": 110
+    },
+    {
+      "dataset": "lago_cierre_c20261101",
+      "h": 1,
+      "n": 1391
+    },
+    {
+      "dataset": "lago_cierre_c20261101",
+      "h": 5,
+      "n": 1391
+    },
+    {
+      "dataset": "lago_cierre_c20261101",
+      "h": 20,
+      "n": 1391
+    }
+  ],
+  "determinismo": {
+    "alcance": "esta maquina, CPU, 2 hilos, origenes repetidos; sin afirmacion entre plataformas",
+    "piloto_vs_FX_origen_ms": 1761091200000,
+    "bit_a_bit": true,
+    "h_almacenados": [
+      1,
+      5,
+      20
+    ],
+    "sha256_63_float64": "ead9aeae3b504c9560a75213e1b21a9ed34223f5e8f50ad2ec47a476d60e7c88"
+  },
+  "parquets_originales_intactos": {
+    "fincast_fx": "f51bff47b8d8de17c52c24f6fe1e1d2a195704e9b2291a5aed523badaf8fc0a1",
+    "fincast_binance": "3eb4909d6694dc772001ead000f23c8cf35a9d8cf94637edae7994a059b00af9"
+  },
+  "mutante_siempre_par_01_02_detectado": "par asimetrico 0.25: np.float64(-0.059607645350975444) != np.float64(-0.07682845473325611) (tol 1e-15)"
+}

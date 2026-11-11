@@ -69,7 +69,18 @@ def cargar_decoder(a):
         if sha256(os.path.join(a.codigo, "src", relativo)) != huella:
             raise ValueError(f"codigo distinto de la revision auditada: {relativo}")
     # El modulo decoder no usa imports relativos. Evita ejecutar ffm/__init__.py y xreg_lib (JAX).
-    sys.path.insert(0, os.path.join(a.codigo, "src"))
+    # Registrar solo este paquete y su __path__: src nunca entra en sys.path y no puede
+    # sombrear torch/numpy/stdlib. Descarta modulos precargados para no resolver desde otra raiz.
+    paquete = "st_moe_pytorch"
+    for n in list(sys.modules):
+        if n == paquete or n.startswith(paquete + "."):
+            del sys.modules[n]
+    directorio = os.path.join(a.codigo, "src", paquete)
+    spec_paquete = importlib.util.spec_from_file_location(
+        paquete, os.path.join(directorio, "__init__.py"), submodule_search_locations=[directorio])
+    modulo_paquete = importlib.util.module_from_spec(spec_paquete)
+    sys.modules[paquete] = modulo_paquete
+    spec_paquete.loader.exec_module(modulo_paquete)
     nombre = "fincast_decoder_auditado"
     spec = importlib.util.spec_from_file_location(
         nombre, os.path.join(a.codigo, "src", "ffm", "pytorch_patched_decoder_MOE.py"))

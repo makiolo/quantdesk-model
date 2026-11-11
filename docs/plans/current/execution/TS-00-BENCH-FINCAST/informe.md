@@ -15,7 +15,7 @@ driver y no identifica una GPU utilizable. DL-02-GATES no está habilitado y el 
 La [tabla principal de 798 filas es idéntica a SPRINT-01](principal-identica.json). La tabla limpia contiene
 570 filas de cinco modelos, con el mismo n por activo y horizonte. FinCast: **1391/1400** previsiones válidas
 en FX y **110/130** en Binance; los **29 rechazos nativos** quedan declarados, sin reparar cuantiles.
-Ambas repeticiones tienen diferencia máxima **0**, también en criterios limpios. La suite global da
+Las repeticiones probadas en esta máquina, CPU y 2 hilos tienen diferencia máxima **0**, también en criterios limpios. La suite global da
 **12 OK, 0 FALLO**. Pared FX acumulada: **5055.404 s**; Binance: **194.270 s**.
 La CPU externa de 5 fallos del primer tramo FX no se pudo recuperar; se distingue la CPU registrada de la
 CPU por origen válido y se incluye toda su pared. No quedan corridas en segundo plano.
@@ -67,7 +67,8 @@ ni índices de la serie fuera del contexto.
 `info` declara por nivel 9 deciles nativos, 8 niveles interpolados y 4 extrapolados. Para un p no nativo:
 `q(p)=q_i+(Phi^-1(p)-z_i)/(z_(i+1)-z_i)*(q_(i+1)-q_i)`, con deciles adyacentes y `z_i=Phi^-1(p_i)`.
 Para 0.01/0.05 se usa el par 0.1–0.2 y para 0.95/0.99 el par 0.8–0.9. Los valores nativos quedan intactos.
-La salida se rechaza por origen si no tiene forma correcta, finitud o monotonía no decreciente.
+La salida de FinCast se rechaza por origen si no tiene forma correcta, finitud o monotonía no decreciente.
+Los modelos de SPRINT-01 conservan sus cruces sin reordenar ni descartar; se cuentan por dataset/modelo/h (A12, Corrección 1).
 
 | Tabla | Selección | Criterios de FinCast |
 |---|---|---|
@@ -165,12 +166,11 @@ ejecutar `run_selftests.py` (lanzador del vigilante **41040**, `finalizar.log`).
 los archivos auditados. [regresion-s01.json](regresion-s01.json) recoge conteos, ejemplos y hashes completos.
 El recálculo actual de los criterios principales de las cuatro corridas archivadas reproduce **exactamente**
 sus hashes originales. No se ordenan/reparan cuantiles ni se modifican archivos o tablas principales históricas.
-La tabla limpia aplica la nueva comprobación también a esos archivos: un cruce en cualquier horizonte
-almacenado excluye ese origen-modelo completo de los tres horizontes y, por intersección, de los demás modelos;
-los conteos y motivos quedan declarados. Solo se pueden comprobar los horizontes almacenados (1/5/20),
-mientras que una corrida nueva comprueba 1..20. Una repetición nueva de todo Chronos-2 puede rechazar también
-orígenes antes aceptados: es efecto de la validación obligatoria de monotonía, no de añadir FinCast ni de cambiar
-fórmulas. La comparación real corta HMM/GARCH (3 orígenes EURUSD, 18 filas) da diferencias **0** de predicciones
+La política inicial de excluir cruces archivados queda sustituida por A12 en **Corrección 1**: solo FinCast
+rechaza cruces; hmm/garch/chronos2/toto se puntúan como en SPRINT-01. No se reordenan cuantiles.
+FinCast valida forma, finitud y monotonía en los **20 horizontes** al inferir; de los modelos archivados
+solo se conocen **h=1/5/20**. Los cruces de esos horizontes se cuentan antes de la intersección y también
+en las celdas realmente puntuadas. La comparación real corta HMM/GARCH (3 orígenes EURUSD, 18 filas) da diferencias **0** de predicciones
 y criterios frente a SPRINT-01, con `--comparar`; log `regresion_s01.log`.
 
 Prueba roja antes de añadir la métrica: `test-rojo.log`, AttributeError por ausencia de `crps_deciles`.
@@ -189,7 +189,7 @@ Se contrasta la suma directa de los nueve pinball; no una integral continua con 
 | CRPS deciles de una normal contra cálculo independiente | `prueba_deciles_independientes` |
 | Las tres copias de NIVELES coinciden; interpolación/extrapolación z preserva deciles | `prueba_fincast` |
 | Unión de corridas con distinto hash de dataset se rechaza | `prueba_informe_limpia` |
-| Cruces en archivos antiguos: exclusión limpia declarada y tabla principal histórica intacta | `prueba_informe_limpia` |
+| Cruces en archivos antiguos: se conservan, puntúan y cuentan; solo FinCast los rechaza | `prueba_informe_limpia`, `prueba_cruces_sprint01` |
 
 Los tests previos no se modifican ni se borran; se añaden funciones e invocaciones en el selftest del banco.
 La implementación abarca proceso, métricas e informe con más de 400 líneas porque el contrato atraviesa esas
@@ -243,17 +243,77 @@ Solo se puntuan origenes validos comunes de los cinco modelos. Un activo sin ori
 
 | dataset | activo | intentos | previsiones validas | rechazos nativos | comunes h=1/5/20 |
 |---|---|---:|---:|---:|---|
-| lago_cierre_c20261101 | AUDNZD | 50 | 49 | 1 | 46/46/46 |
+| lago_cierre_c20261101 | AUDNZD | 50 | 49 | 1 | 49/49/49 |
 | lago_cierre_c20261101 | CADCHF | 50 | 49 | 1 | 49/49/49 |
 | lago_cierre_c20261101 | EURAUD | 50 | 48 | 2 | 48/48/48 |
-| lago_cierre_c20261101 | EURJPY | 50 | 49 | 1 | 42/42/42 |
+| lago_cierre_c20261101 | EURJPY | 50 | 49 | 1 | 49/49/49 |
 | lago_cierre_c20261101 | EURUSD | 50 | 48 | 2 | 48/48/48 |
 | lago_cierre_c20261101 | NZDCHF | 50 | 49 | 1 | 49/49/49 |
 | lago_cierre_c20261101 | USDCHF | 50 | 49 | 1 | 49/49/49 |
-| binance_c20261101 | ADAUSDT | 13 | 8 | 5 | 5/5/5 |
-| binance_c20261101 | BTCUSDT | 13 | 10 | 3 | 8/8/8 |
-| binance_c20261101 | DOGEUSDT | 13 | 11 | 2 | 10/10/10 |
-| binance_c20261101 | SOLUSDT | 13 | 11 | 2 | 10/10/10 |
-| binance_c20261101 | TRXUSDT | 13 | 5 | 8 | 1/1/1 |
+| binance_c20261101 | ADAUSDT | 13 | 8 | 5 | 8/8/8 |
+| binance_c20261101 | BTCUSDT | 13 | 10 | 3 | 10/10/10 |
+| binance_c20261101 | DOGEUSDT | 13 | 11 | 2 | 11/11/11 |
+| binance_c20261101 | SOLUSDT | 13 | 11 | 2 | 11/11/11 |
+| binance_c20261101 | TRXUSDT | 13 | 5 | 8 | 5/5/5 |
 
 CPU del primer tramo FX: 5 origenes fallidos persistidos sin CPU externa recuperable; su CPU registrada solo incluye el padre. Las previsiones validas conservan su CPU medida. La pared completa de ambos segmentos esta registrada, incluidas recargas y calculos no persistidos.
+
+## Corrección 1
+
+Revisión de `c0c7633`, sobre `2021763` de main (2026-11-11). A12 sustituye la exigencia general de monotonía:
+**solo FinCast rechaza cruces**. HMM, GARCH, Chronos-2 y Toto conservan sus cuantiles y se puntúan como en SPRINT-01.
+Los recuentos por dataset/modelo/h están en [meta.json](tablas/meta.json) y en el anexo de las [tablas regeneradas](tablas/informe.md);
+la columna `cruces_cuantiles` cuenta los cruces de cada celda realmente puntuada. No se reescriben las predicciones archivadas.
+En los archivos limpios suministrados, Chronos-2 tiene 187 cruces a h=1 en FX y 283 en Binance (20,66 % de 1370),
+además de 4 a h=20 en Binance. Son recuentos anteriores a la intersección, distintos de los cruces puntuados.
+
+**La comparación limpia está condicionada a que FinCast no falle.** Binance conserva 110 de 130 intentos:
+20 fallan por deciles nativos no monótonos; 13 de esos fallos se concentran en TRXUSDT (8) y ADAUSDT (5).
+Los orígenes rechazados presentan menor volatilidad reciente: sd media de los 20 retornos visibles previos
+**2,112 %**, frente a **3,146 %** en los válidos. En TRX es 1,231 % frente a 1,272 % y en ADA 3,645 % frente a 4,333 %.
+Esto describe una selección relacionada con baja volatilidad reciente, sin demostrar su causa; [cálculo y recuentos](correccion1/volatilidad.json).
+FX conserva 1391 de 1400. La corrección recupera **39 orígenes FX y 20 Binance en cada horizonte** frente a la tabla anterior.
+El [anexo de cobertura](tablas/informe.md) declara **n_base y n_comun por cada activo y horizonte**, incluidos todos los fallos;
+[resumen-cobertura.json](resumen-cobertura.json) y el CSV declaran los n finales (h=1/5/20).
+
+El efecto se mide con la media de CRPS deciles por par activo-origen de los modelos base sobre la misma submuestra
+intentada por FinCast, antes y después de seleccionar sus previsiones válidas. El **5,6–8,1 % mayor a h=1** de la tabla anterior
+incluía también el descarte de cruces de Chronos-2 ([evidencia anterior](correccion1/seleccion-anterior.json)). Ahora:
+
+| dataset | h | n_base → n_comun | variación CRPS deciles de los cuatro modelos base |
+|---|---:|---:|---:|
+| FX (proxy) | 1 | 1400 → 1391 | +0,137 a +0,217 % |
+| FX (proxy) | 5 | 1400 → 1391 | +0,103 a +0,159 % |
+| FX (proxy) | 20 | 1400 → 1391 | −0,027 a +0,071 % |
+| Binance | 1 | 130 → 110 | +1,545 a +2,495 % |
+| Binance | 5 | 130 → 110 | +1,211 a +2,338 % |
+| Binance | 20 | 130 → 110 | −0,167 a +0,572 % |
+
+Los valores completos por modelo/h están en las tablas y metadatos; la comparación sigue condicionada y descriptiva.
+La tabla principal sigue **idéntica byte a byte** a SPRINT-01: 798 filas, SHA-256
+`9b8ab8b073e012ec7e7530f56258c74c8fc6c4eb6f9e9c873878a88b1b558294`.
+Tabla limpia: 570 filas, SHA-256 `8dd0dc0f880a674b1def213c46292bd20002bddda81b8db8c5aa493cdd14c8d7`.
+
+**Determinismo acotado a lo probado:** esta máquina, CPU, 2 hilos y orígenes repetidos. El origen EURUSD
+**1761091200000** coincide **bit a bit** entre piloto y corrida FX: los 63 float64 almacenados (h=1/5/20)
+tienen SHA-256 `ead9aeae3b504c9560a75213e1b21a9ed34223f5e8f50ad2ec47a476d60e7c88`.
+La repetición corta con el importador nuevo conserva las 6 filas del piloto, diferencia máxima 0.
+No se han repetido las corridas largas; sus parquets siguen con su hash original. [Evidencia](correccion1/resultados.json).
+
+**BAJA 3 y 5:** FinCast valida sus **20 horizontes**, incluso h=2 que no se persiste; los archivos de los modelos
+base permiten comprobar solo **h=1/5/20**. CPU/origen mide predicción y trabajo del padre, **sin CPU externa de carga
+inicial ni recargas**; no es coste amortizado. La carga inicial se mide aparte y la pared incluye las recargas.
+Sigue declarada la CPU irrecuperable de cinco fallos del primer driver FX y su pared completa.
+
+| Caso borde nuevo o corregido | Test / evidencia |
+|---|---|
+| Chronos-2 archivado con cruce h=1: puntúa intacto y cuenta; cuatro modelos base aceptan cruces | `prueba_cruces_sprint01`, `prueba_informe_limpia` (también persistencia en meta/CSV) |
+| FinCast con decil cruzado o cruce en h=2: falla explícitamente | `prueba_interpolacion_asimetrica`, `prueba_monotonia_banco`, `prueba_fincast` |
+| Deciles asimétricos: detecta el mutante «siempre 0,1–0,2» en p=0,25 | `prueba_interpolacion_asimetrica`, `correccion1/verificar.py` |
+| SHA-256 de pesos distinto, huella de código distinta, fallo weights_only: BLOQUEADO JSON | `prueba_puertas_fincast`, archivos falsos pequeños y torch falso, sin pesos reales |
+| Paquete del modelo solo desde src; sin introducir src en sys.path ni aceptar módulos precargados ajenos | `prueba_puertas_fincast` |
+| Muestra condicionada: n por activo/h y efecto antes/después | `prueba_seleccion_fincast`, oráculo escalar independiente |
+| Reejecución Chronos-2 con tres cruces conocidos | `correccion1/repetir_chronos2.py`: AUDCHF, 9 filas y criterios idénticos al archivo, diferencia máxima 0 |
+
+Reproducción sin inferencia: `.venv/Scripts/python -X utf8 docs/plans/current/execution/TS-00-BENCH-FINCAST/correccion1/verificar.py`.
+La aceptación de los commits se registra en [correccion1/aceptacion.md](correccion1/aceptacion.md); la evidencia del gate anterior permanece histórica.

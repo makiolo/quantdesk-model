@@ -14,65 +14,993 @@
   "motivo": "",
   "exclusiones_fincast": "FinCast: solo crps_deciles y QLIKE en ventana limpia; crps de 21 niveles y criterios de colas no aplicables porque incluyen cuantiles interpolados/extrapolados",
   "validacion_predicciones": {
-   "origenes_modelo_excluidos": 187,
-   "por_modelo": {
-    "chronos2": 187
-   },
-   "ejemplos": [
-    {
-     "instrument": "AUDCHF",
-     "origen_ms": 1789603200000,
-     "modelo": "chronos2"
-    },
-    {
-     "instrument": "AUDCHF",
-     "origen_ms": 1789689600000,
-     "modelo": "chronos2"
-    },
-    {
-     "instrument": "AUDCHF",
-     "origen_ms": 1789776000000,
-     "modelo": "chronos2"
-    },
-    {
-     "instrument": "AUDCHF",
-     "origen_ms": 1790035200000,
-     "modelo": "chronos2"
-    },
-    {
-     "instrument": "AUDCHF",
-     "origen_ms": 1790121600000,
-     "modelo": "chronos2"
-    },
-    {
-     "instrument": "AUDCHF",
-     "origen_ms": 1790208000000,
-     "modelo": "chronos2"
-    },
-    {
-     "instrument": "AUDJPY",
-     "origen_ms": 1772150400000,
-     "modelo": "chronos2"
-    },
-    {
-     "instrument": "AUDJPY",
-     "origen_ms": 1772668800000,
-     "modelo": "chronos2"
-    },
-    {
-     "instrument": "AUDJPY",
-     "origen_ms": 1772755200000,
-     "modelo": "chronos2"
-    },
-    {
-     "instrument": "AUDJPY",
-     "origen_ms": 1772841600000,
-     "modelo": "chronos2"
-    }
-   ],
+   "origenes_modelo_excluidos": 0,
+   "por_modelo": {},
+   "ejemplos": [],
    "alcance": "origenes limpios suministrados, antes de tomar los comunes"
   },
-  "metricas_sha256": "d835c0008c3fd53cdd493a5d965be05425618b2b56331ed1cac75b12f44c974c"
+  "cruces_cuantiles": {
+   "politica": "A12: solo FinCast rechaza cruces; los modelos SPRINT-01 se puntuan sin reparacion",
+   "alcance": "filas ok, horizontes almacenados; antes de la interseccion de modelos",
+   "por_modelo_h": [
+    {
+     "modelo": "chronos2",
+     "h": 1,
+     "n_validos": 6916,
+     "origenes_con_cruce": 187
+    },
+    {
+     "modelo": "chronos2",
+     "h": 5,
+     "n_validos": 6916,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "chronos2",
+     "h": 20,
+     "n_validos": 6916,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "fincast",
+     "h": 1,
+     "n_validos": 1391,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "fincast",
+     "h": 5,
+     "n_validos": 1391,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "fincast",
+     "h": 20,
+     "n_validos": 1391,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "garch",
+     "h": 1,
+     "n_validos": 6916,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "garch",
+     "h": 5,
+     "n_validos": 6916,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "garch",
+     "h": 20,
+     "n_validos": 6916,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "hmm",
+     "h": 1,
+     "n_validos": 6916,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "hmm",
+     "h": 5,
+     "n_validos": 6916,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "hmm",
+     "h": 20,
+     "n_validos": 6916,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "toto",
+     "h": 1,
+     "n_validos": 1400,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "toto",
+     "h": 5,
+     "n_validos": 1400,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "toto",
+     "h": 20,
+     "n_validos": 1400,
+     "origenes_con_cruce": 0
+    }
+   ]
+  },
+  "seleccion_fincast": {
+   "condicionada": true,
+   "cobertura": [
+    {
+     "instrument": "AUDCAD",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "AUDCAD",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "AUDCAD",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "AUDCHF",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "AUDCHF",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "AUDCHF",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "AUDJPY",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "AUDJPY",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "AUDJPY",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "AUDNZD",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 1,
+     "n_base": 50,
+     "n_comun": 49
+    },
+    {
+     "instrument": "AUDNZD",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 1,
+     "n_base": 50,
+     "n_comun": 49
+    },
+    {
+     "instrument": "AUDNZD",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 1,
+     "n_base": 50,
+     "n_comun": 49
+    },
+    {
+     "instrument": "AUDUSD",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "AUDUSD",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "AUDUSD",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "CADCHF",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 1,
+     "n_base": 50,
+     "n_comun": 49
+    },
+    {
+     "instrument": "CADCHF",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 1,
+     "n_base": 50,
+     "n_comun": 49
+    },
+    {
+     "instrument": "CADCHF",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 1,
+     "n_base": 50,
+     "n_comun": 49
+    },
+    {
+     "instrument": "CADJPY",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "CADJPY",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "CADJPY",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "CHFJPY",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "CHFJPY",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "CHFJPY",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "EURAUD",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 2,
+     "n_base": 50,
+     "n_comun": 48
+    },
+    {
+     "instrument": "EURAUD",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 2,
+     "n_base": 50,
+     "n_comun": 48
+    },
+    {
+     "instrument": "EURAUD",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 2,
+     "n_base": 50,
+     "n_comun": 48
+    },
+    {
+     "instrument": "EURCAD",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "EURCAD",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "EURCAD",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "EURCHF",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "EURCHF",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "EURCHF",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "EURGBP",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "EURGBP",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "EURGBP",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "EURJPY",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 1,
+     "n_base": 50,
+     "n_comun": 49
+    },
+    {
+     "instrument": "EURJPY",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 1,
+     "n_base": 50,
+     "n_comun": 49
+    },
+    {
+     "instrument": "EURJPY",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 1,
+     "n_base": 50,
+     "n_comun": 49
+    },
+    {
+     "instrument": "EURNZD",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "EURNZD",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "EURNZD",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "EURUSD",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 2,
+     "n_base": 50,
+     "n_comun": 48
+    },
+    {
+     "instrument": "EURUSD",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 2,
+     "n_base": 50,
+     "n_comun": 48
+    },
+    {
+     "instrument": "EURUSD",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 2,
+     "n_base": 50,
+     "n_comun": 48
+    },
+    {
+     "instrument": "GBPAUD",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "GBPAUD",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "GBPAUD",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "GBPCAD",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "GBPCAD",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "GBPCAD",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "GBPCHF",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "GBPCHF",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "GBPCHF",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "GBPJPY",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "GBPJPY",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "GBPJPY",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "GBPNZD",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "GBPNZD",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "GBPNZD",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "GBPUSD",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "GBPUSD",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "GBPUSD",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "NZDCAD",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "NZDCAD",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "NZDCAD",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "NZDCHF",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 1,
+     "n_base": 50,
+     "n_comun": 49
+    },
+    {
+     "instrument": "NZDCHF",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 1,
+     "n_base": 50,
+     "n_comun": 49
+    },
+    {
+     "instrument": "NZDCHF",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 1,
+     "n_base": 50,
+     "n_comun": 49
+    },
+    {
+     "instrument": "NZDJPY",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "NZDJPY",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "NZDJPY",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "NZDUSD",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "NZDUSD",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "NZDUSD",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "USDCAD",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "USDCAD",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "USDCAD",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "USDCHF",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 1,
+     "n_base": 50,
+     "n_comun": 49
+    },
+    {
+     "instrument": "USDCHF",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 1,
+     "n_base": 50,
+     "n_comun": 49
+    },
+    {
+     "instrument": "USDCHF",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 1,
+     "n_base": 50,
+     "n_comun": 49
+    },
+    {
+     "instrument": "USDJPY",
+     "h": 1,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "USDJPY",
+     "h": 5,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    },
+    {
+     "instrument": "USDJPY",
+     "h": 20,
+     "intentos_fincast": 50,
+     "fallos_fincast": 0,
+     "n_base": 50,
+     "n_comun": 50
+    }
+   ],
+   "efecto_crps_deciles": [
+    {
+     "modelo": "chronos2",
+     "h": 1,
+     "n_base": 1400,
+     "n_comun": 1391,
+     "base": 0.002565762291839792,
+     "comun": 0.002569277770594834,
+     "variacion_pct": 0.13701498249556465
+    },
+    {
+     "modelo": "chronos2",
+     "h": 5,
+     "n_base": 1400,
+     "n_comun": 1391,
+     "base": 0.005192324929060204,
+     "comun": 0.005198405266577625,
+     "variacion_pct": 0.11710240789037929
+    },
+    {
+     "modelo": "chronos2",
+     "h": 20,
+     "n_base": 1400,
+     "n_comun": 1391,
+     "base": 0.009771291237387677,
+     "comun": 0.009776611391066179,
+     "variacion_pct": 0.054446782408290595
+    },
+    {
+     "modelo": "garch",
+     "h": 1,
+     "n_base": 1400,
+     "n_comun": 1391,
+     "base": 0.0025091947169088203,
+     "comun": 0.0025140627487460214,
+     "variacion_pct": 0.19400773500743984
+    },
+    {
+     "modelo": "garch",
+     "h": 5,
+     "n_base": 1400,
+     "n_comun": 1391,
+     "base": 0.00513260931724797,
+     "comun": 0.005139790792856084,
+     "variacion_pct": 0.13991860989654992
+    },
+    {
+     "modelo": "garch",
+     "h": 20,
+     "n_base": 1400,
+     "n_comun": 1391,
+     "base": 0.010159711887926696,
+     "comun": 0.010163361803719465,
+     "variacion_pct": 0.0359253867927789
+    },
+    {
+     "modelo": "hmm",
+     "h": 1,
+     "n_base": 1400,
+     "n_comun": 1391,
+     "base": 0.002514888936866957,
+     "comun": 0.0025199850565897322,
+     "variacion_pct": 0.20263796337358642
+    },
+    {
+     "modelo": "hmm",
+     "h": 5,
+     "n_base": 1400,
+     "n_comun": 1391,
+     "base": 0.005233248305574659,
+     "comun": 0.0052415652258382866,
+     "variacion_pct": 0.15892462535684881
+    },
+    {
+     "modelo": "hmm",
+     "h": 20,
+     "n_base": 1400,
+     "n_comun": 1391,
+     "base": 0.01050789095299,
+     "comun": 0.010515311798163705,
+     "variacion_pct": 0.07062164241049551
+    },
+    {
+     "modelo": "toto",
+     "h": 1,
+     "n_base": 1400,
+     "n_comun": 1391,
+     "base": 0.0026428202519454764,
+     "comun": 0.002648557883870863,
+     "variacion_pct": 0.21710261684133592
+    },
+    {
+     "modelo": "toto",
+     "h": 5,
+     "n_base": 1400,
+     "n_comun": 1391,
+     "base": 0.005287249088690753,
+     "comun": 0.0052926934449223145,
+     "variacion_pct": 0.10297143448767532
+    },
+    {
+     "modelo": "toto",
+     "h": 20,
+     "n_base": 1400,
+     "n_comun": 1391,
+     "base": 0.010288529844880831,
+     "comun": 0.0102857626504069,
+     "variacion_pct": -0.026895917255931323
+    }
+   ],
+   "metodo": "media por par activo-origen; base = comunes de modelos base en intentos FinCast; comun = base donde FinCast es valido; variacion = 100*(comun/base-1)"
+  },
+  "dataset_hash": "sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356",
+  "cruces_todos_origenes": {
+   "politica": "A12: solo FinCast rechaza cruces; los modelos SPRINT-01 se puntuan sin reparacion",
+   "alcance": "filas ok, horizontes almacenados; antes de la interseccion de modelos",
+   "por_modelo_h": [
+    {
+     "modelo": "chronos2",
+     "h": 1,
+     "n_validos": 6916,
+     "origenes_con_cruce": 187
+    },
+    {
+     "modelo": "chronos2",
+     "h": 5,
+     "n_validos": 6916,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "chronos2",
+     "h": 20,
+     "n_validos": 6916,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "fincast",
+     "h": 1,
+     "n_validos": 1391,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "fincast",
+     "h": 5,
+     "n_validos": 1391,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "fincast",
+     "h": 20,
+     "n_validos": 1391,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "garch",
+     "h": 1,
+     "n_validos": 6916,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "garch",
+     "h": 5,
+     "n_validos": 6916,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "garch",
+     "h": 20,
+     "n_validos": 6916,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "hmm",
+     "h": 1,
+     "n_validos": 6916,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "hmm",
+     "h": 5,
+     "n_validos": 6916,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "hmm",
+     "h": 20,
+     "n_validos": 6916,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "toto",
+     "h": 1,
+     "n_validos": 1400,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "toto",
+     "h": 5,
+     "n_validos": 1400,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "toto",
+     "h": 20,
+     "n_validos": 1400,
+     "origenes_con_cruce": 0
+    }
+   ]
+  },
+  "metricas_sha256": "92e668a06968bff58f101f4e4fb82a91aa97fe6af51bd7fc56b3b8276f164647"
  },
  "binance_c20261101": {
   "corte_utc": "2025-08-27T00:00:00Z",
@@ -89,64 +1017,560 @@
   "motivo": "",
   "exclusiones_fincast": "FinCast: solo crps_deciles y QLIKE en ventana limpia; crps de 21 niveles y criterios de colas no aplicables porque incluyen cuantiles interpolados/extrapolados",
   "validacion_predicciones": {
-   "origenes_modelo_excluidos": 283,
-   "por_modelo": {
-    "chronos2": 283
-   },
-   "ejemplos": [
-    {
-     "instrument": "ADAUSDT",
-     "origen_ms": 1772928000000,
-     "modelo": "chronos2"
-    },
-    {
-     "instrument": "ADAUSDT",
-     "origen_ms": 1773187200000,
-     "modelo": "chronos2"
-    },
-    {
-     "instrument": "ADAUSDT",
-     "origen_ms": 1773446400000,
-     "modelo": "chronos2"
-    },
-    {
-     "instrument": "ADAUSDT",
-     "origen_ms": 1773964800000,
-     "modelo": "chronos2"
-    },
-    {
-     "instrument": "ADAUSDT",
-     "origen_ms": 1774224000000,
-     "modelo": "chronos2"
-    },
-    {
-     "instrument": "ADAUSDT",
-     "origen_ms": 1774483200000,
-     "modelo": "chronos2"
-    },
-    {
-     "instrument": "ADAUSDT",
-     "origen_ms": 1774742400000,
-     "modelo": "chronos2"
-    },
-    {
-     "instrument": "ADAUSDT",
-     "origen_ms": 1775001600000,
-     "modelo": "chronos2"
-    },
-    {
-     "instrument": "ADAUSDT",
-     "origen_ms": 1775260800000,
-     "modelo": "chronos2"
-    },
-    {
-     "instrument": "ADAUSDT",
-     "origen_ms": 1775520000000,
-     "modelo": "chronos2"
-    }
-   ],
+   "origenes_modelo_excluidos": 0,
+   "por_modelo": {},
+   "ejemplos": [],
    "alcance": "origenes limpios suministrados, antes de tomar los comunes"
   },
-  "metricas_sha256": "76bc4c9bd6da96679232f9bc56bb096327d0502434541e4126308d7accde02d7"
+  "cruces_cuantiles": {
+   "politica": "A12: solo FinCast rechaza cruces; los modelos SPRINT-01 se puntuan sin reparacion",
+   "alcance": "filas ok, horizontes almacenados; antes de la interseccion de modelos",
+   "por_modelo_h": [
+    {
+     "modelo": "chronos2",
+     "h": 1,
+     "n_validos": 1370,
+     "origenes_con_cruce": 283
+    },
+    {
+     "modelo": "chronos2",
+     "h": 5,
+     "n_validos": 1370,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "chronos2",
+     "h": 20,
+     "n_validos": 1370,
+     "origenes_con_cruce": 4
+    },
+    {
+     "modelo": "fincast",
+     "h": 1,
+     "n_validos": 110,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "fincast",
+     "h": 5,
+     "n_validos": 110,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "fincast",
+     "h": 20,
+     "n_validos": 110,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "garch",
+     "h": 1,
+     "n_validos": 1370,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "garch",
+     "h": 5,
+     "n_validos": 1370,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "garch",
+     "h": 20,
+     "n_validos": 1370,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "hmm",
+     "h": 1,
+     "n_validos": 1370,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "hmm",
+     "h": 5,
+     "n_validos": 1370,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "hmm",
+     "h": 20,
+     "n_validos": 1370,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "toto",
+     "h": 1,
+     "n_validos": 130,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "toto",
+     "h": 5,
+     "n_validos": 130,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "toto",
+     "h": 20,
+     "n_validos": 130,
+     "origenes_con_cruce": 0
+    }
+   ]
+  },
+  "seleccion_fincast": {
+   "condicionada": true,
+   "cobertura": [
+    {
+     "instrument": "ADAUSDT",
+     "h": 1,
+     "intentos_fincast": 13,
+     "fallos_fincast": 5,
+     "n_base": 13,
+     "n_comun": 8
+    },
+    {
+     "instrument": "ADAUSDT",
+     "h": 5,
+     "intentos_fincast": 13,
+     "fallos_fincast": 5,
+     "n_base": 13,
+     "n_comun": 8
+    },
+    {
+     "instrument": "ADAUSDT",
+     "h": 20,
+     "intentos_fincast": 13,
+     "fallos_fincast": 5,
+     "n_base": 13,
+     "n_comun": 8
+    },
+    {
+     "instrument": "BNBUSDT",
+     "h": 1,
+     "intentos_fincast": 13,
+     "fallos_fincast": 0,
+     "n_base": 13,
+     "n_comun": 13
+    },
+    {
+     "instrument": "BNBUSDT",
+     "h": 5,
+     "intentos_fincast": 13,
+     "fallos_fincast": 0,
+     "n_base": 13,
+     "n_comun": 13
+    },
+    {
+     "instrument": "BNBUSDT",
+     "h": 20,
+     "intentos_fincast": 13,
+     "fallos_fincast": 0,
+     "n_base": 13,
+     "n_comun": 13
+    },
+    {
+     "instrument": "BTCUSDT",
+     "h": 1,
+     "intentos_fincast": 13,
+     "fallos_fincast": 3,
+     "n_base": 13,
+     "n_comun": 10
+    },
+    {
+     "instrument": "BTCUSDT",
+     "h": 5,
+     "intentos_fincast": 13,
+     "fallos_fincast": 3,
+     "n_base": 13,
+     "n_comun": 10
+    },
+    {
+     "instrument": "BTCUSDT",
+     "h": 20,
+     "intentos_fincast": 13,
+     "fallos_fincast": 3,
+     "n_base": 13,
+     "n_comun": 10
+    },
+    {
+     "instrument": "DOGEUSDT",
+     "h": 1,
+     "intentos_fincast": 13,
+     "fallos_fincast": 2,
+     "n_base": 13,
+     "n_comun": 11
+    },
+    {
+     "instrument": "DOGEUSDT",
+     "h": 5,
+     "intentos_fincast": 13,
+     "fallos_fincast": 2,
+     "n_base": 13,
+     "n_comun": 11
+    },
+    {
+     "instrument": "DOGEUSDT",
+     "h": 20,
+     "intentos_fincast": 13,
+     "fallos_fincast": 2,
+     "n_base": 13,
+     "n_comun": 11
+    },
+    {
+     "instrument": "ETHUSDT",
+     "h": 1,
+     "intentos_fincast": 13,
+     "fallos_fincast": 0,
+     "n_base": 13,
+     "n_comun": 13
+    },
+    {
+     "instrument": "ETHUSDT",
+     "h": 5,
+     "intentos_fincast": 13,
+     "fallos_fincast": 0,
+     "n_base": 13,
+     "n_comun": 13
+    },
+    {
+     "instrument": "ETHUSDT",
+     "h": 20,
+     "intentos_fincast": 13,
+     "fallos_fincast": 0,
+     "n_base": 13,
+     "n_comun": 13
+    },
+    {
+     "instrument": "LINKUSDT",
+     "h": 1,
+     "intentos_fincast": 13,
+     "fallos_fincast": 0,
+     "n_base": 13,
+     "n_comun": 13
+    },
+    {
+     "instrument": "LINKUSDT",
+     "h": 5,
+     "intentos_fincast": 13,
+     "fallos_fincast": 0,
+     "n_base": 13,
+     "n_comun": 13
+    },
+    {
+     "instrument": "LINKUSDT",
+     "h": 20,
+     "intentos_fincast": 13,
+     "fallos_fincast": 0,
+     "n_base": 13,
+     "n_comun": 13
+    },
+    {
+     "instrument": "LTCUSDT",
+     "h": 1,
+     "intentos_fincast": 13,
+     "fallos_fincast": 0,
+     "n_base": 13,
+     "n_comun": 13
+    },
+    {
+     "instrument": "LTCUSDT",
+     "h": 5,
+     "intentos_fincast": 13,
+     "fallos_fincast": 0,
+     "n_base": 13,
+     "n_comun": 13
+    },
+    {
+     "instrument": "LTCUSDT",
+     "h": 20,
+     "intentos_fincast": 13,
+     "fallos_fincast": 0,
+     "n_base": 13,
+     "n_comun": 13
+    },
+    {
+     "instrument": "SOLUSDT",
+     "h": 1,
+     "intentos_fincast": 13,
+     "fallos_fincast": 2,
+     "n_base": 13,
+     "n_comun": 11
+    },
+    {
+     "instrument": "SOLUSDT",
+     "h": 5,
+     "intentos_fincast": 13,
+     "fallos_fincast": 2,
+     "n_base": 13,
+     "n_comun": 11
+    },
+    {
+     "instrument": "SOLUSDT",
+     "h": 20,
+     "intentos_fincast": 13,
+     "fallos_fincast": 2,
+     "n_base": 13,
+     "n_comun": 11
+    },
+    {
+     "instrument": "TRXUSDT",
+     "h": 1,
+     "intentos_fincast": 13,
+     "fallos_fincast": 8,
+     "n_base": 13,
+     "n_comun": 5
+    },
+    {
+     "instrument": "TRXUSDT",
+     "h": 5,
+     "intentos_fincast": 13,
+     "fallos_fincast": 8,
+     "n_base": 13,
+     "n_comun": 5
+    },
+    {
+     "instrument": "TRXUSDT",
+     "h": 20,
+     "intentos_fincast": 13,
+     "fallos_fincast": 8,
+     "n_base": 13,
+     "n_comun": 5
+    },
+    {
+     "instrument": "XRPUSDT",
+     "h": 1,
+     "intentos_fincast": 13,
+     "fallos_fincast": 0,
+     "n_base": 13,
+     "n_comun": 13
+    },
+    {
+     "instrument": "XRPUSDT",
+     "h": 5,
+     "intentos_fincast": 13,
+     "fallos_fincast": 0,
+     "n_base": 13,
+     "n_comun": 13
+    },
+    {
+     "instrument": "XRPUSDT",
+     "h": 20,
+     "intentos_fincast": 13,
+     "fallos_fincast": 0,
+     "n_base": 13,
+     "n_comun": 13
+    }
+   ],
+   "efecto_crps_deciles": [
+    {
+     "modelo": "chronos2",
+     "h": 1,
+     "n_base": 130,
+     "n_comun": 110,
+     "base": 0.0148378801614285,
+     "comun": 0.015208154774041272,
+     "variacion_pct": 2.495468413172053
+    },
+    {
+     "modelo": "chronos2",
+     "h": 5,
+     "n_base": 130,
+     "n_comun": 110,
+     "base": 0.04927304476840042,
+     "comun": 0.05034456674985158,
+     "variacion_pct": 2.17466159537667
+    },
+    {
+     "modelo": "chronos2",
+     "h": 20,
+     "n_base": 130,
+     "n_comun": 110,
+     "base": 0.10514268668691606,
+     "comun": 0.10516327759289011,
+     "variacion_pct": 0.019583773843789842
+    },
+    {
+     "modelo": "garch",
+     "h": 1,
+     "n_base": 130,
+     "n_comun": 110,
+     "base": 0.01402330779718686,
+     "comun": 0.014372712732431866,
+     "variacion_pct": 2.491601413149458
+    },
+    {
+     "modelo": "garch",
+     "h": 5,
+     "n_base": 130,
+     "n_comun": 110,
+     "base": 0.04925999331829195,
+     "comun": 0.05041179165006497,
+     "variacion_pct": 2.3382023711020716
+    },
+    {
+     "modelo": "garch",
+     "h": 20,
+     "n_base": 130,
+     "n_comun": 110,
+     "base": 0.10345370904689277,
+     "comun": 0.10386378357458435,
+     "variacion_pct": 0.3963845583397241
+    },
+    {
+     "modelo": "hmm",
+     "h": 1,
+     "n_base": 130,
+     "n_comun": 110,
+     "base": 0.014189788249190614,
+     "comun": 0.01451851536797576,
+     "variacion_pct": 2.316645696273145
+    },
+    {
+     "modelo": "hmm",
+     "h": 5,
+     "n_base": 130,
+     "n_comun": 110,
+     "base": 0.048663560592311625,
+     "comun": 0.04972694329342868,
+     "variacion_pct": 2.185172412733527
+    },
+    {
+     "modelo": "hmm",
+     "h": 20,
+     "n_base": 130,
+     "n_comun": 110,
+     "base": 0.10338065357829739,
+     "comun": 0.10397209571151175,
+     "variacion_pct": 0.5721013678506415
+    },
+    {
+     "modelo": "toto",
+     "h": 1,
+     "n_base": 130,
+     "n_comun": 110,
+     "base": 0.014202110130154393,
+     "comun": 0.01442158883629377,
+     "variacion_pct": 1.54539504431368
+    },
+    {
+     "modelo": "toto",
+     "h": 5,
+     "n_base": 130,
+     "n_comun": 110,
+     "base": 0.048041251477508255,
+     "comun": 0.048623131043989624,
+     "variacion_pct": 1.2112081775259131
+    },
+    {
+     "modelo": "toto",
+     "h": 20,
+     "n_base": 130,
+     "n_comun": 110,
+     "base": 0.10846574055236594,
+     "comun": 0.10828483694875361,
+     "variacion_pct": -0.16678409485895163
+    }
+   ],
+   "metodo": "media por par activo-origen; base = comunes de modelos base en intentos FinCast; comun = base donde FinCast es valido; variacion = 100*(comun/base-1)"
+  },
+  "dataset_hash": "sha256:d765d56037f700bd2550a9a2ae9d53fbd2406afd7cddb82bbfeaf2a56670b744",
+  "cruces_todos_origenes": {
+   "politica": "A12: solo FinCast rechaza cruces; los modelos SPRINT-01 se puntuan sin reparacion",
+   "alcance": "filas ok, horizontes almacenados; antes de la interseccion de modelos",
+   "por_modelo_h": [
+    {
+     "modelo": "chronos2",
+     "h": 1,
+     "n_validos": 3590,
+     "origenes_con_cruce": 869
+    },
+    {
+     "modelo": "chronos2",
+     "h": 5,
+     "n_validos": 3590,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "chronos2",
+     "h": 20,
+     "n_validos": 3590,
+     "origenes_con_cruce": 21
+    },
+    {
+     "modelo": "fincast",
+     "h": 1,
+     "n_validos": 110,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "fincast",
+     "h": 5,
+     "n_validos": 110,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "fincast",
+     "h": 20,
+     "n_validos": 110,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "garch",
+     "h": 1,
+     "n_validos": 3590,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "garch",
+     "h": 5,
+     "n_validos": 3590,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "garch",
+     "h": 20,
+     "n_validos": 3590,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "hmm",
+     "h": 1,
+     "n_validos": 3590,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "hmm",
+     "h": 5,
+     "n_validos": 3590,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "hmm",
+     "h": 20,
+     "n_validos": 3590,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "toto",
+     "h": 1,
+     "n_validos": 360,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "toto",
+     "h": 5,
+     "n_validos": 360,
+     "origenes_con_cruce": 0
+    },
+    {
+     "modelo": "toto",
+     "h": 20,
+     "n_validos": 360,
+     "origenes_con_cruce": 0
+    }
+   ]
+  },
+  "metricas_sha256": "ff35f56b8a702d0d64fb3ff6f183033c4dbfd531a680183a7e2bb0750233f2dc"
  }
 }

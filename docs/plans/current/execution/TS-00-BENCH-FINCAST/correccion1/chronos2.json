@@ -1,0 +1,80 @@
+{
+  "dataset": {
+    "dataset_id": "lago_cierre_c20261101",
+    "dataset_hash": "sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356",
+    "tabla": "lago_ohlcv_1d",
+    "logical_hash": "sha256:640959ade547195c4913a0db2b3f4852fc3ce94e0d97ac75e3ad0db31108f575",
+    "filas": 14448,
+    "default_lag_ms": 0,
+    "filas_available_at_nulo": 14448,
+    "proxy": true,
+    "intervalos_ms": [
+      86400000
+    ]
+  },
+  "config": {
+    "modelos": [
+      "chronos2"
+    ],
+    "ventana": 250,
+    "horizontes": [
+      1,
+      5,
+      20
+    ],
+    "semilla": 20261101,
+    "hilos_torch": 2
+  },
+  "cruces_cuantiles": {
+    "politica": "A12: solo FinCast rechaza cruces; los modelos SPRINT-01 se puntuan sin reparacion",
+    "alcance": "filas ok, horizontes almacenados; antes de la interseccion de modelos",
+    "por_modelo_h": [
+      {
+        "modelo": "chronos2",
+        "h": 1,
+        "n_validos": 3,
+        "origenes_con_cruce": 3
+      },
+      {
+        "modelo": "chronos2",
+        "h": 5,
+        "n_validos": 3,
+        "origenes_con_cruce": 0
+      },
+      {
+        "modelo": "chronos2",
+        "h": 20,
+        "n_validos": 3,
+        "origenes_con_cruce": 0
+      }
+    ]
+  },
+  "versiones": {
+    "python": "3.12.3",
+    "plataforma": "Windows-10-10.0.19045-SP0",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "pandas": "3.1.1",
+    "pyarrow": "26.0.1",
+    "arch": "8.0.0",
+    "torch": "2.15.0+cpu",
+    "transformers": "5.22.2",
+    "chronos-forecasting": "2.3.2",
+    "huggingface_hub": "2.4.0",
+    "motor": "quantdesk 69fdb39d",
+    "motor_commit": "69fdb39d0b67969dbdafa77f5da656511342f175",
+    "rueda_quantdesk_sha256": "sha256=28c1ed662a79a1075a11e544a0f4fe3f10be70d0a9917a4abbf6eccad4c3c3fd"
+  },
+  "comparacion": {
+    "referencia": "E:/quantdesk-lab/runs/TS-00-BENCH/lago_cierre_c20261101",
+    "filas": 9,
+    "filas_sin_pareja": 0,
+    "max_dif_predicciones": 0.0,
+    "predicciones_identicas": true,
+    "max_dif_metricas": 0.0,
+    "metricas_identicas": true,
+    "metricas_limpias_identicas": true,
+    "ref_dataset_hash": "sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356"
+  },
+  "pared_inferencia_s": 0.6869868999929167
+}

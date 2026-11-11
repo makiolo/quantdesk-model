@@ -1,0 +1,41 @@
+{
+  "csv_anterior_sha256": "c495b3bdabfb14ee11906ea1f61ad0073c2470d3b9124c5a12f6eba78347eb01",
+  "n_anterior": [
+    {
+      "dataset": "binance_c20261101",
+      "h": 1,
+      "n": 90
+    },
+    {
+      "dataset": "binance_c20261101",
+      "h": 5,
+      "n": 90
+    },
+    {
+      "dataset": "binance_c20261101",
+      "h": 20,
+      "n": 90
+    },
+    {
+      "dataset": "lago_cierre_c20261101",
+      "h": 1,
+      "n": 1352
+    },
+    {
+      "dataset": "lago_cierre_c20261101",
+      "h": 5,
+      "n": 1352
+    },
+    {
+      "dataset": "lago_cierre_c20261101",
+      "h": 20,
+      "n": 1352
+    }
+  ],
+  "binance_h1_variacion_pct": {
+    "chronos2": 5.814033892737824,
+    "garch": 8.067993760883096,
+    "hmm": 7.641576232229386,
+    "toto": 5.5890657782077025
+  }
+}
