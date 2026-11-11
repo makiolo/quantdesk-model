@@ -1,0 +1,22 @@
+{
+  "fecha": "2026-11-11",
+  "motor": "quantdesk 69fdb39d",
+  "semilla": null,
+  "corte": "2026-11-01",
+  "commit_codigo_verificado": "f48dfe90120756482f7578844fc1927675b39895",
+  "sha256_lf": {
+    "docs/plans/current/execution/TI-02-DATA-V2/informe.md": "47fc3664d71e82f3c9e05a9906114bd3a83144ee4702bc9f1eadafab1f378086",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion2/A12.json": "6ea480ea62cd125afd11ab245391c0c5d7e3ac7f883cd5e43081c4038174ac7f",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion2/aceptacion.log": "fc51efed04a28aa962c46c90442f78ae95a90e5ab773933dc799c002d81301c4",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion2/aserciones.log": "f04152302d294222c8bf417ccdd4e1989152e75f37464b025b24810fcaedfcd2",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion2/invariantes.json": "7995fa063702d88d88fdfb730cb23d2181cc3407af3a7f089d7a5a727b4e2cee",
+    "scripts/exportar_market_history.py": "c6ca66ac71edcf93eaab796fe9ec59fd60498e5e64e2e348912dec86df43249d",
+    "scripts/exportar_market_history_lib/fuentes.py": "0f5945e9d0d2696a8cdf5ae0d254f761f8b9df51e7edf9f890e5e845f2031e0d",
+    "scripts/exportar_market_history_lib/limpieza.py": "200abded021180be9e992858b42b4cd3f6620bd65c685c4bd0ae69c764eb9ef4",
+    "scripts/exportar_market_history_lib/selftests.py": "ed4a9fb94e36a8277dd579b5e64fe8ba0a0a34b58fc0a190ca7b8c1fa558e096"
+  },
+  "ejecutor_verificacion": {
+    "ruta": "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\verificar.py",
+    "sha256": "e70221641cdf2f02abcdfbb20efdecacb8a588c27429a930924613d73bb8206d"
+  }
+}

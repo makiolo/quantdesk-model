@@ -1,0 +1,564 @@
+{
+  "fecha": "2026-11-11",
+  "base_correccion": "0684a93092978e979d33927c0aeb2b920c4675e6",
+  "motor": "quantdesk 69fdb39d",
+  "semilla": null,
+  "corte": "2026-11-01",
+  "decision": "max(_recv_ts, ts + intervalo)",
+  "casos": [
+    {
+      "fecha": "2026-01-13",
+      "ts_ms": 1768262400000,
+      "cierre_real_ms": 1768341600000,
+      "recepcion_ms": 1768343400000,
+      "fixture_sha256": {
+        "manifest.json": "30e9df1ca32d773d0a0b34f0ed0ea9fddae46644e8df1dd8e9bc21b8d8db4eb0",
+        "market.ohlcv.v2/interval=1d,source=mt5,symbol=EURUSD.ndjson": "775828048d349ebd8dc6c87f6fdfaaad0f63fa3de80bab466d3067af4ba64a60"
+      },
+      "antes": {
+        "comando": [
+          "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+          "-X",
+          "utf8",
+          "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\codigo_antes\\scripts\\exportar_market_history.py",
+          "--lago",
+          "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_dump_1",
+          "--corte",
+          "2026-11-01",
+          "--nombre",
+          "a12_1_recepcion",
+          "--salida-raiz",
+          "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_antes_out",
+          "--disponibilidad-ohlcv",
+          "recepcion",
+          "--runs",
+          "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_antes_runs",
+          "--sobrescribir"
+        ],
+        "codigo": 1,
+        "stdout": "",
+        "stderr": "exportar: DATOS INCONSISTENTES en lago_ohlcv_1d: 1 barras con available_at_ms anterior a su cierre"
+      },
+      "motor_antes": [
+        {
+          "available_at_ms": 1768343400000,
+          "code": "DPOL-AVL-002",
+          "instrument": "EURUSD",
+          "reference_close_ms": 1768348800000,
+          "row_index": 0,
+          "ts_ms": 1768262400000
+        }
+      ],
+      "despues": {
+        "recepcion": {
+          "comando": [
+            "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+            "-X",
+            "utf8",
+            "S:\\Projects\\quantdesk-model\\scripts\\exportar_market_history.py",
+            "--lago",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_dump_1",
+            "--corte",
+            "2026-11-01",
+            "--nombre",
+            "a12_1_recepcion",
+            "--salida-raiz",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_despues_out",
+            "--disponibilidad-ohlcv",
+            "recepcion",
+            "--runs",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_despues_runs",
+            "--sobrescribir"
+          ],
+          "codigo": 0,
+          "stdout": "lago_ohlcv_1d: 1 filas de origen -> 1 (0 excluidas: ninguna)\ndataset a12_1_recepcion escrito en E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_despues_out\\a12_1_recepcion (0.4 s)\n  corte 2026-11-01T00:00:00Z; dataset_hash sha256:cb40f3c441283474ef5ddefd46603cd4a2f51a3efdb366f25ba363c880c84735\n  lago_ohlcv_1d          ohlcv/v1          1 filas    1 instrumentos  2026-01-13T00:00:00Z -> 2026-01-13T00:00:00Z  sha256:6c4c6588052921fae479aa018353bbd6ae04a6e1eb9bedeb2b2ae34827b0e114\n  data_py describe: ok con hashes verificados; politica de look-ahead ok=True; violaciones por fila=0; no consumibles causalmente en sentido estricto: ninguna (de ellas, proxy por default_lag_ms: ninguna); tablas vacias tras el corte: ninguna",
+          "stderr": "",
+          "dataset_hash": "sha256:cb40f3c441283474ef5ddefd46603cd4a2f51a3efdb366f25ba363c880c84735",
+          "validacion": {
+            "llamadas": {
+              "describe": "data_py.dataset_describe_json(\"E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion2/a12_despues_out/a12_1_recepcion\", True)",
+              "disponibilidad": "data_py.availability_report_json(dir, table_id, \"{}\", \"reject\")",
+              "politica": "data_py.verify_policy_json(mode=feed, policy={\"availability\": {\"require_available_at\": true}, \"schema\": \"engine.data-policy\", \"timezone\": {\"require_declared\": true}, \"version\": \"v1\"}, vendor_root=\"E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion2/a12_despues_out\", dataset_id=\"a12_1_recepcion\", revision_policy=\"reject\")",
+              "vendor": "data_py.vendor_describe_json(\"E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion2/a12_despues_out\")"
+            },
+            "describe": {
+              "dataset_id": "a12_1_recepcion",
+              "tablas": [
+                {
+                  "table_id": "lago_ohlcv_1d",
+                  "schema": "ohlcv/v1",
+                  "rows": 1,
+                  "rows_declared": 1,
+                  "row_groups": 1,
+                  "ts_min_ms": 1768262400000,
+                  "ts_max_ms": 1768262400000,
+                  "file_size_bytes": 2997,
+                  "codecs": [
+                    "SNAPPY"
+                  ],
+                  "logical_hash": "sha256:6c4c6588052921fae479aa018353bbd6ae04a6e1eb9bedeb2b2ae34827b0e114",
+                  "hash_verified": true
+                }
+              ]
+            },
+            "vendor": {
+              "dataset_hash_del_motor": "sha256:cb40f3c441283474ef5ddefd46603cd4a2f51a3efdb366f25ba363c880c84735",
+              "issues": []
+            },
+            "disponibilidad": {
+              "lago_ohlcv_1d": {
+                "rows": 1,
+                "declared": 1,
+                "defaulted": 0,
+                "undeclared": 0,
+                "violaciones_dpol_avl_002": 0,
+                "ejemplos_de_violacion": [],
+                "revisiones_conservadas": 1,
+                "revisiones_descartadas": 0,
+                "estado": "estricta",
+                "consumible_causal": true
+              }
+            },
+            "parquet": {
+              "lago_ohlcv_1d": {
+                "filas": 1,
+                "grupos": 1,
+                "codec": "SNAPPY",
+                "max_cierre_ms": 1768348800000,
+                "con_disponibilidad": 1,
+                "max_available_at_ms": 1768348800000,
+                "problemas": []
+              }
+            },
+            "politica": {
+              "ok": true,
+              "descriptor_hash": "sha256:3fd6e6b1c474f68dd4760c73cd1f59a72d571391e9974322ea01658c8425ff57",
+              "report_hash": "sha256:249f176005d5bba23377269308037008cc7e23798360caf004cdc9cba3f6d1f3",
+              "violaciones": []
+            },
+            "tablas_no_consumibles_causalmente": [],
+            "tablas_vacias": [],
+            "tablas_proxy": [],
+            "default_lag_ms": null,
+            "lookahead": {
+              "violaciones": [],
+              "violaciones_por_fila": 0
+            },
+            "problemas": [],
+            "ok": true,
+            "dataset_hash": "sha256:cb40f3c441283474ef5ddefd46603cd4a2f51a3efdb366f25ba363c880c84735"
+          },
+          "disponibilidad_efectiva_ms": 1768348800000,
+          "motor": {
+            "declared": 1,
+            "defaulted": 0,
+            "rows": 1,
+            "undeclared": 0,
+            "undeclared_rows": [],
+            "violations": []
+          }
+        },
+        "cierre": {
+          "comando": [
+            "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+            "-X",
+            "utf8",
+            "S:\\Projects\\quantdesk-model\\scripts\\exportar_market_history.py",
+            "--lago",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_dump_1",
+            "--corte",
+            "2026-11-01",
+            "--nombre",
+            "a12_1_cierre",
+            "--salida-raiz",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_despues_out",
+            "--disponibilidad-ohlcv",
+            "cierre",
+            "--runs",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_despues_runs",
+            "--sobrescribir"
+          ],
+          "codigo": 0,
+          "stdout": "lago_ohlcv_1d: 1 filas de origen -> 1 (0 excluidas: ninguna)\ndataset a12_1_cierre escrito en E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_despues_out\\a12_1_cierre (0.2 s)\n  corte 2026-11-01T00:00:00Z; dataset_hash sha256:a6c57aa21abbc287f54d92fbeb3fd887325b3411b62d115988dfe471400fb10a\n  lago_ohlcv_1d          ohlcv/v1          1 filas    1 instrumentos  2026-01-13T00:00:00Z -> 2026-01-13T00:00:00Z  sha256:35f28a706dc4d51eb29db04defccb0e154a58dd079d2ff225e765eac99b32e42\n  data_py describe: ok con hashes verificados; politica de look-ahead ok=False; violaciones por fila=0; no consumibles causalmente en sentido estricto: ['lago_ohlcv_1d'] (de ellas, proxy por default_lag_ms: ['lago_ohlcv_1d']); tablas vacias tras el corte: ninguna",
+          "stderr": "",
+          "dataset_hash": "sha256:a6c57aa21abbc287f54d92fbeb3fd887325b3411b62d115988dfe471400fb10a",
+          "validacion": {
+            "llamadas": {
+              "describe": "data_py.dataset_describe_json(\"E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion2/a12_despues_out/a12_1_cierre\", True)",
+              "disponibilidad": "data_py.availability_report_json(dir, table_id, \"{}\", \"reject\")",
+              "politica": "data_py.verify_policy_json(mode=feed, policy={\"availability\": {\"require_available_at\": true}, \"schema\": \"engine.data-policy\", \"timezone\": {\"require_declared\": true}, \"version\": \"v1\"}, vendor_root=\"E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion2/a12_despues_out\", dataset_id=\"a12_1_cierre\", revision_policy=\"reject\")",
+              "vendor": "data_py.vendor_describe_json(\"E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion2/a12_despues_out\")"
+            },
+            "describe": {
+              "dataset_id": "a12_1_cierre",
+              "tablas": [
+                {
+                  "table_id": "lago_ohlcv_1d",
+                  "schema": "ohlcv/v1",
+                  "rows": 1,
+                  "rows_declared": 1,
+                  "row_groups": 1,
+                  "ts_min_ms": 1768262400000,
+                  "ts_max_ms": 1768262400000,
+                  "file_size_bytes": 2903,
+                  "codecs": [
+                    "SNAPPY"
+                  ],
+                  "logical_hash": "sha256:35f28a706dc4d51eb29db04defccb0e154a58dd079d2ff225e765eac99b32e42",
+                  "hash_verified": true
+                }
+              ]
+            },
+            "vendor": {
+              "dataset_hash_del_motor": "sha256:a6c57aa21abbc287f54d92fbeb3fd887325b3411b62d115988dfe471400fb10a",
+              "issues": []
+            },
+            "disponibilidad": {
+              "lago_ohlcv_1d": {
+                "rows": 1,
+                "declared": 0,
+                "defaulted": 1,
+                "undeclared": 0,
+                "violaciones_dpol_avl_002": 0,
+                "ejemplos_de_violacion": [],
+                "revisiones_conservadas": 1,
+                "revisiones_descartadas": 0,
+                "estado": "proxy_default_lag",
+                "consumible_causal": false
+              }
+            },
+            "parquet": {
+              "lago_ohlcv_1d": {
+                "filas": 1,
+                "grupos": 1,
+                "codec": "SNAPPY",
+                "max_cierre_ms": 1768348800000,
+                "con_disponibilidad": 0,
+                "problemas": []
+              }
+            },
+            "politica": {
+              "ok": false,
+              "descriptor_hash": "sha256:891c27cccf97b28dbdd2d46f0082ef5937b0b39eb95d3e8551151bfbff4ba651",
+              "report_hash": "sha256:4300f336d712332c75218d0b095387832f4e661d89f916596e2662cc944b3860",
+              "violaciones": [
+                {
+                  "code": "DPOL-AVL-001",
+                  "severity": "error",
+                  "instrument": null,
+                  "detail": "table 'lago_ohlcv_1d': 1/1 row(s) lack available_at_ms and the default lag (0) is not accepted (max_default_lag_ms unset)"
+                }
+              ]
+            },
+            "tablas_no_consumibles_causalmente": [
+              "lago_ohlcv_1d"
+            ],
+            "tablas_vacias": [],
+            "tablas_proxy": [
+              "lago_ohlcv_1d"
+            ],
+            "default_lag_ms": 0,
+            "politica_con_lag_admitido": {
+              "max_default_lag_ms": 0,
+              "ok": true,
+              "violaciones": []
+            },
+            "lookahead": {
+              "violaciones": [],
+              "violaciones_por_fila": 0
+            },
+            "problemas": [],
+            "ok": true,
+            "dataset_hash": "sha256:a6c57aa21abbc287f54d92fbeb3fd887325b3411b62d115988dfe471400fb10a"
+          },
+          "disponibilidad_efectiva_ms": 1768348800000,
+          "motor": {
+            "declared": 0,
+            "defaulted": 1,
+            "rows": 1,
+            "undeclared": 0,
+            "undeclared_rows": [],
+            "violations": []
+          }
+        }
+      }
+    },
+    {
+      "fecha": "2026-07-14",
+      "ts_ms": 1783987200000,
+      "cierre_real_ms": 1784062800000,
+      "recepcion_ms": 1784064600000,
+      "fixture_sha256": {
+        "manifest.json": "b1d077c1818ddfa42d865b26b480ae7d60ed2f5aebe3f7d6f14530264dad7e62",
+        "market.ohlcv.v2/interval=1d,source=mt5,symbol=EURUSD.ndjson": "4f402b2876a83ae1098968e492559d33d3d423bdbfe023141099fca2f534d1fb"
+      },
+      "antes": {
+        "comando": [
+          "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+          "-X",
+          "utf8",
+          "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\codigo_antes\\scripts\\exportar_market_history.py",
+          "--lago",
+          "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_dump_7",
+          "--corte",
+          "2026-11-01",
+          "--nombre",
+          "a12_7_recepcion",
+          "--salida-raiz",
+          "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_antes_out",
+          "--disponibilidad-ohlcv",
+          "recepcion",
+          "--runs",
+          "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_antes_runs",
+          "--sobrescribir"
+        ],
+        "codigo": 1,
+        "stdout": "",
+        "stderr": "exportar: DATOS INCONSISTENTES en lago_ohlcv_1d: 1 barras con available_at_ms anterior a su cierre"
+      },
+      "motor_antes": [
+        {
+          "available_at_ms": 1784064600000,
+          "code": "DPOL-AVL-002",
+          "instrument": "EURUSD",
+          "reference_close_ms": 1784073600000,
+          "row_index": 0,
+          "ts_ms": 1783987200000
+        }
+      ],
+      "despues": {
+        "recepcion": {
+          "comando": [
+            "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+            "-X",
+            "utf8",
+            "S:\\Projects\\quantdesk-model\\scripts\\exportar_market_history.py",
+            "--lago",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_dump_7",
+            "--corte",
+            "2026-11-01",
+            "--nombre",
+            "a12_7_recepcion",
+            "--salida-raiz",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_despues_out",
+            "--disponibilidad-ohlcv",
+            "recepcion",
+            "--runs",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_despues_runs",
+            "--sobrescribir"
+          ],
+          "codigo": 0,
+          "stdout": "lago_ohlcv_1d: 1 filas de origen -> 1 (0 excluidas: ninguna)\ndataset a12_7_recepcion escrito en E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_despues_out\\a12_7_recepcion (0.3 s)\n  corte 2026-11-01T00:00:00Z; dataset_hash sha256:e2cfc6bc22a4863ed0e75092e909bc3c63702c4148d2312daa4956b6c0c7433e\n  lago_ohlcv_1d          ohlcv/v1          1 filas    1 instrumentos  2026-07-14T00:00:00Z -> 2026-07-14T00:00:00Z  sha256:a8ac8a39f7ad909038b15b98ae5fc728d92a87eb40957d4aa1b9724d7644140b\n  data_py describe: ok con hashes verificados; politica de look-ahead ok=True; violaciones por fila=0; no consumibles causalmente en sentido estricto: ninguna (de ellas, proxy por default_lag_ms: ninguna); tablas vacias tras el corte: ninguna",
+          "stderr": "",
+          "dataset_hash": "sha256:e2cfc6bc22a4863ed0e75092e909bc3c63702c4148d2312daa4956b6c0c7433e",
+          "validacion": {
+            "llamadas": {
+              "describe": "data_py.dataset_describe_json(\"E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion2/a12_despues_out/a12_7_recepcion\", True)",
+              "disponibilidad": "data_py.availability_report_json(dir, table_id, \"{}\", \"reject\")",
+              "politica": "data_py.verify_policy_json(mode=feed, policy={\"availability\": {\"require_available_at\": true}, \"schema\": \"engine.data-policy\", \"timezone\": {\"require_declared\": true}, \"version\": \"v1\"}, vendor_root=\"E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion2/a12_despues_out\", dataset_id=\"a12_7_recepcion\", revision_policy=\"reject\")",
+              "vendor": "data_py.vendor_describe_json(\"E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion2/a12_despues_out\")"
+            },
+            "describe": {
+              "dataset_id": "a12_7_recepcion",
+              "tablas": [
+                {
+                  "table_id": "lago_ohlcv_1d",
+                  "schema": "ohlcv/v1",
+                  "rows": 1,
+                  "rows_declared": 1,
+                  "row_groups": 1,
+                  "ts_min_ms": 1783987200000,
+                  "ts_max_ms": 1783987200000,
+                  "file_size_bytes": 2997,
+                  "codecs": [
+                    "SNAPPY"
+                  ],
+                  "logical_hash": "sha256:a8ac8a39f7ad909038b15b98ae5fc728d92a87eb40957d4aa1b9724d7644140b",
+                  "hash_verified": true
+                }
+              ]
+            },
+            "vendor": {
+              "dataset_hash_del_motor": "sha256:e2cfc6bc22a4863ed0e75092e909bc3c63702c4148d2312daa4956b6c0c7433e",
+              "issues": []
+            },
+            "disponibilidad": {
+              "lago_ohlcv_1d": {
+                "rows": 1,
+                "declared": 1,
+                "defaulted": 0,
+                "undeclared": 0,
+                "violaciones_dpol_avl_002": 0,
+                "ejemplos_de_violacion": [],
+                "revisiones_conservadas": 1,
+                "revisiones_descartadas": 0,
+                "estado": "estricta",
+                "consumible_causal": true
+              }
+            },
+            "parquet": {
+              "lago_ohlcv_1d": {
+                "filas": 1,
+                "grupos": 1,
+                "codec": "SNAPPY",
+                "max_cierre_ms": 1784073600000,
+                "con_disponibilidad": 1,
+                "max_available_at_ms": 1784073600000,
+                "problemas": []
+              }
+            },
+            "politica": {
+              "ok": true,
+              "descriptor_hash": "sha256:9d2199d1d4ef9cae316915b83bffa90b94a57e395136ecae5c397d9cf462868d",
+              "report_hash": "sha256:92af9329edeac6854d3b47a8092d1ac730b91b9e40b44f9029fa492ae453589d",
+              "violaciones": []
+            },
+            "tablas_no_consumibles_causalmente": [],
+            "tablas_vacias": [],
+            "tablas_proxy": [],
+            "default_lag_ms": null,
+            "lookahead": {
+              "violaciones": [],
+              "violaciones_por_fila": 0
+            },
+            "problemas": [],
+            "ok": true,
+            "dataset_hash": "sha256:e2cfc6bc22a4863ed0e75092e909bc3c63702c4148d2312daa4956b6c0c7433e"
+          },
+          "disponibilidad_efectiva_ms": 1784073600000,
+          "motor": {
+            "declared": 1,
+            "defaulted": 0,
+            "rows": 1,
+            "undeclared": 0,
+            "undeclared_rows": [],
+            "violations": []
+          }
+        },
+        "cierre": {
+          "comando": [
+            "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+            "-X",
+            "utf8",
+            "S:\\Projects\\quantdesk-model\\scripts\\exportar_market_history.py",
+            "--lago",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_dump_7",
+            "--corte",
+            "2026-11-01",
+            "--nombre",
+            "a12_7_cierre",
+            "--salida-raiz",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_despues_out",
+            "--disponibilidad-ohlcv",
+            "cierre",
+            "--runs",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_despues_runs",
+            "--sobrescribir"
+          ],
+          "codigo": 0,
+          "stdout": "lago_ohlcv_1d: 1 filas de origen -> 1 (0 excluidas: ninguna)\ndataset a12_7_cierre escrito en E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion2\\a12_despues_out\\a12_7_cierre (0.3 s)\n  corte 2026-11-01T00:00:00Z; dataset_hash sha256:4a84551c587ca7de59b6a05ac8970dc0c3d9efb7cae374b00de7d68c7be455b9\n  lago_ohlcv_1d          ohlcv/v1          1 filas    1 instrumentos  2026-07-14T00:00:00Z -> 2026-07-14T00:00:00Z  sha256:9402210d53769ab0ec18b0f32fc8056b7f1f07d9e3ee7d2552197bd18525719f\n  data_py describe: ok con hashes verificados; politica de look-ahead ok=False; violaciones por fila=0; no consumibles causalmente en sentido estricto: ['lago_ohlcv_1d'] (de ellas, proxy por default_lag_ms: ['lago_ohlcv_1d']); tablas vacias tras el corte: ninguna",
+          "stderr": "",
+          "dataset_hash": "sha256:4a84551c587ca7de59b6a05ac8970dc0c3d9efb7cae374b00de7d68c7be455b9",
+          "validacion": {
+            "llamadas": {
+              "describe": "data_py.dataset_describe_json(\"E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion2/a12_despues_out/a12_7_cierre\", True)",
+              "disponibilidad": "data_py.availability_report_json(dir, table_id, \"{}\", \"reject\")",
+              "politica": "data_py.verify_policy_json(mode=feed, policy={\"availability\": {\"require_available_at\": true}, \"schema\": \"engine.data-policy\", \"timezone\": {\"require_declared\": true}, \"version\": \"v1\"}, vendor_root=\"E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion2/a12_despues_out\", dataset_id=\"a12_7_cierre\", revision_policy=\"reject\")",
+              "vendor": "data_py.vendor_describe_json(\"E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion2/a12_despues_out\")"
+            },
+            "describe": {
+              "dataset_id": "a12_7_cierre",
+              "tablas": [
+                {
+                  "table_id": "lago_ohlcv_1d",
+                  "schema": "ohlcv/v1",
+                  "rows": 1,
+                  "rows_declared": 1,
+                  "row_groups": 1,
+                  "ts_min_ms": 1783987200000,
+                  "ts_max_ms": 1783987200000,
+                  "file_size_bytes": 2903,
+                  "codecs": [
+                    "SNAPPY"
+                  ],
+                  "logical_hash": "sha256:9402210d53769ab0ec18b0f32fc8056b7f1f07d9e3ee7d2552197bd18525719f",
+                  "hash_verified": true
+                }
+              ]
+            },
+            "vendor": {
+              "dataset_hash_del_motor": "sha256:4a84551c587ca7de59b6a05ac8970dc0c3d9efb7cae374b00de7d68c7be455b9",
+              "issues": []
+            },
+            "disponibilidad": {
+              "lago_ohlcv_1d": {
+                "rows": 1,
+                "declared": 0,
+                "defaulted": 1,
+                "undeclared": 0,
+                "violaciones_dpol_avl_002": 0,
+                "ejemplos_de_violacion": [],
+                "revisiones_conservadas": 1,
+                "revisiones_descartadas": 0,
+                "estado": "proxy_default_lag",
+                "consumible_causal": false
+              }
+            },
+            "parquet": {
+              "lago_ohlcv_1d": {
+                "filas": 1,
+                "grupos": 1,
+                "codec": "SNAPPY",
+                "max_cierre_ms": 1784073600000,
+                "con_disponibilidad": 0,
+                "problemas": []
+              }
+            },
+            "politica": {
+              "ok": false,
+              "descriptor_hash": "sha256:72878fcac411af8ba0dc3a8d3e7e7c3495a8ab288bf671c63bf4e2d2e31e8e64",
+              "report_hash": "sha256:61c004928ac0dd4d169eeefb0cef82870de89e42ee877716fd1ddc5f37103b40",
+              "violaciones": [
+                {
+                  "code": "DPOL-AVL-001",
+                  "severity": "error",
+                  "instrument": null,
+                  "detail": "table 'lago_ohlcv_1d': 1/1 row(s) lack available_at_ms and the default lag (0) is not accepted (max_default_lag_ms unset)"
+                }
+              ]
+            },
+            "tablas_no_consumibles_causalmente": [
+              "lago_ohlcv_1d"
+            ],
+            "tablas_vacias": [],
+            "tablas_proxy": [
+              "lago_ohlcv_1d"
+            ],
+            "default_lag_ms": 0,
+            "politica_con_lag_admitido": {
+              "max_default_lag_ms": 0,
+              "ok": true,
+              "violaciones": []
+            },
+            "lookahead": {
+              "violaciones": [],
+              "violaciones_por_fila": 0
+            },
+            "problemas": [],
+            "ok": true,
+            "dataset_hash": "sha256:4a84551c587ca7de59b6a05ac8970dc0c3d9efb7cae374b00de7d68c7be455b9"
+          },
+          "disponibilidad_efectiva_ms": 1784073600000,
+          "motor": {
+            "declared": 0,
+            "defaulted": 1,
+            "rows": 1,
+            "undeclared": 0,
+            "undeclared_rows": [],
+            "violations": []
+          }
+        }
+      }
+    }
+  ]
+}

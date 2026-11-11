@@ -179,3 +179,23 @@ Aceptación: los dos `--selftest` → `selftest ok`; `run_selftests.py` → **ru
 | Fixture sin MT5 conserva hash; cuatro históricos intactos | `comprobar_invariantes.py` → `correccion1/invariantes.json`: 2/2 hashes idénticos contra archive de a98cea8; 4/4 históricos de 0e67465 sin rehacer, originales byte a byte intactos. `lago_cierre_c20261101` sigue afectado por ISSUE-LAGO-FX-1D-CLOSE. SHA-256 de pruebas, informe, código y evidencia en `correccion1/sha256.json`. |
 
 Dudas para revisión: resolver A12 (horas de los ejemplos y disponibilidad `_recv_ts < ts+1d` incompatible con DPOL-AVL-002).
+
+## Corrección 2
+
+2026-11-11 · intento 3 · base `0684a93` · código `f48dfe90120756482f7578844fc1927675b39895` · motor `quantdesk 69fdb39d` · semilla: no aplica · corte: 2026-11-01. **A12 resuelta**; sustituye la disponibilidad y el bloqueo descritos en Corrección 1.
+`limpieza.py:152`: en recepción, toda barra elegida declara `max(_recv_ts, ts + intervalo)`; conserva primera versión completa y ambas invariantes de validación. CLI y procedencia declaran la fórmula.
+MT5 1d en vivo: disponibilidad efectiva `ts + 1 d`, 00:00 UTC del día siguiente, 2–3 h después de lo posible; retraso conservador declarado. `cierre` conserva ese fin nominal mediante `available_at_ms` nulo y `default_lag_ms=0`; continúa siendo proxy.
+Aceptación sobre `git archive f48dfe9` por cambios ajenos: ambos `--selftest` → `selftest ok`; `run_selftests.py` → **12 OK, 0 FALLO**. Órdenes, directorio, salidas y códigos en `correccion2/aceptacion.log`.
+`correccion2/A12.json`: mismos fixtures de invierno/verano que Corrección 1; reproduce 2/2 rechazos previos y DPOL-AVL-002; corregidos, 4/4 exportaciones aceptadas, cero violaciones DPOL-AVL-002. Recepción satisface la política estricta; cierre, la política que admite el lag proxy 0.
+`correccion2/invariantes.json`: sin MT5, mismos hashes **2/2** contra archive de `0684a93`; con MT5 recibido al fin nominal o después, **2/2** adicionales. Históricos de `0e67465` **4/4**, sin rehacerlos; originales byte a byte intactos. `lago_cierre_c20261101` sigue afectado por ISSUE-LAGO-FX-1D-CLOSE.
+`correccion2/aserciones.log`: 186 aserciones previas conservadas, 197 actuales; ninguna relajada. Sólo cuatro rutas de código autorizadas; `banco_walkforward*` y cambios ajenos intactos. SHA-256 con LF normalizado de código, informe y evidencia en `correccion2/sha256.json`.
+
+| Caso borde | Test que lo cubre |
+|---|---|
+| MT5 1d 22:30Z invierno / 21:30Z verano → fin nominal en ambos modos, motor sin violaciones | `selftests.py:814`, `prueba_disponibilidad_recepcion_mt5`, casos `vivo`; `correccion2/A12.json` |
+| Recepción exactamente al fin nominal y posterior → max, tardía intacta; cierre conserva fin nominal | Misma prueba, casos `nominal` y `tardia` |
+| Primera completa anterior al fin nominal gana a republicación; corte anterior al fin nominal excluye | Misma prueba, `a12_primera` y corte 23:00Z |
+| Cierre NY/DST, minuto previo y otras fuentes/intervalos | `prueba_cierre_real_mt5`, intacta |
+| Hash sin MT5 y MT5 tardía; cuatro históricos | `verificar.py` (orden en aceptación) → `correccion2/invariantes.json` |
+
+Dudas para revisión: ninguna
