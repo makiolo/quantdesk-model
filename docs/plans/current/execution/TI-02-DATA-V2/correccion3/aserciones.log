@@ -1,0 +1,7 @@
+Exportador: 197 previas; 221 actuales; 9 sustituciones declaradas.
+2 literales fuentes/v2 -> v3 (CNH y exclusion de fondos).
+2 aserciones versiones_mt5: ultima completa y motivo version_mt5_revisada.
+2 aserciones prueba_cierre_real_mt5 (antes lineas 799-803): close 1.1 -> 1.15 y motivo de revision.
+3 aserciones prueba_disponibilidad_recepcion_mt5: close/recepcion de la revision, motivo, y corte nominal anterior cuenta las 2 versiones por fecha.
+Las otras 188 aserciones siguen intactas; las 9 sustituciones son consecuencia exacta de A12/v3.
+Descarga: cardinalidad 164 -> 156 (9 fondos excluidos + CNH); casos previos conservados y lista de casos ampliada.

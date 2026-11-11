@@ -1,0 +1,41 @@
+git diff --name-status 5b70106 d4103ad83cebd8252fa81c91cd1dca16d60ee9d4
+A	docs/plans/current/execution/TS-00-BENCH-FINCAST/alcance.json
+A	docs/plans/current/execution/TS-00-BENCH-FINCAST/corridas.json
+M	docs/plans/current/execution/TS-00-BENCH-FINCAST/informe.md
+A	docs/plans/current/execution/TS-00-BENCH-FINCAST/principal-identica.json
+A	docs/plans/current/execution/TS-00-BENCH-FINCAST/reanudacion-fx.json
+A	docs/plans/current/execution/TS-00-BENCH-FINCAST/resumen-cobertura.json
+A	docs/plans/current/execution/TS-00-BENCH-FINCAST/tablas/informe.md
+A	docs/plans/current/execution/TS-00-BENCH-FINCAST/tablas/metricas.csv
+A	docs/plans/current/execution/TS-00-BENCH-FINCAST/tablas/metricas_limpia.csv
+A	docs/plans/current/execution/TS-00-BENCH-FINCAST/tablas/ventana_limpia.json
+A	docs/plans/current/execution/TS-00-BENCH-FINCAST/verificacion.md
+M	scripts/banco_walkforward_lib/informe.py
+M	scripts/descarga_lago.py
+M	scripts/exportar_market_history.py
+M	scripts/exportar_market_history_lib/fuentes.py
+M	scripts/exportar_market_history_lib/informe.py
+M	scripts/exportar_market_history_lib/limpieza.py
+M	scripts/exportar_market_history_lib/selftests.py
+
+git show --format=fuller --name-status d4103ad83cebd8252fa81c91cd1dca16d60ee9d4
+commit d4103ad83cebd8252fa81c91cd1dca16d60ee9d4
+Author:     Ricardo Marmolejo <makiolo@gmail.com>
+AuthorDate: Wed Nov 11 11:30:18 2026 +0100
+Commit:     Ricardo Marmolejo <makiolo@gmail.com>
+CommitDate: Wed Nov 11 11:30:18 2026 +0100
+
+    TI-02-DATA-V2: elegir revisiones MT5 conocidas al corte y corregir clase FX
+
+M	scripts/descarga_lago.py
+M	scripts/exportar_market_history.py
+M	scripts/exportar_market_history_lib/fuentes.py
+M	scripts/exportar_market_history_lib/informe.py
+M	scripts/exportar_market_history_lib/limpieza.py
+M	scripts/exportar_market_history_lib/selftests.py
+
+git status --short (cambios ajenos no incluidos)
+ M docs/plans/current/EXECUTION.md
+ M docs/plans/current/execution/TI-02-DATA-V2/informe.md
+?? bash.exe.stackdump
+?? docs/plans/current/execution/TI-02-DATA-V2/correccion3/

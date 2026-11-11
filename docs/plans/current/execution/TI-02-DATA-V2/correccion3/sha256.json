@@ -1,0 +1,23 @@
+{
+  "fecha": "2026-11-11",
+  "motor": "quantdesk 69fdb39d",
+  "codigo_verificado": "d4103ad83cebd8252fa81c91cd1dca16d60ee9d4",
+  "semilla": null,
+  "algoritmo": "SHA-256 con CRLF normalizado a LF",
+  "ficheros": {
+    "scripts/descarga_lago.py": "c9308e0c5c08dff7e59f5d26af69e63bc921fa97e28c4dc5812c8b8a4eded252",
+    "scripts/exportar_market_history.py": "26a4b86a90b447fb4d093c95e59ca50bcd43688ed128a575f7b521971321e79d",
+    "scripts/exportar_market_history_lib/fuentes.py": "98b56e7f6ea61533a1cfce84f76e0f827964f8b2f97eeb6559c98b6a7cfe806d",
+    "scripts/exportar_market_history_lib/informe.py": "4884a672f5f2d5408f3b73f910e4599b308dad0be7fadbe7d3e029eff5ac55bb",
+    "scripts/exportar_market_history_lib/limpieza.py": "cd8453c407cd00739803a666ab4e04473491e9c3dd8881784b082894864d2d53",
+    "scripts/exportar_market_history_lib/selftests.py": "6b0cb495766c911c75dfe1346d4eda6dc5a8cccf6021aa9cdd3ec09ba8b65b28",
+    "docs/plans/current/execution/TI-02-DATA-V2/informe.md": "588d950bb1f1ad068293e798dbb2cb294f5643f0ee44b1ee7b3e92a98ab3cb0b",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion3/A12.json": "8987e4044eba59eb2136106f3720bc00c004d9b69d0ad806375d012e289d3095",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion3/aceptacion.log": "ffd9c7efde6b909477ae5eb28126ceffa4a965040de2039b2dd5493a3badeb26",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion3/aceptar.py": "2fce1a3361325b5f6e48001be04128b8ea791474c153a288b343b4d5cfaf360c",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion3/alcance.log": "a5c7d044b708ca81ef5283de66a02270288b9446624e51a96fc594c7ad0d8a79",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion3/aserciones.log": "bfc63d3195d34acc642ad55605c112e144c6ef1f0209278b34485d8f3fa9da42",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion3/invariantes.json": "b5f44837d834e4500d7ff43799b23537b55ca06208eae59aabab43de0f7aab2b",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion3/verificar.py": "2e95272f45fe8ac3b0ba7c62e825cf2ffb7d9a8a13728310667ba81553d850b1"
+  }
+}

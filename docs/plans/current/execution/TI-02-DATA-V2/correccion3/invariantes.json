@@ -1,0 +1,302 @@
+{
+  "fecha": "2026-11-11",
+  "base_correccion": "5b70106",
+  "codigo_verificado": "d4103ad83cebd8252fa81c91cd1dca16d60ee9d4",
+  "motor": "quantdesk 69fdb39d",
+  "semilla": null,
+  "corte": "2026-11-01",
+  "fixtures": {
+    "sin_mt5": {
+      "fixture_sha256": {
+        "manifest.json": "45f04f3648cc32e4da201ad267dee084cc182b5e7bb64d92aef4ac1c1b2cdaaf",
+        "market.ohlcv.v2/interval=1d,source=market_scraper,symbol=DE40.ndjson": "c8090df7e09d61dc31b93cc3a2aa05ee2ca96d695364d615407fc7e26fbb9ab3",
+        "market.ohlcv.v2/interval=1d,source=yahoo,symbol=BTCUSD.ndjson": "2581b254a238dade428290f375d03e8ec9175e972fa7988ab5e508b6027d2053",
+        "market.ohlcv.v2/interval=1h,source=yahoo,symbol=EURUSD.ndjson": "c03b0749311c1bd4aac8fb6ecf8599deb1077694da5b50a66b8c7dabb40208aa"
+      },
+      "modos": {
+        "recepcion": {
+          "antes": {
+            "comando": [
+              "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+              "-X",
+              "utf8",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\codigo_antes\\scripts\\exportar_market_history.py",
+              "--lago",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\sin_mt5",
+              "--corte",
+              "2026-11-01",
+              "--nombre",
+              "sin_mt5_recepcion",
+              "--salida-raiz",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\hash_antes_out",
+              "--disponibilidad-ohlcv",
+              "recepcion",
+              "--runs",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\hash_antes_runs",
+              "--sobrescribir"
+            ],
+            "dataset_hash": "sha256:304a17928bf7b5d88866d2655f45e13d551ad1b92327dc47385a4b030e93d067",
+            "ficheros_sha256": {
+              "lago_ohlcv_1d.parquet": "0e18f5e19f2d7e22f7a276228be70fa65126361f7eedbcab16899620d00d6a48",
+              "lago_ohlcv_1h.parquet": "754ca9ce26a16320ae5cb22a1d33fa8b1bb27ae713dbb642e256fb2f2853cf50",
+              "manifest.json": "3341a414129c9192672c75aea31877915e9fe756a6e7d1ec2bc2016001e2a2eb",
+              "procedencia.json": "64e43cd92df7d758ada207c8d91d0c6e88d9f14925fffc2d92164278468a15d0"
+            },
+            "validacion_ok": true
+          },
+          "despues": {
+            "comando": [
+              "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+              "-X",
+              "utf8",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\codigo_d4103ad83cebd8252fa81c91cd1dca16d60ee9d4\\scripts\\exportar_market_history.py",
+              "--lago",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\sin_mt5",
+              "--corte",
+              "2026-11-01",
+              "--nombre",
+              "sin_mt5_recepcion",
+              "--salida-raiz",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\hash_despues_out",
+              "--disponibilidad-ohlcv",
+              "recepcion",
+              "--runs",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\hash_despues_runs",
+              "--sobrescribir"
+            ],
+            "dataset_hash": "sha256:304a17928bf7b5d88866d2655f45e13d551ad1b92327dc47385a4b030e93d067",
+            "ficheros_sha256": {
+              "lago_ohlcv_1d.parquet": "0e18f5e19f2d7e22f7a276228be70fa65126361f7eedbcab16899620d00d6a48",
+              "lago_ohlcv_1h.parquet": "754ca9ce26a16320ae5cb22a1d33fa8b1bb27ae713dbb642e256fb2f2853cf50",
+              "manifest.json": "67aaac8baf48123b06afb7b07403fac8273ca4783a9dc1f8d5b4568e514e8853",
+              "procedencia.json": "fb246dc14a926a0dcbfd8f5b176d8764651374361630a15d58652300487689e9"
+            },
+            "validacion_ok": true
+          },
+          "coincide": true
+        },
+        "cierre": {
+          "antes": {
+            "comando": [
+              "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+              "-X",
+              "utf8",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\codigo_antes\\scripts\\exportar_market_history.py",
+              "--lago",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\sin_mt5",
+              "--corte",
+              "2026-11-01",
+              "--nombre",
+              "sin_mt5_cierre",
+              "--salida-raiz",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\hash_antes_out",
+              "--disponibilidad-ohlcv",
+              "cierre",
+              "--runs",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\hash_antes_runs",
+              "--sobrescribir"
+            ],
+            "dataset_hash": "sha256:d6fa0f6970e1bcd1f5b790304a8a3406dd2367aae6b6baeb9343186bd5826ab6",
+            "ficheros_sha256": {
+              "lago_ohlcv_1d.parquet": "716f263761fa13f7b4c35e4f7bd232e7f4760b51a11ee4031b944d9d1e7f36ed",
+              "lago_ohlcv_1h.parquet": "4e72aabd4e7697960d6ecd31edb61529016a447518b781635fcc716b837b5fd1",
+              "manifest.json": "838bdd4a3bb571a45d9bfe91389c2d1a4fb52fdd00ff6a2564e96a444c9416ec",
+              "procedencia.json": "093ec5fab30cbd2224cb256ee29910dcf9d6a009ff4c8d519b5164f0dcd86629"
+            },
+            "validacion_ok": true
+          },
+          "despues": {
+            "comando": [
+              "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+              "-X",
+              "utf8",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\codigo_d4103ad83cebd8252fa81c91cd1dca16d60ee9d4\\scripts\\exportar_market_history.py",
+              "--lago",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\sin_mt5",
+              "--corte",
+              "2026-11-01",
+              "--nombre",
+              "sin_mt5_cierre",
+              "--salida-raiz",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\hash_despues_out",
+              "--disponibilidad-ohlcv",
+              "cierre",
+              "--runs",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\hash_despues_runs",
+              "--sobrescribir"
+            ],
+            "dataset_hash": "sha256:d6fa0f6970e1bcd1f5b790304a8a3406dd2367aae6b6baeb9343186bd5826ab6",
+            "ficheros_sha256": {
+              "lago_ohlcv_1d.parquet": "716f263761fa13f7b4c35e4f7bd232e7f4760b51a11ee4031b944d9d1e7f36ed",
+              "lago_ohlcv_1h.parquet": "4e72aabd4e7697960d6ecd31edb61529016a447518b781635fcc716b837b5fd1",
+              "manifest.json": "40a3a5ea915004ad5bbe3de68e7000e0ab7ad7c4b51835982bcc7a2f95ebb8df",
+              "procedencia.json": "3a6656728f1197316cf6c685647745f361e5620fce60a14b56d109784a9441ac"
+            },
+            "validacion_ok": true
+          },
+          "coincide": true
+        }
+      },
+      "coincidencias": "2/2"
+    },
+    "mt5_tardia": {
+      "fixture_sha256": {
+        "manifest.json": "91eb09c1e509d67a67700182073a8fd0a3123689ea88e61d20e841ee911cb7e8",
+        "market.ohlcv.v2/interval=1d,source=mt5,symbol=EURUSD.ndjson": "c1e343a57b1da5033dc36d2dbc9c4e78aa037ee0a68a301f475d73d95d1a6d19"
+      },
+      "modos": {
+        "recepcion": {
+          "antes": {
+            "comando": [
+              "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+              "-X",
+              "utf8",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\codigo_antes\\scripts\\exportar_market_history.py",
+              "--lago",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\mt5_tardia",
+              "--corte",
+              "2026-11-01",
+              "--nombre",
+              "mt5_tardia_recepcion",
+              "--salida-raiz",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\hash_antes_out",
+              "--disponibilidad-ohlcv",
+              "recepcion",
+              "--runs",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\hash_antes_runs",
+              "--sobrescribir"
+            ],
+            "dataset_hash": "sha256:7e56d2ddb3eea67b738dd2907bc3f4e22616d381c177ebd433796797c449b7f9",
+            "ficheros_sha256": {
+              "lago_ohlcv_1d.parquet": "52b95dd3085643ca2376e00334bc81c1c61e6f763108eb6cb7ffd4f76b319129",
+              "manifest.json": "5a5910ed0a1405f409bf33795f0ccc6dc77b0361b6a685cd47018466a63397eb",
+              "procedencia.json": "a780915a0ca39a74a72b53020fdd2d006259840650b2f8a404c064d8aa8bc517"
+            },
+            "validacion_ok": true
+          },
+          "despues": {
+            "comando": [
+              "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+              "-X",
+              "utf8",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\codigo_d4103ad83cebd8252fa81c91cd1dca16d60ee9d4\\scripts\\exportar_market_history.py",
+              "--lago",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\mt5_tardia",
+              "--corte",
+              "2026-11-01",
+              "--nombre",
+              "mt5_tardia_recepcion",
+              "--salida-raiz",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\hash_despues_out",
+              "--disponibilidad-ohlcv",
+              "recepcion",
+              "--runs",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\hash_despues_runs",
+              "--sobrescribir"
+            ],
+            "dataset_hash": "sha256:7e56d2ddb3eea67b738dd2907bc3f4e22616d381c177ebd433796797c449b7f9",
+            "ficheros_sha256": {
+              "lago_ohlcv_1d.parquet": "52b95dd3085643ca2376e00334bc81c1c61e6f763108eb6cb7ffd4f76b319129",
+              "manifest.json": "131a34b0ccf00d1cbbb7d55f3f7e7a4e4c463f6d6590785f582b477aeb5815fe",
+              "procedencia.json": "da8afa541ad9addc0297b2c928d080b4691e8a31e070233c9bad30a1c36f40d1"
+            },
+            "validacion_ok": true
+          },
+          "coincide": true
+        },
+        "cierre": {
+          "antes": {
+            "comando": [
+              "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+              "-X",
+              "utf8",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\codigo_antes\\scripts\\exportar_market_history.py",
+              "--lago",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\mt5_tardia",
+              "--corte",
+              "2026-11-01",
+              "--nombre",
+              "mt5_tardia_cierre",
+              "--salida-raiz",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\hash_antes_out",
+              "--disponibilidad-ohlcv",
+              "cierre",
+              "--runs",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\hash_antes_runs",
+              "--sobrescribir"
+            ],
+            "dataset_hash": "sha256:02c945d564e99063d29e7d98e47bb78f3f6f909bae9adb2d27ed18e2a7ecbabb",
+            "ficheros_sha256": {
+              "lago_ohlcv_1d.parquet": "2a924e63938178fa9840b73c8a468587a3631872787cfcb1d3d3718091c4d7ec",
+              "manifest.json": "1d76c8fa8735384779f017513dcfb361eaefd7e59c06ae985d508a0c0fb91256",
+              "procedencia.json": "5d946c8b67d6ad5ffe9c9ca183ff80555b6b77117b514dde050779ea03372c13"
+            },
+            "validacion_ok": true
+          },
+          "despues": {
+            "comando": [
+              "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+              "-X",
+              "utf8",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\codigo_d4103ad83cebd8252fa81c91cd1dca16d60ee9d4\\scripts\\exportar_market_history.py",
+              "--lago",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\mt5_tardia",
+              "--corte",
+              "2026-11-01",
+              "--nombre",
+              "mt5_tardia_cierre",
+              "--salida-raiz",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\hash_despues_out",
+              "--disponibilidad-ohlcv",
+              "cierre",
+              "--runs",
+              "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion3\\hash_despues_runs",
+              "--sobrescribir"
+            ],
+            "dataset_hash": "sha256:02c945d564e99063d29e7d98e47bb78f3f6f909bae9adb2d27ed18e2a7ecbabb",
+            "ficheros_sha256": {
+              "lago_ohlcv_1d.parquet": "2a924e63938178fa9840b73c8a468587a3631872787cfcb1d3d3718091c4d7ec",
+              "manifest.json": "64e0c54637776033fe4ce8b6e90b65bda24ff1306fd3f09f3af9b626f396f885",
+              "procedencia.json": "a40929b66227c64c6b70cfa24ea6f6184e752e61cf7e915a5560e9ef47be8c21"
+            },
+            "validacion_ok": true
+          },
+          "coincide": true
+        }
+      },
+      "coincidencias": "2/2"
+    }
+  },
+  "historicos_sin_rehacer": [
+    {
+      "dataset": "binance_c20261101",
+      "original": "sha256:d765d56037f700bd2550a9a2ae9d53fbd2406afd7cddb82bbfeaf2a56670b744",
+      "regenerado": "sha256:d765d56037f700bd2550a9a2ae9d53fbd2406afd7cddb82bbfeaf2a56670b744",
+      "coincide": true,
+      "base_codigo": "0e67465"
+    },
+    {
+      "dataset": "lago_c20261101",
+      "original": "sha256:cce80ad2bb82374e71a92ba27c4f9a89ad6ad0d7901697b853c15e24b39f70ea",
+      "regenerado": "sha256:cce80ad2bb82374e71a92ba27c4f9a89ad6ad0d7901697b853c15e24b39f70ea",
+      "coincide": true,
+      "base_codigo": "0e67465"
+    },
+    {
+      "dataset": "lago_cierre_c20261101",
+      "original": "sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356",
+      "regenerado": "sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356",
+      "coincide": true,
+      "base_codigo": "0e67465"
+    },
+    {
+      "dataset": "lago_c20261107",
+      "original": "sha256:853d8e8a111005d87836732266d800bb52a44f200eaba3599440d91b555c1495",
+      "regenerado": "sha256:853d8e8a111005d87836732266d800bb52a44f200eaba3599440d91b555c1495",
+      "coincide": true,
+      "base_codigo": "0e67465"
+    }
+  ],
+  "historicos_coincidencias": "4/4",
+  "originales_bytes_intactos": true
+}

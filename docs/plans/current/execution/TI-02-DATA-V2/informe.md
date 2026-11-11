@@ -199,3 +199,24 @@ Aceptación sobre `git archive f48dfe9` por cambios ajenos: ambos `--selftest` �
 | Hash sin MT5 y MT5 tardía; cuatro históricos | `verificar.py` (orden en aceptación) → `correccion2/invariantes.json` |
 
 Dudas para revisión: ninguna
+
+## Corrección 3
+
+2026-11-11 · intento 4 · base `5b70106` · código `d4103ad83cebd8252fa81c91cd1dca16d60ee9d4` (main incorpora también los commits ajenos `d422e48`/`c0c7633`) · motor `quantdesk 69fdb39d` · semilla: no aplica.
+A12 sustituye la elección anterior sólo para MT5 1d: última versión completa recibida hasta el corte; `recepcion=max(_recv_ts elegida, ts+1d)`; `cierre=ts+1d` sigue siendo proxy. Otras fuentes e intervalos conservan la primera completa.
+Manifiesto, procedencia e informe cuentan `version_mt5_revisada` (versiones sustituidas y barras, pares y fechas); las revisiones futuras no sustituyen la conocida ni alteran manifest/parquet. Guarda explícita de `ts` exactamente 00:00Z, también antes de truncar µs/ns.
+Política `ti-02-data.fuentes/v3`: CNH admitida como excepción no ISO 4217; excluidos fondos y unidades de cuenta de [SIX, List Two](https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-two.doc), además de XSU/XUA y las exclusiones previas (156 códigos admitidos).
+Cambio de test declarado: las antiguas líneas 799–803 esperan ahora close 1.15 y `version_mt5_revisada`; es consecuencia exacta de A12. `correccion3/aserciones.log`: 197→221 aserciones, 9 sustituciones A12/v3 auditadas, otras 188 intactas; cardinalidad del volcado 164→156, casos previos conservados.
+Aceptación en `git archive d4103ad`: `.venv/Scripts/python -X utf8 scripts/descarga_lago.py --selftest` y `scripts/exportar_market_history.py --selftest` → **selftest ok**; `scripts/run_selftests.py` al final → **12 OK, 0 FALLO**. Órdenes completas, junction del venv y salidas: `correccion3/aceptacion.log`.
+`correccion3/A12.json`: AUDCAD corte 2026-11-11 → close 0.97762, volumen 75560, disponibilidad recepción 2026-11-10T09:35Z; corte 2026-11-10T05:00Z → close 0.9768, volumen 68104, disponibilidad 00:00Z del 10. Motor: **10/10**, cero violaciones; cierre usa la política que admite proxy 0.
+`correccion3/invariantes.json`: sin MT5 **2/2**, MT5 tardío sin revisiones **2/2** contra archive `5b70106`; históricos del exportador `0e67465` **4/4**, sin rehacer y originales byte a byte intactos. `lago_cierre_c20261101` sigue afectado por ISSUE-LAGO-FX-1D-CLOSE. Código, informe y evidencia: `correccion3/sha256.json`; alcance selectivo en `correccion3/alcance.log`, sin tocar `banco_walkforward*`.
+
+| Caso borde → test | Cobertura nueva |
+|---|---|
+| AUDCAD real, corte 11 / corte 10 05:00Z → `prueba_revisiones_mt5:886` | Dos modos; importes, volumen y disponibilidad de cada versión |
+| Tres completas, orden de entrada alterado, corte entre ellas/exacto y revisión futura → misma prueba | Última recibida hasta el corte; hash, manifest y parquet inmunes a revisión futura |
+| market_scraper 1d y MT5 1h con dos completas → misma prueba | Primera completa intacta |
+| CNH y fondos/unidades de cuenta → D `prueba_clasificacion_fx:842`; E `prueba_fx_iso_y_tags_v2:716` | Ambas orientaciones de fondos; USDCNH/EURCNH con dos fuentes y sin MT5 |
+| MT5 1d fuera de medianoche → `prueba_rejilla_mt5:964` | 6 rechazos CLI (hora/ms/µs/ns y ms fraccional), guarda directa; otras fuentes/intervalos intactos |
+
+Dudas para revisión: ninguna

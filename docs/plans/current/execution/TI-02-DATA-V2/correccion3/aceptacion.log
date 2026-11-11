@@ -1,0 +1,37 @@
+fecha=2026-11-11 motor=quantdesk 69fdb39d semilla=no_aplica
+git archive d4103ad83cebd8252fa81c91cd1dca16d60ee9d4 -> E:\quantdesk-lab\tmp\TI-02-DATA-V2\correccion3\codigo_d4103ad83cebd8252fa81c91cd1dca16d60ee9d4
+.venv es junction al venv existente; no se instalan paquetes ni se modifica el archive.
+Cortes A12: 2026-11-11T00:00Z, 2026-11-10T05:00Z/09:35Z/10:00Z; invariantes 2026-11-01.
+cwd=E:\quantdesk-lab\tmp\TI-02-DATA-V2\correccion3\codigo_d4103ad83cebd8252fa81c91cd1dca16d60ee9d4
+
+> S:\Projects\quantdesk-model\.venv\Scripts\python.exe -X utf8 -u scripts/descarga_lago.py --selftest
+selftest ok
+exit=0
+
+> S:\Projects\quantdesk-model\.venv\Scripts\python.exe -X utf8 -u scripts/exportar_market_history.py --selftest
+selftest ok
+exit=0
+
+> S:\Projects\quantdesk-model\.venv\Scripts\python.exe -X utf8 -u E:\quantdesk-lab\tmp\TI-02-DATA-V2\correccion3\verificar.py E:\quantdesk-lab\tmp\TI-02-DATA-V2\correccion3\codigo_d4103ad83cebd8252fa81c91cd1dca16d60ee9d4
+sin_mt5: 2/2 hashes iguales contra git archive 5b70106
+mt5_tardia: 2/2 hashes iguales contra git archive 5b70106
+Historicos: 4/4, exportador 0e67465; sin rehacer; originales byte a byte intactos.
+A12 C3: 10/10 datasets, motor y look-ahead sin violaciones; CLI, futuras y rejilla OK.
+Aserciones: 9 sustituciones exactas A12/v3; otras 188 intactas; nuevas verificadas.
+exit=0
+
+> S:\Projects\quantdesk-model\.venv\Scripts\python.exe -X utf8 -u scripts/run_selftests.py
+OK     scripts/banco_precision.py: selftest ok
+OK     scripts/banco_walkforward.py: selftest ok
+OK     scripts/build_wheels.py: selftest OK
+OK     scripts/cuadre_mt5.py: selftest ok
+OK     scripts/descarga_lago.py: selftest ok
+OK     scripts/exportar_market_history.py: selftest ok
+OK     scripts/extractor_mt5.py: selftest ok
+OK     scripts/ingesta_publica.py: selftest ok
+OK     scripts/inventario_options_chain.py: selftest ok
+OK     scripts/publicador_mt5.py: selftest ok
+OK     scripts/setup_env.py: setup_env selftest ok
+OK     scripts/smoke_env.py: smoke_env: OK (21 comprobaciones; 0 SALTADAS)
+run_selftests: 12 OK, 0 FALLO
+exit=0
