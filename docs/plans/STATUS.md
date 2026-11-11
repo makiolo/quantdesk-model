@@ -3,16 +3,16 @@
 Qué tenemos y qué falta, por área, en una o dos líneas por fila con el ID que cubre cada hueco. Se
 actualiza en el mismo commit que cierra cada tarea; el detalle vive en los planes.
 
-**Sprint:** ninguno activo. SPRINT-01 cerrado el 2026-11-09 sin arrastres y archivado en
-[archive/SPRINT-01_2026-11-07_2026-11-09/](archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md) (cierre en su §10).
-Sin release: el proyecto está en planificación desde el 2026-11-09. Siguiente: SPRINT-02, en preparación en
-[next/SPRINT.md](next/SPRINT.md).
+**Sprint:** SPRINT-02 activo desde el 2026-11-11 ([current/SPRINT.md](current/SPRINT.md)), partido por el usuario
+para no esperar a quantdesk SPRINT-02; pendiente de lanzar la raíz ([LAUNCH](current/LAUNCH.md)). Último cerrado:
+SPRINT-01 (2026-11-09, [archivo](archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md)). Próximo: SPRINT-03 en
+[next/SPRINT.md](next/SPRINT.md), con las filas S02-1…S02-4.
 
 | Área | Tenemos | Falta (ID) |
 |---|---|---|
-| Entorno | `.venv` propio (Python 3.12.3 de `D:/miniconda312`) con `requirements.lock` (hashes, torch 2.15.0+cpu, chronos-forecasting 2.3.2, arch, ml_dtypes, MetaTrader5, pyarrow) y la rueda `quantdesk-0.0.0-cp312` de quantdesk `69fdb39d` (sha256 `28c1ed66…c3fd`, `E:/quantdesk-lab/wheels/`); cachés y temporales en `E:/quantdesk-lab/`; suite `scripts/run_selftests.py` en verde al cierre (12 OK, 0 FALLO) (LAB-00-ENV, 2026-11-08) | Recompilar con `build_wheels.py` corregido al subir de commit del motor (decisión del usuario; SPRINT-02) |
+| Entorno | `.venv` propio (Python 3.12.3 de `D:/miniconda312`) con `requirements.lock` (hashes, torch 2.15.0+cpu, chronos-forecasting 2.3.2, arch, ml_dtypes, MetaTrader5, pyarrow) y la rueda `quantdesk-0.0.0-cp312` de quantdesk `69fdb39d` (sha256 `28c1ed66…c3fd`, `E:/quantdesk-lab/wheels/`); cachés y temporales en `E:/quantdesk-lab/`; suite `scripts/run_selftests.py` en verde al cierre (12 OK, 0 FALLO) (LAB-00-ENV, 2026-11-08) | Recompilar con `build_wheels.py` corregido al subir de commit del motor (decisión del usuario; SPRINT-03, fila S02-1) |
 | Lago de qn | Inventario (TI-01-INV, 2026-11-08, [informe](archive/SPRINT-01_2026-11-07_2026-11-09/execution/TI-01-INV/informe.md)): 28 cruces FX diarios desde 2024-11 (99 %), horarios desde 2026-10-18; tipos (103 nodos) y rendimientos (64) desde 2025-12 con hueco 2026-04…09; `market.options.chain` y `market.options.fx` vacíos en `main` a esa fecha; la flota de qn no tiene GPU | Sonda de cadenas ([ISSUE-TI09-SONDA-CADENAS](issues/ISSUE-TI09-SONDA-CADENAS.md)); TI-09-ARCH retirada del sprint, vuelve desde el [backlog](backlog/PLAN_ARCHIVO_OPCIONES.md) |
-| Datasets congelados | Exportador a `engine.market-history/v1` (TI-02-DATA, `906f73e`, 2026-11-09): `binance_c20261101`, `lago_c20261101` (estricto, sin ohlcv), `lago_cierre_c20261101` (proxy con `default_lag_ms`) y `lago_c20261107` en `E:/quantdesk-lab/datasets/TI-02-DATA/`, hash reproducible y 0 violaciones de look-ahead; volcado del lago en `E:/quantdesk-lab/data/lago/2026-11-08/` | Comprobación del close diario en el exportador ([ISSUE-LAGO-FX-1D-CLOSE](issues/ISSUE-LAGO-FX-1D-CLOSE.md), SPRINT-02); TI-02-DATA-V2 ([backlog](backlog/PLAN_DATOS_VIA_QN.md)) |
+| Datasets congelados | Exportador a `engine.market-history/v1` (TI-02-DATA, `906f73e`, 2026-11-09): `binance_c20261101`, `lago_c20261101` (estricto, sin ohlcv), `lago_cierre_c20261101` (proxy con `default_lag_ms`) y `lago_c20261107` en `E:/quantdesk-lab/datasets/TI-02-DATA/`, hash reproducible y 0 violaciones de look-ahead; volcado del lago en `E:/quantdesk-lab/data/lago/2026-11-08/` | Comprobación del close diario en el exportador ([ISSUE-LAGO-FX-1D-CLOSE](current/issues/ISSUE-LAGO-FX-1D-CLOSE.md), SPRINT-02 fila 1b); TI-02-DATA-V2 (SPRINT-02 fila 1b) |
 | MT5 (local) | Extractor de sólo lectura (TI-12-MT5, cerrada 2026-11-09, [fase C](archive/SPRINT-01_2026-11-07_2026-11-09/execution/TI-12-MT5/fase-c.md) y [cuadre](archive/SPRINT-01_2026-11-07_2026-11-09/execution/TI-12-MT5/cuadre.md)). 1d local de los 193 de `@continuo` (`E:/quantdesk-lab/data/mt5/continuo_1d_20261109`, `sha256:a503bb75…`) y de 497 acciones de `@us_grandes` (484 de sesión normal en `us_grandes_1d_20261109`, `sha256:6d9e0528…`; 13 `-24` en `us_grandes24_1d_20261109`, `sha256:1e58cb0a…`). m1 de fx28 del 2026-08-06 al 2026-11-07 (`fx28_m1_20261109`, `sha256:8a6fa0dc…`), cuadrado exacto con el D1 de MT5 | m1 y m5 de `@continuo` en local ([ISSUE-TI12-MT5-INTRADIA-LOCAL](issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md), descarga en curso) |
 | MT5 → qn | Publicador 1d de fx28 en qn con la tarea programada `quantdesk\publicador_mt5` (registrada por el usuario) | Noche 1 de la carga 1d de `@continuo` (2026-11-10 02:03, con OK de network y backend); noche 2, acciones, espera a network y al usuario |
 | Datos públicos | Ingesta con licencias verificadas y filtro de fugas D-11 (TI-13-PUB, `7ea6d94`, 2026-11-08): 36 datasets (Chronos, LOTSA, Binance; 1,0 GB de 100 GB) en `E:/quantdesk-lab/datasets/TI-13-PUB/`, train/val disjuntos; corte D-11 provisional 2016-10-01 | Mercado público movido al backend (A16 bis, [backlog](backlog/PLAN_DATOS_VIA_QN.md)) |
@@ -21,6 +21,6 @@ Sin release: el proyecto está en planificación desde el 2026-11-09. Siguiente:
 
 Incidencias abiertas (ninguna se resolvió en SPRINT-01; snapshots **NO RESUELTA** en
 [archive/SPRINT-01_2026-11-07_2026-11-09/issues/](archive/SPRINT-01_2026-11-07_2026-11-09/ARCHIVE_MANIFEST.md)):
-[ISSUE-LAGO-FX-1D-CLOSE](issues/ISSUE-LAGO-FX-1D-CLOSE.md) (destino SPRINT-02),
+[ISSUE-LAGO-FX-1D-CLOSE](current/issues/ISSUE-LAGO-FX-1D-CLOSE.md) (en SPRINT-02, fila 1b),
 [ISSUE-TI12-MT5-INTRADIA-LOCAL](issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md) (en investigación) e
 [ISSUE-TI09-SONDA-CADENAS](issues/ISSUE-TI09-SONDA-CADENAS.md) (fuera de sprint). Índice: [issues/](issues/index.md).

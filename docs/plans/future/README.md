@@ -7,5 +7,4 @@ Prepararlos no los activa; sus dependencias con otros proyectos van en `../DEPEN
 
 | Sprint | Cuándo | Contenido |
 |---|---|---|
-| [SPRINT-03](SPRINT-03/SPRINT.md) | Tras cerrar quantdesk SPRINT-03 | Ciclo sintético-real (TS-02-DISC) y procedencia en el manifiesto |
 | [SPRINT-04](SPRINT-04/SPRINT.md) | Tras cerrar quantdesk SPRINT-04 | Escalera de entrenamiento, ajuste fino, adaptadores, TS-15-FINAL |

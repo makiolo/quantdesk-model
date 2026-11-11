@@ -25,10 +25,10 @@ Ciclo: planificación → inicio → ejecución → cierre y archivo → freeze 
 
 | Fase | Sprint | Enlace |
 |---|---|---|
-| Activo | ninguno: el proyecto está en planificación desde el 2026-11-09 (sin release) | [current/](current/README.md) |
-| Próximo | SPRINT-02 — Rueda fijada, HMM causal y ampliación de datos y banco (en preparación; tras quantdesk SPRINT-02; fila 1b nueva: TI-02-DATA-V2 y tabla FX sobre MT5) | [next/SPRINT.md](next/SPRINT.md) |
+| Activo | SPRINT-02 — Datos MT5 vía qn, FinCast y ampliación de datos (desde el 2026-11-11; partido por el usuario sin esperar a quantdesk SPRINT-02: filas 1b, 2b, 5, 6, 7) | [current/SPRINT.md](current/SPRINT.md) · [LAUNCH](current/LAUNCH.md) |
+| Próximo | SPRINT-03 — Ciclo sintético-real y procedencia en el manifiesto, más las filas S02-1…S02-4 (rueda re-fijada, HMM causal, FG-16-hmmcop, universo59); tras quantdesk SPRINT-03 | [next/SPRINT.md](next/SPRINT.md) |
 | Fuera de sprint, urgentes | Fichas vivas: ISSUE-TI12-MT5-SYNC, ISSUE-TI12-MT5-VELA-A-MEDIAS, ISSUE-TI12-MT5-INTRADIA-LOCAL, ISSUE-TI09-SONDA-CADENAS | [issues/](issues/index.md) |
-| Futuros | SPRINT-03 (tras quantdesk SPRINT-03), SPRINT-04 (tras quantdesk SPRINT-04) | [future/](future/README.md) · [DEPENDENCIAS](DEPENDENCIAS.md) |
+| Futuros | SPRINT-04 (tras quantdesk SPRINT-04) | [future/](future/README.md) · [DEPENDENCIAS](DEPENDENCIAS.md) |
 | Último cerrado | SPRINT-01 — Entorno, datos reales y banco de referencia (2026-11-07 a 2026-11-09), cerrado y archivado | [archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md](archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md) · [archive/](archive/index.md) |
 
 ## Backlog
@@ -60,37 +60,48 @@ graph LR
     end
 
     subgraph N["⏳ 2. Próximos (next y future)"]
-        N1["SPRINT-02<br/>Rueda fijada, HMM causal y ampliación de datos y banco · En planificación"]:::next
-        N2["PLAN_DATOS_VIA_QN<br/>Datos de mercado vía qn (MT5, publicadores públicos, export…"]:::next
-        N3["SPRINT-03<br/>Ciclo sintético-real y procedencia en el manifiesto · En planificación"]:::next
-        N4["SPRINT-04<br/>Escalera de entrenamiento, ajuste fino y adaptadores · En planificación"]:::next
-        N1 --> N2
+        N1["SPRINT-03<br/>Ciclo sintético-real y procedencia en el manifiesto · En planificación"]:::next
+        N2["SPRINT-04<br/>Escalera de entrenamiento, ajuste fino y adaptadores · En planificación"]:::next
     end
 
-    subgraph D["✅ 3. Sprints cerrados"]
+    subgraph C["📦 3. SPRINT-02 activo"]
+        C1["SPRINT-02<br/>Datos MT5 vía qn, FinCast y ampliación de datos · 0/5 cerradas"]:::current
+        C2["PLAN_DATOS_VIA_QN<br/>Datos de mercado vía qn (MT5, publicadores públicos, export…"]:::current
+        C3["PLAN_ARCHIVO_OPCIONES<br/>Archivo de cadenas de opciones del laboratorio (TI-09-ARCH)"]:::current
+        C1 --> C2
+        C1 --> C3
+    end
+
+    subgraph D["✅ 4. Sprints cerrados"]
         D1["SPRINT-01<br/>Entorno, datos reales y banco de referencia · Cerrado"]:::completed
     end
 
-    subgraph P["⚠️ 4. Issues abiertas"]
-        P1["ISSUE-LAGO-FX-1D-CLOSE<br/>El «close» del FX diario del lago (yfinance) es el precio d… · Abierto"]:::issues
-        P2["ISSUE-TI09-SONDA-CADENAS<br/>¿Hay cadenas de opciones en qn? Sonda de sólo lectura · Abierto"]:::issues
-        P3["ISSUE-TI12-MT5-INTRADIA-LOCAL<br/>Guardar en local el 1m y 5m de MT5 antes de que el bróker l… · Abierto"]:::issues
+    subgraph P["⚠️ 5. Issues abiertas"]
+        P1["ISSUE-TI09-SONDA-CADENAS<br/>¿Hay cadenas de opciones en qn? Sonda de sólo lectura · Abierto"]:::issues
+        P2["ISSUE-TI12-MT5-INTRADIA-LOCAL<br/>Guardar en local el 1m y 5m de MT5 antes de que el bróker l… · Abierto"]:::issues
+        P3["ISSUE-TI12-MT5-SYNC<br/>Publicar el 1d de MT5 sólo con la historia sincronizada, po… · En resolución vía ISSUE-TI12-M"]:::issues
+        P4["ISSUE-TI12-MT5-VELA-A-MEDIAS<br/>El publicador MT5 publicó la vela 1d del 2026-11-09 a media… · En resolución"]:::issues
+        P5["ISSUE-LAGO-FX-1D-CLOSE<br/>El «close» del FX diario del lago (yfinance) es el precio d… · Abierto"]:::issues
     end
 
     B --> N
-    N --> D
+    N --> C
+    C --> D
     D --> P
 
     click B1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/backlog/PLAN_ARCHIVO_OPCIONES.md" _blank
     click B2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/backlog/PLAN_DATOS_VIA_QN.md" _blank
     click N1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/next/SPRINT.md" _blank
-    click N2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/backlog/PLAN_DATOS_VIA_QN.md" _blank
-    click N3 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/future/SPRINT-03/SPRINT.md" _blank
-    click N4 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/future/SPRINT-04/SPRINT.md" _blank
+    click N2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/future/SPRINT-04/SPRINT.md" _blank
+    click C1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/current/SPRINT.md" _blank
+    click C2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/backlog/PLAN_DATOS_VIA_QN.md" _blank
+    click C3 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/backlog/PLAN_ARCHIVO_OPCIONES.md" _blank
     click D1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md" _blank
-    click P1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/issues/ISSUE-LAGO-FX-1D-CLOSE.md" _blank
-    click P2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/issues/ISSUE-TI09-SONDA-CADENAS.md" _blank
-    click P3 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md" _blank
+    click P1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/issues/ISSUE-TI09-SONDA-CADENAS.md" _blank
+    click P2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md" _blank
+    click P3 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/issues/ISSUE-TI12-MT5-SYNC.md" _blank
+    click P4 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/issues/ISSUE-TI12-MT5-VELA-A-MEDIAS.md" _blank
+    click P5 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/current/issues/ISSUE-LAGO-FX-1D-CLOSE.md" _blank
 ```
 
 <details><summary>Enlaces de los planes e issues</summary>
@@ -102,10 +113,14 @@ graph LR
 
 **⏳ Próximos (next y future)**
 
-- [SPRINT-02](next/SPRINT.md) — Rueda fijada, HMM causal y ampliación de datos y banco
-  - [PLAN_DATOS_VIA_QN](backlog/PLAN_DATOS_VIA_QN.md) — Datos de mercado vía qn (MT5, publicadores públicos, export…
-- [SPRINT-03](future/SPRINT-03/SPRINT.md) — Ciclo sintético-real y procedencia en el manifiesto
+- [SPRINT-03](next/SPRINT.md) — Ciclo sintético-real y procedencia en el manifiesto
 - [SPRINT-04](future/SPRINT-04/SPRINT.md) — Escalera de entrenamiento, ajuste fino y adaptadores
+
+**📦 SPRINT-02 activo**
+
+- [SPRINT-02](current/SPRINT.md) — Datos MT5 vía qn, FinCast y ampliación de datos
+  - [PLAN_DATOS_VIA_QN](backlog/PLAN_DATOS_VIA_QN.md) — Datos de mercado vía qn (MT5, publicadores públicos, export…
+  - [PLAN_ARCHIVO_OPCIONES](backlog/PLAN_ARCHIVO_OPCIONES.md) — Archivo de cadenas de opciones del laboratorio (TI-09-ARCH)
 
 **✅ Sprints cerrados**
 
@@ -113,9 +128,11 @@ graph LR
 
 **⚠️ Issues abiertas**
 
-- [ISSUE-LAGO-FX-1D-CLOSE](issues/ISSUE-LAGO-FX-1D-CLOSE.md) — El «close» del FX diario del lago (yfinance) es el precio d…
 - [ISSUE-TI09-SONDA-CADENAS](issues/ISSUE-TI09-SONDA-CADENAS.md) — ¿Hay cadenas de opciones en qn? Sonda de sólo lectura
 - [ISSUE-TI12-MT5-INTRADIA-LOCAL](issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md) — Guardar en local el 1m y 5m de MT5 antes de que el bróker l…
+- [ISSUE-TI12-MT5-SYNC](issues/ISSUE-TI12-MT5-SYNC.md) — Publicar el 1d de MT5 sólo con la historia sincronizada, po…
+- [ISSUE-TI12-MT5-VELA-A-MEDIAS](issues/ISSUE-TI12-MT5-VELA-A-MEDIAS.md) — El publicador MT5 publicó la vela 1d del 2026-11-09 a media…
+- [ISSUE-LAGO-FX-1D-CLOSE](current/issues/ISSUE-LAGO-FX-1D-CLOSE.md) — El «close» del FX diario del lago (yfinance) es el precio d…
 
 </details>
 <!-- kanban:fin -->

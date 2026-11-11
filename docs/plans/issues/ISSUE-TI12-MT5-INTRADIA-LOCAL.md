@@ -40,7 +40,7 @@ Límite del bróker (`maxbars`), no del código: el extractor ya soporta `--inte
 - [ ] 1. Dos descargas del mismo rango dan el mismo SHA-256.
 - [ ] 2. Reanudable: la siguiente descarga sólo añade barras nuevas, sin huecos salvo fines de semana y festivos del bróker.
       **El incremental es fuera de sprint, ya, en esta ficha** (usuario, 2026-11-10, revisión de planes, D3): la fila 5 de
-      [next/SPRINT.md](../next/SPRINT.md) se reduce a «más símbolos y periodos» y ya no lo recoge.
+      [current/SPRINT.md](../current/SPRINT.md) se reduce a «más símbolos y periodos» y ya no lo recoge.
 - [ ] 3. Manifiesto con símbolo, periodo, primera y última barra, filas y hash.
 - [ ] 4. Periodicidad que no pierda barras de 1m por `maxbars` (documentada; si es una tarea programada, la registra el usuario).
 - [ ] 5. Nada se publica en qn y el extractor no envía órdenes; credenciales fuera del repo y del chat.

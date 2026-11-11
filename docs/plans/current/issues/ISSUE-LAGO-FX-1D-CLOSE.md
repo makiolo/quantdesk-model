@@ -8,13 +8,13 @@
 > origen, el publicador yfinance de `quantdesk-backend`\
 > **Especificación de referencia:** SPRINT-01 TS-00-BENCH y TI-02-DATA; en el backend, ISSUE-FX-1D-CLOSE-YFINANCE (`c68547d`)\
 > **Severidad:** Media\
-> **Destino:** Backlog (SPRINT-02 del laboratorio)\
+> **Destino:** Sprint actual (SPRINT-02, activo desde el 2026-11-11)\
 > **Prioridad y motivo:** no hay look-ahead, pero la tabla de cabecera del banco usa una serie con la fecha corrida un
 > día y con artefactos de captura\
 > **Responsable:** raíz del laboratorio; el arreglo en origen lo decide el usuario con el backend\
-> **Seguimiento:** SPRINT-02, fila 1b de [next/SPRINT.md](../next/SPRINT.md) (TI-02-DATA-V2 y repetición de la tabla FX sobre el 1d de MT5, en dos tablas): usuario, 2026-11-10, revisión de planes (D2, D15). Sustituye el seguimiento anterior «fila 2», que no contenía este trabajo
+> **Seguimiento:** SPRINT-02, fila 1b de [current/SPRINT.md](../SPRINT.md) (TI-02-DATA-V2 y repetición de la tabla FX sobre el 1d de MT5, en dos tablas): usuario, 2026-11-10, revisión de planes (D2, D15). Sustituye el seguimiento anterior «fila 2», que no contenía este trabajo
 
-**Snapshot al cierre de SPRINT-01 (2026-11-09, NO RESUELTA):** [archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-LAGO-FX-1D-CLOSE.md](../archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-LAGO-FX-1D-CLOSE.md)
+**Snapshot al cierre de SPRINT-01 (2026-11-09, NO RESUELTA):** [archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-LAGO-FX-1D-CLOSE.md](../../archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-LAGO-FX-1D-CLOSE.md)
 
 ---
 

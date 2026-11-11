@@ -47,7 +47,7 @@ Cambios decididos el 2026-11-09 que la especificación anterior aún no recoge (
   o en una tarea al lado). El lector y el informe de huecos agrupan por subyacente y `asset_type`. *(Decisión
   2026-11-10, D11:)* **no hay subyacente de respaldo** del OHLCV diario ni para esos ETF e índices: sólo cuentan las
   filas con `underlying_price` de OC-03.
-- **Cobertura en SPRINT-02 del laboratorio:** la fila 6 de [next/SPRINT.md](../next/SPRINT.md) («TI-09-ARCH
+- **Cobertura en SPRINT-02 del laboratorio:** la fila 6 de [current/SPRINT.md](../current/SPRINT.md) («TI-09-ARCH
   (cobertura)») sigue condicionada a que antes se entregue esta parte.
 
 Correcciones de la revisión del 2026-11-10 (verificadas contra el código del backend en `e90eb03`, el inventario
