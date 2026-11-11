@@ -5,7 +5,8 @@ actualiza en el mismo commit que cierra cada tarea; el detalle vive en los plane
 
 **Sprint:** SPRINT-02 activo desde el 2026-11-11 ([current/SPRINT.md](current/SPRINT.md)), partido por el usuario
 para no esperar a quantdesk SPRINT-02; raíz en marcha desde el 2026-11-11 ([EXECUTION](current/EXECUTION.md)): fila 2b
-(FinCast) cerrada; 1b en curso; 5 en espera de la cuenta MT5; 6 en espera de OC-03. Último cerrado:
+(FinCast) cerrada; 1b en curso (sub-entrega A aceptada; B espera el volcado de qn del usuario en mini); 5 en espera
+de la cuenta MT5; 6 en espera de OC-03; 7 sale con causa (el backend no publica mercado público hasta su SPRINT-03). Último cerrado:
 SPRINT-01 (2026-11-09, [archivo](archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md)). Próximo: SPRINT-03 en
 [next/SPRINT.md](next/SPRINT.md), con las filas S02-1…S02-4.
 
