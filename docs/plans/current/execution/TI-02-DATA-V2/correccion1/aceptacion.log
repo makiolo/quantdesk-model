@@ -1,0 +1,29 @@
+$env:QN_SELFTEST_TMP='E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion1'; .venv/Scripts/python -X utf8 scripts/descarga_lago.py --selftest
+selftest ok
+
+.venv/Scripts/python -X utf8 scripts/exportar_market_history.py --selftest
+selftest ok
+
+$env:QN_SELFTEST_TMP='E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion1'; .venv/Scripts/python -X utf8 E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion1/standalone/descarga_lago.py --selftest
+selftest ok
+
+$env:QN_SELFTEST_TMP='E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion1'; .venv/Scripts/python -X utf8 -u scripts/run_selftests.py
+OK     scripts/banco_precision.py: selftest ok
+OK     scripts/banco_walkforward.py: selftest ok
+OK     scripts/build_wheels.py: selftest OK
+OK     scripts/cuadre_mt5.py: selftest ok
+OK     scripts/descarga_lago.py: selftest ok
+OK     scripts/exportar_market_history.py: selftest ok
+OK     scripts/extractor_mt5.py: selftest ok
+OK     scripts/ingesta_publica.py: selftest ok
+OK     scripts/inventario_options_chain.py: selftest ok
+OK     scripts/publicador_mt5.py: selftest ok
+OK     scripts/setup_env.py: setup_env selftest ok
+OK     scripts/smoke_env.py: smoke_env: OK (21 comprobaciones; 0 SALTADAS)
+run_selftests: 12 OK, 0 FALLO
+
+.venv/Scripts/python -X utf8 E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion1/comprobar_invariantes.py
+sin_mt5: 2/2 hashes iguales; historicos: 4/4, sin regenerar; originales: bytes intactos; ISO: 164/164
+
+.venv/Scripts/python -X utf8 E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion1/reproducir_A12.py
+A12 literal: invierno 22:00Z, verano 21:00Z; cierre exporta 1/1, recepcion falla; motor DPOL-AVL-002 2/2.

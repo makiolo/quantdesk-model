@@ -647,12 +647,12 @@ def prueba_fuentes_v2(tmp: str) -> None:
     assert t['carga']['source'] == {'mt5': 2} and t['carga']['seleccion_fuentes']['excluidas_por_source'] == {'market_scraper': 1}
     df = pq.read_table(os.path.join(raiz, nombre, 'lago_ohlcv_1d.parquet')).to_pandas()
     assert df['close'].tolist() == [1.1, 1.1] and df['available_at_ms'].tolist() == [ms(10, 28, 0, 10), ms(10, 29, 0, 10)]
-    assert p['origenes'][0]['fuente']['politica_fuentes']['version'] == 'ti-02-data.fuentes/v1'
+    assert p['origenes'][0]['fuente']['politica_fuentes']['version'] == 'ti-02-data.fuentes/v2'
     man = json.load(open(os.path.join(raiz, nombre, 'manifest.json'), encoding='utf-8'))
     assert "fuentes por tag source {'mt5': 2}" in man['description']
     from . import informe
     md = informe.generar(raiz, runs, [nombre])
-    assert 'market_scraper' in md and 'fuente_excluida_por_regla 1' in md and 'ti-02-data.fuentes/v1' in md
+    assert 'market_scraper' in md and 'fuente_excluida_por_regla 1' in md and 'ti-02-data.fuentes/v2' in md
     # Mismas entradas y corte: mismos hashes de todos los ficheros y hash del motor.
     r2 = os.path.join(tmp, 'v2_repetida')
     c, out, err = cli('--lago', dump, '--corte', CORTE, '--nombre', nombre, '--salida-raiz', r2, '--repeticion', runs=runs)
@@ -713,6 +713,104 @@ def prueba_fuentes_v2(tmp: str) -> None:
     assert S.sub_ms('2026-11-11T00:00:00.000001Z') and not S.sub_ms('2026-11-11T00:00:00.001000Z')
 
 
+def prueba_fx_iso_y_tags_v2(tmp: str) -> None:
+    """Exoticos y variantes conservan instrument, filtran y cuentan; tags contradictorios fallan por la CLI."""
+    runs = os.path.join(tmp, 'iso_runs')
+    def exportar(caso, series):
+        dump, raiz = [os.path.join(tmp, p + caso) for p in ('iso_dump_', 'iso_out_')]
+        escribir_volcado(dump, {'market.ohlcv.v2': series})
+        c, out, err = cli('--lago', dump, '--corte', CORTE, '--nombre', caso, '--salida-raiz', raiz, runs=runs)
+        return c, out, err, raiz
+
+    for i, symbol in enumerate(('USDMXN', 'USDTRY', 'EURUSD=X', 'EUR/USD', 'eurusd')):
+        series = [({'symbol': symbol, 'interval': '1d', 'source': source},
+                   [{**normal(10, 27), 'symbol': symbol, 'interval': '1d', 'source': source}])
+                  for source in ('mt5', 'market_scraper')]
+        caso = f'exotico_{i}'
+        c, out, err, raiz = exportar(caso, series)
+        assert c == 0, (out, err)
+        t = leer(raiz, caso)['tablas'][0]
+        assert t['filas'] == 1 and t['carga']['source'] == {'mt5': 1}
+        assert t['limpieza']['excluidas'] == {'fuente_excluida_por_regla': 1}
+        f = pq.read_table(os.path.join(raiz, caso, 'lago_ohlcv_1d.parquet')).to_pandas()
+        assert f['instrument'].tolist() == [symbol]
+        caso += '_sin_mt5'
+        c, out, err, raiz = exportar(caso, series[1:])
+        assert c == 0 and 'sin barras de la fuente exigida' in out, (out, err)
+        t = leer(raiz, caso)['tablas'][0]
+        assert t['filas'] == 0 and t['limpieza']['filas_origen'] == 1
+        assert t['limpieza']['excluidas'] == {'fuente_excluida_por_regla': 1}
+    # Hash del fichero correcto: se alcanza la validacion de tags, no la guardia de integridad previa.
+    et = {'symbol': 'DE40', 'interval': '1d', 'source': 'mt5'}
+    for tag, valor in (('symbol', 'US500'), ('interval', '1h'), ('source', 'market_scraper')):
+        c, _, err, raiz = exportar('tags_distintos_' + tag, [(et, [{**normal(10, 27), **et, tag: valor}])])
+        assert c == 2 and 'tags de la fila distintos de las etiquetas del fichero' in err, err
+        assert not os.path.exists(raiz)
+
+
+def prueba_cierre_real_mt5(tmp: str) -> None:
+    """El umbral de version completa coincide con el publicador, incluidos ambos cambios DST de NY."""
+    from publicador_mt5_lib import nucleo as N
+    from extractor_mt5_lib import hora as HR
+    from . import fuentes as S
+
+    regla = HR.regla_desde_texto('ny+7')
+    for m, d, hora in ((1, 13, 22), (7, 14, 21), (3, 6, 22), (3, 8, 21), (3, 9, 21),
+                       (10, 30, 21), (11, 1, 22), (11, 2, 22)):
+        df = marco([('EURUSD', ms(m, d), 1., 1.2, .9, 1.1, 0., ms(m, d, hora, 30), None)])
+        df['source'] = 'mt5'
+        ts_publicado, cierre_publicador = N.sesion_1d([ms(m, d) // 1000], regla)
+        assert ts_publicado.tolist() == [ms(m, d)]
+        assert L.cierre_version(df).tolist() == cierre_publicador.tolist() == [ms(m, d, hora)]
+        # La fuente y el intervalo limitan estrictamente la excepcion.
+        df['source'] = 'market_scraper'
+        assert L.cierre_version(df).tolist() == [ms(m, d) + DIA]
+        df['source'], df['interval_ms'] = 'mt5', H
+        assert L.cierre_version(df).tolist() == [ms(m, d) + H]
+        df = df.drop(columns='source')
+        assert L.cierre_version(df).tolist() == [ms(m, d) + H]
+
+    runs = os.path.join(tmp, 'sesion_runs')
+    for m, d, hora in ((1, 13, 22), (7, 14, 21)):
+        # Incluye los ejemplos contradictorios de la ficha: 21:30Z invierno y 20:30Z verano todavia estan en curso.
+        for minutos, cuenta in ((-30, 0), (-1, 0), (0, 1), (30, 1)):
+            recv = (ms(m, d, hora) + minutos * MIN) * 10**6
+            et = {'symbol': 'EURUSD', 'interval': '1d', 'source': 'mt5'}
+            caso = f'sesion_{m}_{minutos}_cierre'
+            dump, raiz = [os.path.join(tmp, p + caso) for p in ('dump_', 'out_')]
+            escribir_volcado(dump, {'market.ohlcv.v2': [(et, [{**barra(ns(m, d), recv), **et}])]})
+            # Se comprueba tambien que source llega de los tags a la limpieza.
+            cargada = S.cargar_lago(dump, True)['tablas'][0]['frame']
+            assert cargada['source'].tolist() == ['mt5']
+            c, out, err = cli('--lago', dump, '--corte', CORTE, '--nombre', caso, '--salida-raiz', raiz,
+                              '--disponibilidad-ohlcv', 'cierre', runs=runs)
+            assert c == 0, (out, err)
+            t = leer(raiz, caso)['tablas'][0]
+            assert t['filas'] == cuenta and t['limpieza']['excluidas'] == ({} if cuenta else {'version_en_curso': 1})
+            f = pq.read_table(os.path.join(raiz, caso, 'lago_ohlcv_1d.parquet')).to_pandas()
+            assert f['available_at_ms'].isna().all()  # el proxy sigue siendo ts + 1d, mediante lag 0
+            v = json.load(open(os.path.join(runs, caso + '.json'), encoding='utf-8'))['validacion']
+            assert v['ok'] and v['default_lag_ms'] == 0 and v['lookahead']['violaciones_por_fila'] == 0
+
+    # Una republicacion no sustituye a la primera completa, aunque esta se reciba antes del fin nominal.
+    et = {'symbol': 'EURUSD', 'interval': '1d', 'source': 'mt5'}
+    versiones = [barra(ns(1, 13), ns(1, 13, 21, 59), c=1.), barra(ns(1, 13), ns(1, 13, 23, 1), c=1.1),
+                 barra(ns(1, 13), ns(1, 14, 1), c=1.15)]
+    dump = os.path.join(tmp, 'primera_sesion')
+    escribir_volcado(dump, {'market.ohlcv.v2': [(et, [{**r, **et} for r in versiones])]})
+    t = S.cargar_lago(dump, True)['tablas'][0]
+    f = L.limpiar_ohlcv(t['frame'], ms(11, 1), 'recepcion', t['contador'], disp_cierre=True)
+    assert f['close'].tolist() == [1.1]
+    assert t['contador']['excluidas'] == {'version_en_curso': 1, 'version_posterior_descartada': 1}
+    cambio = t['contador']['detalle']['version_mayor_diferencia']
+    assert cambio['solo_cerradas'] and cambio['recv_primera_ms'] == ms(1, 13, 23, 1)
+    # Un 1d market_scraper recibido tras el cierre de NY pero antes de ts + 1d sigue en curso.
+    t['frame']['source'] = 'market_scraper'
+    contador = L.nuevo_contador(3)
+    f = L.limpiar_ohlcv(t['frame'], ms(11, 1), 'recepcion', contador, disp_cierre=True)
+    assert f['close'].tolist() == [1.15] and contador['excluidas'] == {'version_en_curso': 2}
+
+
 def prueba_corte_v2_posterior_migracion(tmp: str) -> None:
     """Paso 1 sin --topics y paso 2 real: barras posteriores al corte a v2, RFC3339 y sin look-ahead."""
     import descarga_lago as D
@@ -757,6 +855,8 @@ def correr() -> None:
         prueba_guardia_default_lag(tmp)
         prueba_integracion_con_descarga(tmp)
         prueba_fuentes_v2(tmp)
+        prueba_fx_iso_y_tags_v2(tmp)
+        prueba_cierre_real_mt5(tmp)
         prueba_corte_v2_posterior_migracion(tmp)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

@@ -6,6 +6,9 @@ validez de los valores -> version de cada barra -> corte -> orden final.
 """
 from __future__ import annotations
 
+from datetime import datetime, time, timezone
+from zoneinfo import ZoneInfo
+
 import numpy as np
 import pandas as pd
 
@@ -72,6 +75,24 @@ def elegir_version(df: pd.DataFrame, clave: list, orden_por: list, conservar: st
     return quitar(df, descarta, motivo, c)
 
 
+def cierre_version(df: pd.DataFrame) -> pd.Series:
+    """Umbral de version completa; solo MT5 1d usa 17:00 America/New_York de la fecha UTC de ts.
+
+    Es distinto del fin nominal ts + intervalo usado por el corte y el proxy de disponibilidad. La columna source es
+    interna a la carga: no se infiere MT5 del simbolo ni se cambia el esquema de salida.
+    """
+    cierre = df["ts_ms"] + df["interval_ms"]
+    if "source" in df:
+        mt5_diaria = (df["source"] == "mt5") & (df["interval_ms"] == MS_DIA)
+        if mt5_diaria.any():
+            ny = ZoneInfo("America/New_York")
+            por_ts = {ts: int(datetime.combine(datetime.fromtimestamp(int(ts) // 1000, timezone.utc).date(),
+                                               time(17), ny).timestamp()) * 1000
+                      for ts in df.loc[mt5_diaria, "ts_ms"].unique()}
+            cierre.loc[mt5_diaria] = df.loc[mt5_diaria, "ts_ms"].map(por_ts)
+    return cierre
+
+
 def mayor_diferencia(df: pd.DataFrame, solo_cerradas: bool = True) -> dict | None:
     """La barra cuyo `close` mas cambia entre su primera y su ultima version recibida. Con `solo_cerradas` (por defecto) solo
     cuentan las versiones recibidas con la barra ya cerrada (el mismo criterio que `version_en_curso`): es la revision de un
@@ -79,7 +100,7 @@ def mayor_diferencia(df: pd.DataFrame, solo_cerradas: bool = True) -> dict | Non
     barra antes de cerrar). None si ninguna barra cambia."""
     s = df.dropna(subset=["recv_ms"])
     if solo_cerradas:
-        s = s[como_mascara(s["recv_ms"] >= s["ts_ms"] + s["interval_ms"])]
+        s = s[como_mascara(s["recv_ms"] >= cierre_version(s))]
     s = s.sort_values(["recv_ms", "orden"], kind="mergesort")
     g = s.groupby(CLAVE_OHLCV, sort=True)
     a, b = g[["close", "recv_ms"]].first(), g[["close", "recv_ms"]].last()
@@ -96,7 +117,7 @@ def limpiar_ohlcv(df: pd.DataFrame, corte_ms: int, duplicados: str, c: dict, cal
                   disp_cierre: bool = False) -> pd.DataFrame:
     """Aplica los pasos a una tabla ohlcv/v1 en construccion y devuelve el DataFrame final, con las columnas de la tabla.
 
-    `df`: instrument, interval_ms, ts_ms, open..volume, available_at_ms (Int64), orden y, en el lago, recv_ms (Int64).
+    `df`: instrument, interval_ms, ts_ms, open..volume, available_at_ms (Int64), orden y, en el lago, recv_ms (Int64) y source.
     `duplicados`: 'identicos' (solo se admiten filas repetidas iguales) o 'recepcion' (el lago: primera version ya cerrada
     segun la marca de recepcion de qn; sin marca, la ultima del orden de qn y la disponibilidad queda sin declarar).
     `calendario`: 'fx' separa los huecos del cierre semanal en el informe; None trata todo hueco como anomalo (24x7).
@@ -116,7 +137,7 @@ def limpiar_ohlcv(df: pd.DataFrame, corte_ms: int, duplicados: str, c: dict, cal
     # (corregirla seria aproximar y quitarla abriria huecos): se cuenta aparte sobre las filas finales
     df = quitar(df, df["high"] < df["low"], "high_menor_que_low", c)
     # 2. una fila por (instrumento, intervalo, inicio de barra)
-    cierre = df["ts_ms"] + df["interval_ms"]
+    cierre = cierre_version(df)
     valores = list(NUMERICAS)
     if duplicados == "recepcion" and df["recv_ms"].notna().any():
         del_dataset = df[(df["ts_ms"] + df["interval_ms"]) <= corte_ms]  # barras que pueden entrar en el dataset

@@ -20,6 +20,9 @@ Uso:
     python3 descarga_lago.py --desde 2024-10-01 --hasta 2026-11-07 --salida /ruta/lago/AAAA-MM-DD
     python3 descarga_lago.py --selftest          # sin red real: levanta un qn falso en 127.0.0.1
 
+`QN_SELFTEST_TMP` redirige los temporales del selftest; por defecto usa el temporal del sistema (o el del laboratorio
+si existe en Windows), sin exigir una unidad E: en otras maquinas.
+
 Comportamiento:
 - Peticiones en serie, con timeout de 120 s y 3 reintentos (espera 1, 2 y 4 s) ante HTTP 5xx, 429 o fallo de red.
   HTTP 401/403 paran la ejecucion al instante con un mensaje claro (sin reintentar).
@@ -62,9 +65,22 @@ TOPIC_OHLCV = "market.ohlcv.v2"
 TOPICS_DEFECTO = (TOPIC_OHLCV,)
 # Politica unica, compartida con el exportador. Se deja aqui para que el paso 1 siga siendo un solo fichero stdlib.
 POLITICA_FUENTES = {
-    "version": "ti-02-data.fuentes/v1",
-    "divisas_fx": ("AUD", "CAD", "CHF", "EUR", "GBP", "JPY", "NZD", "USD"),
-    "clasificacion": "FX: seis letras mayusculas, dos divisas distintas de divisas_fx; resto sin clase",
+    "version": "ti-02-data.fuentes/v2",
+    # SIX (agencia ISO 4217), List One publicada 2026-09-17, consultada 2026-11-11:
+    # https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-one.xml
+    # Incluye codigos monetarios de fondos. De los X**, solo XAF/XCD/XCG/XOF/XPF son divisas;
+    # quedan fuera metales, unidades de cuenta, pruebas y ausencia de moneda (XAD, XDR, XSU, XUA, XTS, XXX...).
+    "divisas_fx": tuple("""
+        AED AFN ALL AMD AOA ARS AUD AWG AZN BAM BBD BDT BHD BIF BMD BND BOB BOV BRL BSD BTN BWP BYN BZD
+        CAD CDF CHE CHF CHW CLF CLP CNY COP COU CRC CUP CVE CZK DJF DKK DOP DZD EGP ERN ETB EUR FJD FKP
+        GBP GEL GHS GIP GMD GNF GTQ GYD HKD HNL HTG HUF IDR ILS INR IQD IRR ISK JMD JOD JPY KES KGS KHR
+        KMF KPW KRW KWD KYD KZT LAK LBP LKR LRD LSL LYD MAD MDL MGA MKD MMK MNT MOP MRU MUR MVR MWK MXN
+        MXV MYR MZN NAD NGN NIO NOK NPR NZD OMR PAB PEN PGK PHP PKR PLN PYG QAR RON RSD RUB RWF SAR SBD
+        SCR SDG SEK SGD SHP SLE SOS SRD SSP STN SVC SYP SZL THB TJS TMT TND TOP TRY TTD TWD TZS UAH UGX
+        USD USN UYI UYU UYW UZS VED VES VND VUV WST XAF XCD XCG XOF XPF YER ZAR ZMW ZWG
+    """.split()),
+    "clasificacion": "FX: dos divisas ISO 4217 vigentes distintas; solo para clasificar se quitan espacios exteriores, "
+                     "se pasa a mayusculas y se admiten AAABBB, AAA/BBB y sufijo =X; instrument conserva el tag original",
     "reglas": ({"clase": "fx", "interval": "1d", "source": "mt5", "motivo": "ISSUE-LAGO-FX-1D-CLOSE"},),
     "sin_regla": "una sola fuente por (symbol, interval); multiples fuentes son un error, incluso sin solape temporal",
 }
@@ -76,6 +92,12 @@ EXIT_LECTURA, EXIT_USO, EXIT_CREDENCIAL = 1, 2, 3
 
 
 def regla_fuente(symbol: str, interval: str) -> dict | None:
+    # No se modifica el tag ni la clave del instrumento, tampoco los filtros exactos de la CLI.
+    symbol = symbol.strip().upper()
+    if symbol.endswith("=X"):
+        symbol = symbol[:-2]
+    if re.fullmatch(r"[A-Z]{3}/[A-Z]{3}", symbol):
+        symbol = symbol.replace("/", "")
     divisas = POLITICA_FUENTES["divisas_fx"]
     es_fx = len(symbol) == 6 and symbol[:3] in divisas and symbol[3:] in divisas and symbol[:3] != symbol[3:]
     clase = "fx" if es_fx else None
@@ -587,10 +609,18 @@ def n_objetos(estado: QnFalso, desde: int = 0, symbol: str | None = None) -> int
                if "/objects/" in r and (symbol is None or p.get("symbol") == symbol))
 
 
+def directorio_selftest() -> str | None:
+    """None deja que tempfile respete TMPDIR/TEMP/TMP; el laboratorio tiene preferencia en Windows si existe."""
+    raiz = os.environ.get("QN_SELFTEST_TMP")
+    if not raiz and os.name == "nt" and os.path.isdir("E:/quantdesk-lab/tmp"):
+        raiz = "E:/quantdesk-lab/tmp"
+    if raiz:
+        os.makedirs(raiz, exist_ok=True)
+    return raiz
+
+
 def selftest() -> None:
-    # Los temporales del selftest de esta tarea no salen de su directorio autorizado.
-    lab_tmp = 'E:/quantdesk-lab/tmp/TI-02-DATA-V2'
-    os.makedirs(lab_tmp, exist_ok=True)
+    lab_tmp = directorio_selftest()
     assert TOPICS_DEFECTO == ('market.ohlcv.v2',), 'el topic por defecto debe ser exclusivamente v2'
     # --- piezas puras
     assert sanear("Bearer SECRETO y " + "x " * 400, "SECRETO").startswith("Bearer [redactado] y")
@@ -799,7 +829,91 @@ def selftest() -> None:
             srv.shutdown()
             srv.server_close()
         prueba_seleccion_v2(tmp)
+        prueba_clasificacion_fx()
+        prueba_exoticos_v2(tmp)
+        prueba_tags_v2(tmp)
+        prueba_temporal_selftest(tmp)
     print("selftest ok")
+
+
+def prueba_clasificacion_fx() -> None:
+    """ISO vigente completa, normalizacion solo para clasificar y exclusiones no monetarias/cripto."""
+    divisas = POLITICA_FUENTES["divisas_fx"]
+    assert len(divisas) == len(set(divisas)) == 164
+    for symbol in ("USDMXN", "USDTRY", "EURUSD=X", "EUR/USD", "eurusd", " eur/usd=x ",
+                   "USDXAF", "USDXCD", "USDXCG", "USDXOF", "USDXPF", "USDZWG"):
+        assert regla_fuente(symbol, "1d")["source"] == "mt5", symbol
+        aceptadas, excluidas = seleccionar_series([
+            {"symbol": symbol, "interval": "1d", "source": s} for s in ("mt5", "market_scraper")])
+        assert aceptadas == {(symbol, "1d", "mt5")} and len(excluidas) == 1
+        assert excluidas[0]["etiquetas"]["source"] == "market_scraper"
+    for symbol in ("XAUUSD", "XAGUSD", "XPTUSD", "XPDUSD", "XADUSD", "XDRUSD", "XSUUSD", "XUAUSD", "XTSUSD", "XXXUSD",
+                   "XBAUSD", "XBBUSD", "XBCUSD", "XBDUSD", "BTCUSD", "ETHUSD", "USDBGN", "USDZWL", "EUR//USD", "EURUSD.a"):
+        assert regla_fuente(symbol, "1d") is None, symbol
+
+
+def prueba_tags_v2(tmp: str) -> None:
+    """Una fila con symbol, interval o source ajeno al filtro falla en la CLI y no completa el volcado."""
+    estado = QnFalso()
+    estado.catalogo = {TOPIC_OHLCV: [{"symbol": "DE40", "interval": "1d", "source": "mt5"}]}
+    originales = estado.filas
+    for tag, valor in (("symbol", "US500"), ("interval", "1h"), ("source", "market_scraper")):
+        def filas(*args):
+            return [{**r, tag: valor} for r in originales(*args)]
+        estado.filas = filas
+        srv = servidor_falso(estado)
+        try:
+            salida = os.path.join(tmp, "tags_distintos_" + tag)
+            c, _, err = lanzar(f"http://127.0.0.1:{srv.server_address[1]}/qn", salida,
+                               "--desde", "2026-11-09", "--hasta", "2026-11-09")
+            assert c == 1 and "fila con tags distintos del filtro" in err, err
+            m = json.load(open(os.path.join(salida, "manifest.json"), encoding="utf-8"))
+            assert not m["completo"] and not m["topics"][TOPIC_OHLCV]["ficheros"]
+        finally:
+            srv.shutdown()
+            srv.server_close()
+
+
+def prueba_exoticos_v2(tmp: str) -> None:
+    estado = QnFalso()
+    estado.catalogo = {TOPIC_OHLCV: [
+        {"symbol": symbol, "interval": "1d", "source": source}
+        for symbol in ("USDMXN", "USDTRY", "EURUSD=X") for source in ("mt5", "market_scraper")]}
+    srv = servidor_falso(estado)
+    try:
+        for symbol in ("USDMXN", "USDTRY", "EURUSD=X"):
+            salida = os.path.join(tmp, "exotico_" + symbol)
+            c, _, err = lanzar(f"http://127.0.0.1:{srv.server_address[1]}/qn", salida,
+                               "--desde", "2026-11-09", "--hasta", "2026-11-09", "--symbols", symbol)
+            assert c == 0, err
+            t = json.load(open(os.path.join(salida, "manifest.json"), encoding="utf-8"))["topics"][TOPIC_OHLCV]
+            assert len(t["ficheros"]) == 1 and t["ficheros"][0]["etiquetas"] == {
+                "symbol": symbol, "interval": "1d", "source": "mt5"}
+            assert len(t["combinaciones_excluidas_por_regla"]) == 1
+        estado.catalogo[TOPIC_OHLCV] = [{"symbol": "USDMXN", "interval": "1d", "source": "market_scraper"}]
+        salida = os.path.join(tmp, "exotico_sin_mt5")
+        n = n_objetos(estado)
+        c, out, err = lanzar(f"http://127.0.0.1:{srv.server_address[1]}/qn", salida,
+                             "--desde", "2026-11-09", "--hasta", "2026-11-09")
+        assert c == 0 and "no se solicitan sus filas" in out and n_objetos(estado) == n, (out, err)
+        t = json.load(open(os.path.join(salida, "manifest.json"), encoding="utf-8"))["topics"][TOPIC_OHLCV]
+        assert not t["ficheros"] and len(t["combinaciones_excluidas_por_regla"]) == 1
+    finally:
+        srv.shutdown()
+        srv.server_close()
+
+
+def prueba_temporal_selftest(tmp: str) -> None:
+    from unittest.mock import patch
+    with patch.dict(os.environ, {"QN_SELFTEST_TMP": os.path.join(tmp, "redirigido")}):
+        raiz = directorio_selftest()
+        assert raiz == os.path.join(tmp, "redirigido") and os.path.isdir(raiz)
+    with patch.dict(os.environ):
+        os.environ.pop("QN_SELFTEST_TMP", None)
+        with patch("os.path.isdir", return_value=False):
+            assert directorio_selftest() is None  # maquina sin E: -> tempfile del sistema
+        with patch("os.name", "nt"), patch("os.path.isdir", return_value=True), patch("os.makedirs"):
+            assert directorio_selftest() == "E:/quantdesk-lab/tmp"
 
 
 def prueba_seleccion_v2(tmp: str) -> None:

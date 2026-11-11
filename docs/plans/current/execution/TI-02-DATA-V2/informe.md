@@ -159,4 +159,23 @@ M	scripts/exportar_market_history_lib/selftests.py
 
 Los SHA-256 del informe, evidencias, logs y código se registran en `evidencia_sha256.json` (el propio índice no se incluye en su contenido). Las evidencias de regeneración incluyen la versión del motor y la fecha de corte de cada dataset. La suite completa usa los selftests del proyecto, con sus temporales habituales bajo el laboratorio; los datos y experimentos creados por esta subentrega quedan bajo `E:/quantdesk-lab/tmp/TI-02-DATA-V2/`.
 
-Dudas para revisión: ninguna
+## Corrección 1
+
+2026-11-11 · intento 2 · base `a98cea8` de main (incluye `27cfb2b`) · motor `quantdesk 69fdb39d` · semilla: no aplica · corte del fixture: 2026-11-01. Estado: **BLOQUEADO en recepción MT5 por contradicción de A12**; las secciones anteriores documentan la entrega inicial.
+Política `ti-02-data.fuentes/v2`: 164 códigos monetarios vigentes de [SIX, lista publicada 2026-09-17](https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-one.xml); metales, otros X no monetarios y cripto fuera de la clase FX. Minúsculas, `/`, sufijo `=X` y espacios exteriores se normalizan sólo para clasificar; `instrument` y filtros siguen exactos.
+MT5 1d: versión completa desde las 17:00 America/New_York de D, con `zoneinfo`; source interno procede del tag. Primera versión completa y diagnóstico usan ese umbral; corte, proxy `cierre=ts+1d` y `_recv_ts` de recepción se conservan. Contraste ejecutado con `publicador_mt5_lib.nucleo.sesion_1d` y su regla `ny+7`, incluidas ambas transiciones DST.
+A12 es incompatible: invierno cierra 22:00Z y verano 21:00Z; sus ejemplos 21:30Z/20:30Z aún están en curso. Recepciones válidas 22:30Z/21:30Z anteriores a `ts+1d` chocan con la invariante Python y DPOL-AVL-002 del motor; `correccion1/A12.json` reproduce ambos. No se ha cambiado la disponibilidad ni debilitado la validación; hace falta resolver A12 para aceptar recepción.
+Temporal del volcado: sistema por defecto, alternativa E:/quantdesk-lab/tmp si existe en Windows y variable `QN_SELFTEST_TMP` para redirigirlo; copia suelta sin imports del repo verificada. Esta ejecución usa el directorio temporal autorizado.
+Aceptación: los dos `--selftest` → `selftest ok`; `run_selftests.py` → **run_selftests: 12 OK, 0 FALLO**; comandos exactos y salidas en `correccion1/aceptacion.log`. No se tocaron ni añadieron los cambios concurrentes de `banco_walkforward*`; no hubo fallos que exigieran archive de la suite.
+Únicos cambios de aserciones previas: dos literales de versión v1→v2 para versionar ISO; 163 aserciones previas conservadas, 186 actuales (`correccion1/aserciones.log`). Desviación deliberada mantenida: dos fuentes sin regla fallan por (instrumento, intervalo), también con historias disjuntas (`indice_empalme`), para exigir regla de empalme explícita.
+
+| Caso borde | Test que lo cubre |
+|---|---|
+| USDMXN/USDTRY dobles y sólo scraper; variantes sin renombrar; metales/cripto/X no monetarios fuera | D `prueba_clasificacion_fx`, `prueba_exoticos_v2`; E `prueba_fx_iso_y_tags_v2` |
+| MT5 invierno/verano/DST, un minuto antes, justo al cierre, primera 23:01 y republicación; scraper sin cambio | E `prueba_cierre_real_mt5` (CLI en cierre, contraste con publicador y selección de versiones) |
+| Recepción MT5 anterior a ts+1d: aceptación pendiente | `reproducir_A12.py` → `correccion1/A12.json`: error explícito Python y DPOL-AVL-002 del motor, 2/2 |
+| Tags symbol/interval/source distintos del fichero/filtro | D `prueba_tags_v2`: «fila con tags distintos del filtro»; E `prueba_fx_iso_y_tags_v2`: «tags de la fila distintos de las etiquetas del fichero» |
+| Temporal portable, redirección y copia suelta | D `prueba_temporal_selftest`; `standalone/descarga_lago.py --selftest` |
+| Fixture sin MT5 conserva hash; cuatro históricos intactos | `comprobar_invariantes.py` → `correccion1/invariantes.json`: 2/2 hashes idénticos contra archive de a98cea8; 4/4 históricos de 0e67465 sin rehacer, originales byte a byte intactos. `lago_cierre_c20261101` sigue afectado por ISSUE-LAGO-FX-1D-CLOSE. SHA-256 de pruebas, informe, código y evidencia en `correccion1/sha256.json`. |
+
+Dudas para revisión: resolver A12 (horas de los ejemplos y disponibilidad `_recv_ts < ts+1d` incompatible con DPOL-AVL-002).

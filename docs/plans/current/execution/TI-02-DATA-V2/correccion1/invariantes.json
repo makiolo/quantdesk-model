@@ -1,0 +1,143 @@
+{
+  "fecha": "2026-11-11",
+  "base_correccion": "a98cea80a1c77d9f07d14a161230aa2531ac2f28",
+  "base_regeneracion": "0e67465",
+  "motor": "quantdesk 69fdb39d",
+  "semilla": null,
+  "corte": "2026-11-01",
+  "sin_mt5": {
+    "recepcion": {
+      "antes": "sha256:304a17928bf7b5d88866d2655f45e13d551ad1b92327dc47385a4b030e93d067",
+      "despues": "sha256:304a17928bf7b5d88866d2655f45e13d551ad1b92327dc47385a4b030e93d067",
+      "coincide": true,
+      "comando_antes": [
+        "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+        "-X",
+        "utf8",
+        "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\codigo_antes\\scripts\\exportar_market_history.py",
+        "--lago",
+        "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\sin_mt5",
+        "--corte",
+        "2026-11-01",
+        "--nombre",
+        "sin_mt5_recepcion",
+        "--salida-raiz",
+        "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\archive_antes",
+        "--disponibilidad-ohlcv",
+        "recepcion",
+        "--runs",
+        "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\archive_antes_runs",
+        "--sobrescribir"
+      ],
+      "comando_despues": [
+        "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+        "-X",
+        "utf8",
+        "S:\\Projects\\quantdesk-model\\scripts\\exportar_market_history.py",
+        "--lago",
+        "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\sin_mt5",
+        "--corte",
+        "2026-11-01",
+        "--nombre",
+        "sin_mt5_recepcion",
+        "--salida-raiz",
+        "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\despues",
+        "--disponibilidad-ohlcv",
+        "recepcion",
+        "--sobrescribir"
+      ]
+    },
+    "cierre": {
+      "antes": "sha256:d6fa0f6970e1bcd1f5b790304a8a3406dd2367aae6b6baeb9343186bd5826ab6",
+      "despues": "sha256:d6fa0f6970e1bcd1f5b790304a8a3406dd2367aae6b6baeb9343186bd5826ab6",
+      "coincide": true,
+      "comando_antes": [
+        "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+        "-X",
+        "utf8",
+        "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\codigo_antes\\scripts\\exportar_market_history.py",
+        "--lago",
+        "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\sin_mt5",
+        "--corte",
+        "2026-11-01",
+        "--nombre",
+        "sin_mt5_cierre_cierre",
+        "--salida-raiz",
+        "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\archive_antes",
+        "--disponibilidad-ohlcv",
+        "cierre",
+        "--runs",
+        "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\archive_antes_runs",
+        "--sobrescribir"
+      ],
+      "comando_despues": [
+        "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+        "-X",
+        "utf8",
+        "S:\\Projects\\quantdesk-model\\scripts\\exportar_market_history.py",
+        "--lago",
+        "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\sin_mt5",
+        "--corte",
+        "2026-11-01",
+        "--nombre",
+        "sin_mt5_cierre_cierre",
+        "--salida-raiz",
+        "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\despues",
+        "--disponibilidad-ohlcv",
+        "cierre",
+        "--sobrescribir"
+      ]
+    }
+  },
+  "historicos_sin_rehacer": [
+    {
+      "dataset": "binance_c20261101",
+      "hash": "sha256:d765d56037f700bd2550a9a2ae9d53fbd2406afd7cddb82bbfeaf2a56670b744",
+      "coincide": true
+    },
+    {
+      "dataset": "lago_c20261101",
+      "hash": "sha256:cce80ad2bb82374e71a92ba27c4f9a89ad6ad0d7901697b853c15e24b39f70ea",
+      "coincide": true
+    },
+    {
+      "dataset": "lago_cierre_c20261101",
+      "hash": "sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356",
+      "coincide": true
+    },
+    {
+      "dataset": "lago_c20261107",
+      "hash": "sha256:853d8e8a111005d87836732266d800bb52a44f200eaba3599440d91b555c1495",
+      "coincide": true
+    }
+  ],
+  "originales_bytes_intactos": true,
+  "iso4217": {
+    "fuente": "https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-one.xml",
+    "publicada": "2026-09-17",
+    "sha256_xml": "33139b438657d1cee116ba737807ea71d19d6de4b90f799a09c56f0cc6a1b0ff",
+    "vigentes_monetarios": 164,
+    "excluidos": [
+      "XAD",
+      "XAG",
+      "XAU",
+      "XBA",
+      "XBB",
+      "XBC",
+      "XBD",
+      "XDR",
+      "XPD",
+      "XPT",
+      "XSU",
+      "XTS",
+      "XUA",
+      "XXX"
+    ]
+  },
+  "fixture_sha256": {
+    "manifest.json": "45f04f3648cc32e4da201ad267dee084cc182b5e7bb64d92aef4ac1c1b2cdaaf",
+    "market.ohlcv.v2\\interval=1d,source=market_scraper,symbol=DE40.ndjson": "c8090df7e09d61dc31b93cc3a2aa05ee2ca96d695364d615407fc7e26fbb9ab3",
+    "market.ohlcv.v2\\interval=1d,source=yahoo,symbol=BTCUSD.ndjson": "2581b254a238dade428290f375d03e8ec9175e972fa7988ab5e508b6027d2053",
+    "market.ohlcv.v2\\interval=1h,source=yahoo,symbol=EURUSD.ndjson": "c03b0749311c1bd4aac8fb6ecf8599deb1077694da5b50a66b8c7dabb40208aa"
+  }
+}

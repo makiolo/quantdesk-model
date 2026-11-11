@@ -225,7 +225,7 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: b
         if iv not in INTERVALOS_MS:
             raise ValueError(f"{fich['ruta']}: intervalo {iv!r} desconocido (conocidos: {', '.join(INTERVALOS_MS)}); no se adivina")
         a = por_iv.setdefault(iv, {"cols": {k: [] for k in ("instrument", "ts_ms", "open", "high", "low", "close", "volume",
-                                                            "recv_ms", "orden")},
+                                                            "recv_ms", "source", "orden")},
                                    "leidas": 0, "sin_ts": 0, "sub_ms": 0, "con_recv": 0, "recv_antes_de_ts": 0,
                                    "desfases": Counter(), "con_date": 0, "mismo_dia": 0, "ejemplos_dia": [],
                                    "fuentes": Counter(), "fuentes_leidas": Counter(), "fuentes_excluidas": Counter(),
@@ -263,6 +263,7 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: b
             for k in ("open", "high", "low", "close", "volume"):
                 cols[k].append(num(r.get(k)))
             cols["recv_ms"].append(recv)
+            cols["source"].append(source)
             cols["orden"].append(orden)
             a["fuentes"][source] += 1
             dc = contenido_ms(r.get("date"))
@@ -284,6 +285,7 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: b
             "ts_ms": pd.Series(cols["ts_ms"], dtype="int64"),
             **{k: pd.Series(cols[k], dtype="float64") for k in ("open", "high", "low", "close", "volume")},
             "recv_ms": pd.array(cols["recv_ms"], dtype="Int64"),
+            "source": pd.Series(cols["source"], dtype=object),
             "available_at_ms": pd.array([None] * n, dtype="Int64"), "orden": pd.Series(cols["orden"], dtype="int64")})
         con_recv = a["con_recv"] > 0
         tablas.append({
@@ -315,7 +317,8 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: b
                     "El topic market.ohlcv.v2 identifica la fuente por el tag source; `_ts` es la marca de la barra. "
                     "El unico instante respaldado en que el dato existia en el "
                     "sistema es `_recv_ts` (recepcion en qn). Las barras se republican mientras estan abiertas, asi que se "
-                    "conserva la primera version recibida con `_recv_ts` >= cierre de la barra (inicio + intervalo) y se "
+                    "conserva la primera version recibida con `_recv_ts` >= cierre real (MT5 1d: 17:00 America/New_York "
+                    "de la fecha UTC de `_ts`; resto: inicio + intervalo) y se "
                     "declara su `_recv_ts` como disponibilidad. Es conservador: un relleno historico queda disponible desde "
                     "la fecha del relleno, nunca antes." if con_recv else
                     "Las filas no traen `_recv_ts` y el productor no guarda ningun otro instante de publicacion de las barras: "

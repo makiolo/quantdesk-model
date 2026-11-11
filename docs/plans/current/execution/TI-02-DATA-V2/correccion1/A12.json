@@ -1,0 +1,123 @@
+{
+  "fecha": "2026-11-11",
+  "motor": "quantdesk 69fdb39d",
+  "decision_pendiente": "A12: disponibilidad antes del fin nominal",
+  "casos": [
+    {
+      "fecha": "2026-01-13",
+      "ts_ms": 1768262400000,
+      "cierre_publicador_ms": 1768341600000,
+      "recepcion_ms": 1768343400000,
+      "ejemplos_ficha_en_curso_ms": 1768339800000,
+      "exportacion": {
+        "recepcion": {
+          "comando": [
+            "--lago",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\a12_dump_1",
+            "--corte",
+            "2026-11-01",
+            "--nombre",
+            "a12_1_recepcion",
+            "--salida-raiz",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\a12_out",
+            "--disponibilidad-ohlcv",
+            "recepcion",
+            "--sobrescribir"
+          ],
+          "codigo": 1,
+          "stdout": "",
+          "stderr": "exportar: DATOS INCONSISTENTES en lago_ohlcv_1d: 1 barras con available_at_ms anterior a su cierre"
+        },
+        "cierre": {
+          "comando": [
+            "--lago",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\a12_dump_1",
+            "--corte",
+            "2026-11-01",
+            "--nombre",
+            "a12_1_cierre",
+            "--salida-raiz",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\a12_out",
+            "--disponibilidad-ohlcv",
+            "cierre",
+            "--sobrescribir"
+          ],
+          "codigo": 0,
+          "stdout": "lago_ohlcv_1d: 1 filas de origen -> 1 (0 excluidas: ninguna)\ndataset a12_1_cierre escrito en E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\a12_out\\a12_1_cierre (0.1 s)\n  corte 2026-11-01T00:00:00Z; dataset_hash sha256:a6c57aa21abbc287f54d92fbeb3fd887325b3411b62d115988dfe471400fb10a\n  lago_ohlcv_1d          ohlcv/v1          1 filas    1 instrumentos  2026-01-13T00:00:00Z -> 2026-01-13T00:00:00Z  sha256:35f28a706dc4d51eb29db04defccb0e154a58dd079d2ff225e765eac99b32e42\n  data_py describe: ok con hashes verificados; politica de look-ahead ok=False; violaciones por fila=0; no consumibles causalmente en sentido estricto: ['lago_ohlcv_1d'] (de ellas, proxy por default_lag_ms: ['lago_ohlcv_1d']); tablas vacias tras el corte: ninguna",
+          "stderr": ""
+        }
+      },
+      "motor": [
+        {
+          "available_at_ms": 1768343400000,
+          "code": "DPOL-AVL-002",
+          "instrument": "EURUSD",
+          "reference_close_ms": 1768348800000,
+          "row_index": 0,
+          "ts_ms": 1768262400000
+        }
+      ],
+      "parquet": [
+        "1 filas con available_at_ms anterior al cierre"
+      ]
+    },
+    {
+      "fecha": "2026-07-14",
+      "ts_ms": 1783987200000,
+      "cierre_publicador_ms": 1784062800000,
+      "recepcion_ms": 1784064600000,
+      "ejemplos_ficha_en_curso_ms": 1784061000000,
+      "exportacion": {
+        "recepcion": {
+          "comando": [
+            "--lago",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\a12_dump_7",
+            "--corte",
+            "2026-11-01",
+            "--nombre",
+            "a12_7_recepcion",
+            "--salida-raiz",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\a12_out",
+            "--disponibilidad-ohlcv",
+            "recepcion",
+            "--sobrescribir"
+          ],
+          "codigo": 1,
+          "stdout": "",
+          "stderr": "exportar: DATOS INCONSISTENTES en lago_ohlcv_1d: 1 barras con available_at_ms anterior a su cierre"
+        },
+        "cierre": {
+          "comando": [
+            "--lago",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\a12_dump_7",
+            "--corte",
+            "2026-11-01",
+            "--nombre",
+            "a12_7_cierre",
+            "--salida-raiz",
+            "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\a12_out",
+            "--disponibilidad-ohlcv",
+            "cierre",
+            "--sobrescribir"
+          ],
+          "codigo": 0,
+          "stdout": "lago_ohlcv_1d: 1 filas de origen -> 1 (0 excluidas: ninguna)\ndataset a12_7_cierre escrito en E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\a12_out\\a12_7_cierre (0.1 s)\n  corte 2026-11-01T00:00:00Z; dataset_hash sha256:4a84551c587ca7de59b6a05ac8970dc0c3d9efb7cae374b00de7d68c7be455b9\n  lago_ohlcv_1d          ohlcv/v1          1 filas    1 instrumentos  2026-07-14T00:00:00Z -> 2026-07-14T00:00:00Z  sha256:9402210d53769ab0ec18b0f32fc8056b7f1f07d9e3ee7d2552197bd18525719f\n  data_py describe: ok con hashes verificados; politica de look-ahead ok=False; violaciones por fila=0; no consumibles causalmente en sentido estricto: ['lago_ohlcv_1d'] (de ellas, proxy por default_lag_ms: ['lago_ohlcv_1d']); tablas vacias tras el corte: ninguna",
+          "stderr": ""
+        }
+      },
+      "motor": [
+        {
+          "available_at_ms": 1784064600000,
+          "code": "DPOL-AVL-002",
+          "instrument": "EURUSD",
+          "reference_close_ms": 1784073600000,
+          "row_index": 0,
+          "ts_ms": 1783987200000
+        }
+      ],
+      "parquet": [
+        "1 filas con available_at_ms anterior al cierre"
+      ]
+    }
+  ]
+}

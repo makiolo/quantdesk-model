@@ -1,0 +1,17 @@
+{
+  "fecha": "2026-11-11",
+  "sha256_bytes": {
+    "S:\\Projects\\quantdesk-model\\docs\\plans\\current\\execution\\TI-02-DATA-V2\\informe.md": "9e6bf6d7b9e445b07e085b442295248059d43c402a89f7159d96dbb69e6356a9",
+    "S:\\Projects\\quantdesk-model\\docs\\plans\\current\\execution\\TI-02-DATA-V2\\correccion1\\A12.json": "5279cf54537134473e7ce6acf9406b22ec93f7837934935731af40a0423978dc",
+    "S:\\Projects\\quantdesk-model\\docs\\plans\\current\\execution\\TI-02-DATA-V2\\correccion1\\aceptacion.log": "ed089726fb1ead0858d04e96c17d086116fcb77366cad62de4792da2181e1799",
+    "S:\\Projects\\quantdesk-model\\docs\\plans\\current\\execution\\TI-02-DATA-V2\\correccion1\\aserciones.log": "0c3ad9c253939b0a0d10ab4cbfae7a4a7dcbb9d3619158eac6c9513ab7347c07",
+    "S:\\Projects\\quantdesk-model\\docs\\plans\\current\\execution\\TI-02-DATA-V2\\correccion1\\invariantes.json": "c69a5dc491bd63ba9f5bcc0bbcbb5cf4a7cd92ff5c2aa0905d39602829ed60bf",
+    "S:\\Projects\\quantdesk-model\\scripts\\descarga_lago.py": "4973c346aca8e5b441176518e7ed212d84429d23abf37f73cd3be44447525e59",
+    "S:\\Projects\\quantdesk-model\\scripts\\exportar_market_history_lib\\fuentes.py": "ac5b05e24ea1f460dcb35556e4b50819a582ff7d9212945008178c4b5cfc0132",
+    "S:\\Projects\\quantdesk-model\\scripts\\exportar_market_history_lib\\limpieza.py": "715d30defbdc59c92bf43c6628ebe4adccc766bb938d5efac888bf32576b979d",
+    "S:\\Projects\\quantdesk-model\\scripts\\exportar_market_history_lib\\selftests.py": "dd3e71d106d05733a1264d04ad5d8e47fefb98a261a0e27e3292b3e19dffffb4",
+    "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\comprobar_invariantes.py": "17c5b815cf4409ae29be4e519953378348a526b6adee6a22eedff70431225784",
+    "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\reproducir_A12.py": "d47dd7728e8ec5464d57934ca29102d58582757e17dffcdedcd15eb2c704baf4",
+    "E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\correccion1\\cerrar_informe.py": "a6265ef265f7b7af391464c3e2585b5e489c712b06f40f6e9596520ba674dba5"
+  }
+}
