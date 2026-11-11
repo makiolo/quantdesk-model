@@ -27,6 +27,12 @@ NIVELES = (0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5,
            0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99)
 I01, I10, I50, I90, I99 = 0, 2, 10, 18, 20
 Z90 = 1.2815515655446004
+DECILES = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
+IDECILES = [NIVELES.index(p) for p in DECILES]
+COLUMNAS_RESUMEN = ("n", "crps", "pinball_01", "pinball_99", "exc_01", "exc_99", "n_test", "x_01", "x_99",
+                    "kupiec_01_p", "kupiec_99_p", "christ_01_p", "christ_99_p", "qlike")
+MOTIVO_FINCAST = ("FinCast: solo crps_deciles y QLIKE en ventana limpia; crps de 21 niveles y criterios de "
+                  "colas no aplicables porque incluyen cuantiles interpolados/extrapolados")
 
 
 def pinball(y, q, a):
@@ -42,6 +48,22 @@ def crps_cuantiles(y, Q, niveles=NIVELES):
     a = np.asarray(niveles, float)[None, :]
     pb = ((y < Q).astype(float) - a) * (Q - y)
     return 2.0 * pb.mean(axis=1)
+
+
+def crps_deciles(y, Q):
+    """2 * media de los 9 pinball nativos (0.1..0.9), con el mismo peso para cada decil."""
+    return crps_cuantiles(y, np.asarray(Q, float)[:, IDECILES], DECILES)
+
+
+def resumen_fincast(y, Q, rv):
+    """No llama a ningun criterio de colas ni al CRPS de 21 niveles; exclusiones declaradas por celda."""
+    s2 = var_desde_cuantiles(Q)
+    if not np.isfinite(s2).all() or (s2 <= 0).any():
+        raise ValueError("FinCast QLIKE no definido: varianza q10/q90 no positiva o no finita")
+    r = dict.fromkeys(COLUMNAS_RESUMEN, float("nan"))
+    r.update(n=len(y), crps_deciles=float(np.mean(crps_deciles(y, Q))),
+             qlike=float(np.mean(qlike(rv, s2))), criterios_no_aplicables=MOTIVO_FINCAST)
+    return r
 
 
 def _xlogy(x, y):

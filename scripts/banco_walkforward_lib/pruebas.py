@@ -239,5 +239,203 @@ def selftest() -> int:
     prueba_garch_conocido()
     prueba_reproducible()
     prueba_toto()
+    prueba_deciles_independientes()
+    prueba_ventana_limpia()
+    prueba_fincast()
+    prueba_monotonia_banco()
+    prueba_informe_limpia()
     print("selftest ok")
     return 0
+
+
+def prueba_deciles_independientes():
+    """Oraculo escalar: NormalDist (stdlib), formula de pinball de scikit-learn,
+    https://scikit-learn.org/stable/modules/model_evaluation.html#pinball-loss.
+    No usa pinball/crps del banco para calcular el esperado; no es la integral continua del CRPS normal.
+    """
+    from statistics import NormalDist
+
+    niveles = tuple(i / 10 for i in range(1, 10))
+    normales = [NormalDist().inv_cdf(p) for p in niveles]
+    ys = [-2.1, 0.0, 0.7]
+    esperado = [2 * sum(max(p * (y - q), (p - 1) * (y - q))
+                        for p, q in zip(niveles, normales)) / 9 for y in ys]
+    Q = np.tile([NormalDist().inv_cdf(p) for p in metricas.NIVELES], (len(ys), 1))
+    obtenido = metricas.crps_deciles(ys, Q)
+    assert np.allclose(obtenido, esperado, rtol=0, atol=1e-15), (obtenido, esperado)
+    # Todos los cuantiles no decilicos se pueden alterar sin cambiar la metrica.
+    Q[:, [i for i, p in enumerate(metricas.NIVELES) if p not in niveles]] += 100
+    assert np.array_equal(metricas.crps_deciles(ys, Q), obtenido)
+    print("crps_deciles: normal exacta contra 9 pinball escalares independientes: ok")
+
+
+def prueba_ventana_limpia():
+    import pandas as pd
+    from scipy.stats import norm
+
+    corte = datos.rejilla_origenes("2025-08-27", "2025-08-27", 1)[0]
+    filas = []
+    for j, t in enumerate((corte - DIA, corte, corte + DIA, corte + 2 * DIA)):
+        for m in ("hmm", "garch", "chronos2", "toto", "fincast"):
+            for h in banco.HORIZONTES:
+                f = {"instrument": "SINT", "origen_ms": t, "k": j, "modelo": m, "h": h,
+                     "y": 0.01, "rv": 0.001, "ok": m != "fincast" or j == 2}
+                f.update(dict(zip(banco.QCOLS, norm.ppf(metricas.NIVELES) * 0.02)))
+                filas.append(f)
+    p = pd.DataFrame(filas)
+    ms = ["hmm", "garch", "chronos2", "toto"]
+    base = banco.metricas_tabla(p[p.modelo != "fincast"], ms)
+    principal = banco.metricas_tabla(p, ms + ["fincast"])
+    assert base.equals(principal) and set(principal.modelo) == set(ms)
+    assert (principal.n == 4).all(), "FinCast reduce los origenes principales"
+    limpia = banco.metricas_tabla(p, ms + ["fincast"], limpia=True)
+    assert (limpia.n == 1).all() and set(limpia.modelo) == set(ms + ["fincast"])
+    fc = limpia[limpia.modelo == "fincast"]
+    prohibidos = ["crps", "pinball_01", "pinball_99", "exc_01", "exc_99", "n_test", "x_01", "x_99",
+                  "kupiec_01_p", "kupiec_99_p", "christ_01_p", "christ_99_p"]
+    assert fc[prohibidos].isna().all().all() and fc.criterios_no_aplicables.str.len().gt(0).all()
+    assert np.isfinite(fc[["crps_deciles", "qlike"]]).all().all()
+    # La frontera exacta se excluye; +1 ms tambien debe entrar, no solo +1 dia.
+    assert not banco.es_origen_limpio(corte) and banco.es_origen_limpio(corte + 1)
+    assert banco.es_origen_limpio(corte + DIA)
+    antiguo = p[p.origen_ms <= corte]
+    vacia = banco.metricas_tabla(antiguo, ms, limpia=True)
+    assert vacia.empty and "crps_deciles" in vacia.columns
+    estado = banco.estado_limpia(antiguo, vacia, ms)
+    assert estado["estado"] == "vacia" and "posteriores" in estado["motivo"]
+    # Con origenes posteriores pero sin interseccion tambien hay motivo explicito.
+    sin_comunes = p[p.origen_ms == corte + 2 * DIA]
+    vacia = banco.metricas_tabla(sin_comunes, ms + ["fincast"], limpia=True)
+    assert banco.estado_limpia(sin_comunes, vacia, ms + ["fincast"])["estado"] == "vacia"
+    assert "comunes" in banco.estado_limpia(sin_comunes, vacia, ms + ["fincast"])["motivo"]
+    print("ventana limpia: corte UTC estricto, vacia declarada, origenes comunes y mascara FinCast: ok")
+
+
+def prueba_fincast():
+    import sys
+    import pandas as pd
+    from statistics import NormalDist
+    from . import fincast_trabajador as ft, toto_trabajador as tt
+
+    assert ft.NIVELES == tt.NIVELES == metricas.NIVELES, "copias del contrato de niveles distintas"
+    nativos = np.array([[0.3 + 0.02 * NormalDist().inv_cdf(p) for p in ft.DECILES]])
+    Q, info = ft.expandir_deciles(nativos)
+    esperado = np.array([[0.3 + 0.02 * NormalDist().inv_cdf(p) for p in metricas.NIVELES]])
+    assert np.allclose(Q, esperado, rtol=0, atol=1e-15)
+    assert np.array_equal(Q[:, metricas.IDECILES], nativos)
+    assert len(info["niveles_nativos"]) == 9 and len(info["niveles_interpolados"]) == 8
+    assert info["niveles_extrapolados"] == [0.01, 0.05, 0.95, 0.99]
+    falta = "E:/quantdesk-lab/venvs/no-existe/Scripts/python.exe"
+    for opciones in ({"python": falta}, {"python": sys.executable, "pesos": falta}):
+        try:
+            modelos.FinCast(**opciones)
+            raise AssertionError("FinCast sin venv/pesos debe quedar SALTADO")
+        except modelos.ModeloSaltado as exc:
+            assert "SALTADO" in str(exc)
+    close = 100 * np.exp(np.cumsum(simular_garch(500, semilla=13)) / 100)
+    ts0 = datos.rejilla_origenes("2025-01-01", "2025-01-01", 1)[0]
+    s = datos.series_desde_tabla(_tabla(500, close, ts0=ts0), None)["SINT"]
+    cortes, _ = datos.cortes_de_serie(s, [ts0 + j * DIA for j in (400, 420)], 250, banco.HMAX)
+    t = modelos.FinCast(python=sys.executable, falso=True, timeout_s=5)
+    try:
+        q1, i1 = t.predecir(cortes[0].precios, 7, banco.HMAX)
+        q2, _ = t.predecir(cortes[0].precios, 7, banco.HMAX)
+        assert np.array_equal(q1, q2) and q1.shape == (banco.HMAX, 21)
+        assert np.all(np.diff(q1, axis=1) >= 0) and "cpu_s_externo" in i1
+        assert i1["niveles_nativos"] == list(ft.DECILES)
+        try:
+            t.predecir([1, -1, 2], 7, banco.HMAX)
+            raise AssertionError("error JSON del trabajador no propagado")
+        except RuntimeError as exc:
+            assert "precios" in str(exc)
+        filas = pd.DataFrame(banco.correr_serie(s, cortes, [t], banco.SEMILLA))
+        assert filas.ok.all() and banco.metricas_tabla(filas, ["fincast"]).empty
+        assert len(banco.metricas_tabla(filas, ["fincast"], limpia=True)) == 3
+    finally:
+        t.cerrar()
+    # El trabajador real falso puede simular un cuelgue o una salida corrupta. Tras el timeout se reinicia
+    # para el siguiente origen; el primero queda fallido y el banco no se bloquea.
+    for fallo, mensaje in (("silencio", "timeout"), ("error", "error falso"), ("no_monotono", "monoton")):
+        t = modelos.FinCast(python=sys.executable, falso=True, timeout_s=0.25, fallo_falso=fallo)
+        try:
+            t.timeout_arranque_s = 10
+            filas = pd.DataFrame(banco.correr_serie(s, cortes, [t], banco.SEMILLA))
+            assert not filas.iloc[:3].ok.any() and filas.iloc[:3].error.str.contains(mensaje).all(), filas.error
+            assert filas.iloc[3:].ok.all(), "la corrida no sigue tras un origen fallido"
+            assert filas.loc[~filas.ok, "origen_ms"].nunique() == 1
+        finally:
+            t.cerrar()
+    print("fincast: trabajador aislado falso, deciles/z, venv/pesos ausentes, timeout y errores por origen: ok")
+
+
+def prueba_monotonia_banco():
+    import pandas as pd
+
+    class Roto:
+        nombre = "hmm"
+
+        def predecir(self, precios, semilla, hmax):
+            Q = np.tile(np.arange(21, dtype=float), (hmax, 1))
+            Q[0, 1] = -1
+            return Q, {}
+
+    close = np.exp(np.arange(80) * 0.001)
+    s = datos.series_desde_tabla(_tabla(80, close), None)["SINT"]
+    cortes, _ = datos.cortes_de_serie(s, [T0 + 40 * DIA], 30, banco.HMAX)
+    p = pd.DataFrame(banco.correr_serie(s, cortes, [Roto()], banco.SEMILLA))
+    assert not p.ok.any() and p.error.str.contains("monoton").all()
+    print("banco: cuantiles no monotonos fallan explicitamente para cualquier modelo: ok")
+
+
+def prueba_informe_limpia():
+    import json
+    import tempfile
+    from pathlib import Path
+    import pandas as pd
+    from scipy.stats import norm
+    from . import informe, rutas
+
+    os.makedirs(rutas.TMP_FINCAST, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="selftest-", dir=rutas.TMP_FINCAST) as tmp:
+        origen = banco.CORTE_LIMPIO_MS + DIA
+        archivos = []
+        for m in ("hmm", "toto", "fincast"):
+            run = Path(tmp, m)
+            run.mkdir()
+            c = datos.Corte(origen, 30, origen - DIA, np.ones(30), np.full(20, 0.01), np.full(20, 0.001))
+            q = np.tile(norm.ppf(metricas.NIVELES) * 0.02, (banco.HMAX, 1))
+            pred = pd.DataFrame(banco._filas_corte("SINT", c, m, q, {}, 0.1, None))
+            pred.to_parquet(run / "predicciones.parquet", index=False)
+            meta = {"dataset": {"dataset_id": "sintetico", "dataset_hash": "sha256:prueba", "proxy": False},
+                    "config": {"modelos": [m], "ventana": 30, "horizontes": [1, 5, 20], "semilla": banco.SEMILLA},
+                    "cpu": {m: {"por_origen_s": 0.1}}, "pared_s": 0.1, "fallos": {m: 0},
+                    "predicciones_sha256": banco.hash_predicciones(pred)}
+            (run / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+            archivos.append(str(run))
+        met, estado, _ = informe.cargar_limpia(archivos)
+        assert len(met) == 9 and (met.n == 1).all() and estado["estado"] == "calculada"
+        texto, tabla, _ = informe.seccion_limpia(archivos)
+        assert "no aplicables" in "\n".join(texto) and "extrapolacion" in "\n".join(texto)
+        assert tabla[tabla.modelo == "fincast"].pinball_01.isna().all()
+        # La comparacion FinCast comprueba tambien la tabla limpia (la principal esta vacia).
+        comp = banco.comparar(archivos[-1], archivos[-1])
+        assert comp["predicciones_identicas"] and comp["metricas_limpias_identicas"]
+        # CSV vacio con cabecera, estado explicito y render sin NaN mudo si no hay origen limpio.
+        for run in archivos:
+            p = Path(run, "predicciones.parquet")
+            antiguo = pd.read_parquet(p).assign(origen_ms=banco.CORTE_LIMPIO_MS)
+            antiguo.to_parquet(p, index=False)
+        texto, tabla, estados = informe.seccion_limpia(archivos)
+        assert tabla.empty and estados["sintetico"]["estado"] == "vacia"
+        assert "sin origenes posteriores" in "\n".join(texto)
+        # Un dataset distinto o un objetivo distinto se rechazan antes de comparar criterios.
+        path = Path(archivos[-1], "meta.json")
+        meta = json.loads(path.read_text(encoding="utf-8"))
+        meta["dataset"]["dataset_hash"] = "sha256:otro"
+        path.write_text(json.dumps(meta), encoding="utf-8")
+        try:
+            informe.cargar_limpia(archivos)
+            raise AssertionError("mezcla de datasets aceptada")
+        except ValueError as exc:
+            assert "dataset_hash" in str(exc)
+    print("informe limpio: union de corridas, mascara, determinismo y vacio explicito, sin mezclar datasets: ok")

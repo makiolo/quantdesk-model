@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 import os
 import sys
@@ -147,7 +148,7 @@ def _cargar_toto(run, base_runs):
     return meta_t, met, base[0]
 
 
-def escribir(runs, repeticiones, destino, pilotos=None, totos=None) -> int:
+def escribir(runs, repeticiones, destino, pilotos=None, totos=None, fincasts=None) -> int:
     import pandas as pd
 
     cargados = [(_cargar(r), r) for r in runs]
@@ -183,14 +184,14 @@ def escribir(runs, repeticiones, destino, pilotos=None, totos=None) -> int:
       "CRPS (y el menor QLIKE). «Kupiec/Chr. p<0,05» cuenta activos en que el test rechaza al 5 %. Excedencias "
       "esperadas: 1 % en cada cola.")
     for (meta, met), run in cargados:
-        mods = meta["config"]["modelos"]
+        mods = [m for m in meta["config"]["modelos"] if m != "fincast"]
         w("")
         w(f"### {_etiqueta(meta)}" + (" — tabla de cabecera" if meta["dataset"]["dataset_id"] == CABECERA else ""))
         w("")
         w("| h | modelo | activos | CRPS (med.) | CRPS rel. GARCH | pinball 0,01 | pinball 0,99 | exc. 1 % | exc. 99 % "
           "| Kupiec p<0,05 (1 %/99 %) | Chr. p<0,05 (1 %/99 %) | QLIKE (med.) | gana CRPS | gana QLIKE |")
         w("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
-        for r in _resumen(met, mods):
+        for r in _resumen(met, mods) if not met.empty else []:
             w(f"| {r['h']} | {r['modelo']} | {r['activos']} | {_f(r['crps'])} | {_f(r['crps_rel'], 3)} | "
               f"{_f(r['p01'])} | {_f(r['p99'])} | {_f(r['exc01'], 3)} | {_f(r['exc99'], 3)} | {r['ku01']}/{r['ku99']} | "
               f"{r['ch01']}/{r['ch99']} | {_f(r['qlike'])} | {r['gana']} | {r['gana_q']} |")
@@ -499,13 +500,123 @@ def escribir(runs, repeticiones, destino, pilotos=None, totos=None) -> int:
         todas.append(met.assign(dataset=meta["dataset"]["dataset_id"], proxy=meta["dataset"]["proxy"],
                                 dataset_hash=meta["dataset"]["dataset_hash"][:23],
                                 conjunto=f"submuestra_toto_cada_{cada}_4_modelos"))
+    seccion, limpia, estados = seccion_limpia(list(runs) + list(totos or []) + list(fincasts or []))
+    L.extend(seccion)
     os.makedirs(destino, exist_ok=True)
     allm = pd.concat(todas, ignore_index=True)
     primeras = ["dataset", "proxy", "dataset_hash", "conjunto"]
     allm = allm[primeras + [c for c in allm.columns if c not in primeras]]
     allm.to_csv(os.path.join(destino, "metricas.csv"), index=False, float_format="%.10g")
+    limpia.to_csv(os.path.join(destino, "metricas_limpia.csv"), index=False, float_format="%.10g")
+    with open(os.path.join(destino, "ventana_limpia.json"), "w", encoding="utf-8") as f:
+        json.dump(estados, f, ensure_ascii=False, indent=1)
     with open(os.path.join(destino, "informe.md"), "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(L) + "\n")
     print(f"informe: {os.path.join(destino, 'informe.md')} ({sum(len(x) + 1 for x in L)} bytes); metricas.csv "
           f"{os.path.getsize(os.path.join(destino, 'metricas.csv'))} bytes")
     return 0
+
+
+def cargar_limpia(runs):
+    """Une predicciones del mismo dataset sin limitar la tabla principal a la submuestra FinCast.
+    Rechaza diferencias de dataset, contexto, semilla u objetivo antes de calcular criterios comunes.
+    """
+    import pandas as pd
+
+    metas, partes = [], []
+    for run in runs:
+        with open(os.path.join(run, "meta.json"), encoding="utf-8") as f:
+            metas.append(json.load(f))
+        partes.append(pd.read_parquet(os.path.join(run, "predicciones.parquet")))
+    base = metas[0]
+    for m in metas[1:]:
+        if m["dataset"]["dataset_hash"] != base["dataset"]["dataset_hash"]:
+            raise ValueError("dataset_hash distinto en la comparacion limpia")
+        for k in ("ventana", "horizontes", "semilla"):
+            if m["config"][k] != base["config"][k]:
+                raise ValueError(f"{k} distinto en la comparacion limpia")
+    pred = pd.concat(partes, ignore_index=True)
+    clave = ["instrument", "origen_ms", "h"]
+    if pred.duplicated(clave + ["modelo"]).any():
+        raise ValueError("predicciones duplicadas entre corridas de la tabla limpia")
+    for k in ("y", "rv", "k", "ts_ultima_ms"):
+        if (pred.groupby(clave)[k].nunique(dropna=False) > 1).any():
+            raise ValueError(f"{k}: objetivo/contexto distinto entre corridas de la tabla limpia")
+    ms = sorted({m for meta in metas for m in meta["config"]["modelos"]})
+    met = banco.metricas_tabla(pred, ms, limpia=True)
+    return met, banco.estado_limpia(pred, met, ms), metas
+
+
+def seccion_limpia(runs):
+    import pandas as pd
+    from . import fincast_trabajador as ft
+
+    grupos = {}
+    hay_fincast = False
+    for run in runs:
+        with open(os.path.join(run, "meta.json"), encoding="utf-8") as f:
+            meta = json.load(f)
+            ds = meta["dataset"]["dataset_id"]
+            hay_fincast |= "fincast" in meta["config"]["modelos"]
+        grupos.setdefault(ds, []).append(run)
+    L = ["", "## Ventana limpia: segundo calculo de los mismos criterios", "",
+         f"Origen estrictamente posterior a **{banco.CORTE_LIMPIO}**; el contexto puede ser anterior. "
+         "Todos los modelos de cada tabla usan los mismos origenes validos comunes. La tabla principal "
+         "conserva los origenes de sus modelos sin recortar por FinCast.", "",
+         "`crps_deciles` = 2 × media de los pinball en 0.1, 0.2, …, 0.9, para todos los modelos. "
+         "No es el CRPS continuo ni el de 21 niveles. FinCast solo aporta `crps_deciles` y QLIKE "
+         "(varianza = ((q90-q10)/(2 Phi^-1(0.9)))²). CRPS de 21 niveles, pinball 1 %/99 %, excedencias, "
+         "Kupiec y Christoffersen de FinCast: **no aplicables**, quedan vacios en CSV y — en la tabla.", "",
+         "Cuantiles de FinCast: " + ft.METODO + ". Nativos: 0.1..0.9; extrapolados: 0.01/0.05/0.95/0.99; "
+         "interpolados: 0.15/0.25/0.35/0.45/0.55/0.65/0.75/0.85. Ninguno de los niveles no nativos "
+         "entra en sus criterios.", ""]
+    if hay_fincast:
+        L += ["FinCast v1: decoder oficial sin modificar, 50 capas, dimension 1280, 16 cabezas, 4 expertos/top-2, "
+              "patch 32, horizonte de salida 128, frecuencia diaria 0. Contexto log-precio completo, "
+              "padding frontal al siguiente multiplo de 32, lote 1, CPU float32. Se importa directamente el "
+              "decoder para evitar la API de covariables JAX; `torch.load(weights_only=True)`, "
+              "`load_state_dict(strict=True)`, `eval()` y `torch.use_deterministic_algorithms(True)`. "
+              "Semilla reiniciada por origen, tambien para el sorteo del gate MoE.", "",
+              f"Timeout FinCast por peticion: {modelos.FINCAST_TIMEOUT_S:g} s por defecto "
+              "(`--fincast-timeout`); arranque 300 s. Un timeout mata el trabajador y marca el origen fallido; "
+              "el siguiente origen arranca otro. CPU de peticiones fallidas sin respuesta no recuperable; "
+              "el tiempo de espera si esta en la pared. Toto conserva su comportamiento previo.", "",
+              "Licencias verificadas el 2026-11-11: [codigo Apache-2.0](https://github.com/vincent05r/FinCast-fts/blob/"
+              + modelos.FINCAST_CODIGO_REV + "/LICENSE), SHA-256 de LICENSE "
+              "`1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6`; "
+              "[tarjeta de pesos Apache-2.0](https://huggingface.co/Vincent05R/FinCast/blob/"
+              + modelos.FINCAST_REV + "/README.md), SHA-256 "
+              "`cbc5c2eb63cd9cc2ff8baa1ed888cd062e81ec170413ffe9827b920bc726794d`. "
+              f"v1.pth SHA-256 `{modelos.FINCAST_SHA256}`. La tarjeta no fija fecha de corte del "
+              "preentrenamiento: la ventana posterior a publicacion es el control disponible, no una prueba "
+              "de ausencia de contaminacion de los pesos.", ""]
+    tablas, estados = [], {}
+    for ds, rr in grupos.items():
+        met, estado, metas = cargar_limpia(rr)
+        estados[ds] = estado
+        estado["metricas_sha256"] = hashlib.sha256(met.to_csv(index=False, float_format="%.10g").encode()).hexdigest()
+        L += [f"### {_etiqueta(metas[0])}: ventana limpia", "",
+              f"Dataset SHA-256: `{metas[0]['dataset']['dataset_hash']}`. Estado: **{estado['estado']}**. "
+              + (estado["motivo"] + "." if met.empty else "Orígenes comunes por activo y horizonte: columna n."), ""]
+        if not met.empty:
+            cols = ["instrument", "h", "modelo", *banco.metricas.COLUMNAS_RESUMEN, "crps_deciles"]
+            L += ["| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
+            for _, r in met.iterrows():
+                L.append("| " + " | ".join(str(r[c]) if c in banco.CLAVES_METRICAS else _f(r[c], 8)
+                                          for c in cols) + " |")
+            L.append("")
+        L += ["| corrida | modelos | cada | solo limpia | CPU s/origen | pared inferencia / total s | fallos | SHA-256 predicciones |",
+              "|---|---|---|---|---|---|---|---|"]
+        for m, run in zip(metas, rr):
+            L.append(f"| `{run}` | {','.join(m['config']['modelos'])} | {m['config'].get('cada', 1)} | "
+                     f"{m['config'].get('solo_limpia', False)} | "
+                     + "; ".join(f"{n}: {c['por_origen_s']:.4g}" for n, c in m["cpu"].items())
+                     + f" | {m['pared_s']:.2f} / {m.get('pared_total_s', 'no medida')} | {m['fallos']} | "
+                     f"`{m['predicciones_sha256']}` |")
+            if m.get("saltados"):
+                L.append(f"Modelos saltados declarados: {m['saltados']}.")
+            for e in m.get("errores_ejemplo", []):
+                L.append(f"Fallo declarado: {e['instrument']} {e['origen_ms']} {e['modelo']}: {e['error']}.")
+        L.append("")
+        tablas.append(met.assign(dataset=ds, dataset_hash=metas[0]["dataset"]["dataset_hash"]))
+    return L, pd.concat(tablas, ignore_index=True), estados
