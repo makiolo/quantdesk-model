@@ -28,6 +28,30 @@ Registro de ejecución del sprint. Lo crea la activación; la raíz del [LAUNCH]
 - Aviso de quantdesk-backend (raíz de su SPRINT-02, relevo 1, mensaje entre sesiones, 2026-11-11): OC-01 y OC-02
   cerradas en su SPRINT-01; para la fila 6 (TI-09-ARCH) sigue pendiente OC-03 (entregas b y c tras la sonda de bid/ask
   de Yahoo de esta noche, 22:20–23:00 hora local). Avisarán al cerrar OC-03. Fila 6 sigue sin empezar.
+- **Decisiones del usuario (2026-11-11, chat de la raíz):** «Ya se puede usar modelos de codex, 100% disponible»;
+  «De momento seguimos con la prohibicion de no usar IA local, hay que terminar las suscripciones». Efecto: autores L5–L6
+  por Codex mientras tenga margen; ningún autor local (`claude-local`) en este sprint hasta nuevo aviso.
+- Decisiones de la raíz (A12) para la fila 2b, en su ficha: ventana limpia = orígenes > 2025-08-27T00:00Z para todos
+  los modelos; CRPS de FinCast sólo sobre sus 9 deciles nativos, con columna `crps_deciles` para todos en la tabla
+  limpia; criterios de colas de FinCast no aplicables (declarados); submuestra fijada tras un piloto (≤ ~8 h por tabla).
+- Fila 1b partida en sub-entregas: **A** código TI-02-DATA-V2 y regeneración de los 4 datasets con el código de
+  `0e67465` (sin qn); **B** volcado v2 del FX 1d de MT5 desde qn (lo ejecuta el usuario con su credencial) y exportación
+  de los datasets de cabecera y ampliación, con cuadre; **C** las dos tablas del banco, informe y revisión de umbrales.
+- **Respuestas del usuario a las puertas (2026-11-11, AskUserQuestion de la raíz):**
+  - Fila 2b: «Sí, pesos y código» (FinCast `v1.pth` 3,97 GB de huggingface.co/Vincent05R/FinCast y código de
+    github.com/vincent05r/FinCast-fts, por revisión fijada, a `E:/quantdesk-lab`). Puerta 3 cumplida.
+  - Fila 5: periodos nuevos = **h1 de @continuo**; símbolos nuevos = **ninguno** (sólo periodos).
+  - Fila 1b, volcado de qn: «Ahora mismo MT5 nos ha bloqueado la cuenta, hay que esperar un poco, para ver si la
+    recuperamos. Pero tal vez te pueda servir D:\dev\deeplearning_dev\dataset\h1_period-1h_fa79d8045dce76d4.parquet
+    son 28 pares de FX desde 2010». Efecto: **fila 5 en espera** (necesita el terminal MT5) hasta que el usuario
+    recupere la cuenta. El parquet ofrecido (leído sólo su esquema: 2 799 685 filas, `time, open, high, low, close,
+    tick_volume, spread, symbol`; formato de exportación de MT5, zona horaria sin declarar) es h1, no 1d, y no viene de
+    qn: no sustituye a la tabla FX 1d de la fila 1b; queda anotado como fuente candidata del h1 de fx28 (fila 5) si el
+    usuario lo decide. El volcado de qn de la sub-entrega 1b-B no usa el terminal MT5 (el 1d ya está en qn): se le
+    preguntará de nuevo dónde lo ejecuta cuando 1b-A esté aceptada.
+- Revisión A2 de las fichas 1b-A y 2b-A (Codex `gpt-6-luna` high, sólo lectura): 2 preguntas cada una (filtros y
+  nombres del volcado y la exportación; revisiones fijadas y método de cuantiles no nativos), resueltas por la raíz en
+  las fichas antes de lanzar.
 - Ola 1: auditorías de sólo lectura (Sonnet 5.5, Explore) de las filas 1b, 2b y 5 para redactar las fichas.
 
 ## Registro
