@@ -1655,4 +1655,3 @@ Fallo declarado: BTCUSDT 1779148800000 fincast: RuntimeError: ValueError: decile
 Fallo declarado: BTCUSDT 1786924800000 fincast: RuntimeError: ValueError: deciles nativos no monotonos.
 Fallo declarado: DOGEUSDT 1781740800000 fincast: RuntimeError: ValueError: deciles nativos no monotonos.
 Fallo declarado: DOGEUSDT 1786924800000 fincast: RuntimeError: ValueError: deciles nativos no monotonos.
-
