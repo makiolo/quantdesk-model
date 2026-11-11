@@ -961,6 +961,72 @@ def prueba_revisiones_mt5(tmp: str) -> None:
         assert c['excluidas'] == {'version_posterior_descartada': 1} and 'version_mt5_revisada' not in c['detalle']
 
 
+def prueba_mt5_sin_version_al_corte(tmp: str) -> None:
+    """A12 C4: el relleno historico conserva primera completa en cierre y motivos previos sin revisiones."""
+    et = {'symbol': 'EURUSD', 'interval': '1d', 'source': 'mt5'}
+    dump, raiz, runs = [os.path.join(tmp, 'c4_' + p) for p in ('dump', 'out', 'runs')]
+    filas = [{**barra(ns(10, d), ns(11, 9, 12)), **et} for d in range(15, 27)]
+    escribir_volcado(dump, {'market.ohlcv.v2': [(et, filas)]})
+    for modo, n, excluidas in (('cierre', 12, {}), ('recepcion', 0, {'posterior_al_corte_por_disponibilidad': 12})):
+        nombre = 'mt5_posterior_' + modo
+        c, out, err = cli('--lago', dump, '--corte', CORTE, '--nombre', nombre, '--salida-raiz', raiz,
+                          '--disponibilidad-ohlcv', modo, runs=runs)
+        assert c == 0, (out, err)
+        t = leer(raiz, nombre)['tablas'][0]
+        assert t['filas'] == n and t['limpieza']['excluidas'] == excluidas
+        assert t['limpieza']['detalle'] == {'version_mayor_diferencia': None}
+        f = pq.read_table(os.path.join(raiz, nombre, 'lago_ohlcv_1d.parquet')).to_pandas()
+        assert f['ts_ms'].tolist() == ([ms(10, d) for d in range(15, 27)] if n else [])
+        v = json.load(open(os.path.join(runs, nombre + '.json'), encoding='utf8'))['validacion']
+        assert v['ok'] and not v['lookahead']['violaciones'] and v['lookahead']['violaciones_por_fila'] == 0
+        assert v['politica_con_lag_admitido']['ok'] if modo == 'cierre' else v['politica']['ok']
+
+    # Orden de entrada invertido; antes del corte solo hay una version aun en curso o ninguna.
+    # Las completas futuras conservan primera, motivo posterior_descartada y diagnostico historicos.
+    for abierta in (False, True):
+        filas = [('EURUSD', ms(10, 30), 1., 1.3, .9, close, 0., recv, None)
+                 for close, recv in ((1.2, ms(11, 10)), (1.1, ms(11, 9, 12)))]
+        if abierta:
+            filas += [('EURUSD', ms(10, 30), 1., 1.3, .9, 1., 0., ms(10, 30, 20), None)]
+        for cierre in (False, True):
+            f = marco(filas)
+            f['source'] = 'mt5'
+            c = L.nuevo_contador(len(f))
+            f = L.limpiar_ohlcv(f, ms(11, 1), 'recepcion', c, disp_cierre=cierre)
+            esperadas = {'version_posterior_descartada': 1}
+            if abierta:
+                esperadas['version_en_curso'] = 1
+            if not cierre:
+                esperadas['posterior_al_corte_por_disponibilidad'] = 1
+            assert f['close'].tolist() == ([1.1] if cierre else []) and c['excluidas'] == esperadas
+            assert 'version_mt5_revisada' not in c['detalle']
+            assert c['detalle']['version_mayor_diferencia']['close_ultima'] == 1.2
+
+    # Una conocida y otra futura -> primera en ambos modos; una barra fuera por fecha nunca cuenta como revisada.
+    for corte, recepciones, n, excluidas in (
+        (ms(11, 1), [ms(10, 31), ms(11, 9)], 1, {'posterior_al_corte_por_disponibilidad': 1}),
+        (ms(10, 30, 23), [ms(10, 30, 21, 30), ms(10, 30, 22, 30)], 0,
+         {'version_posterior_descartada': 1, 'posterior_al_corte_por_fecha': 1}),
+    ):
+        for cierre in (False, True):
+            f = marco([('EURUSD', ms(10, 30), 1., 1.3, .9, close, 0., recv, None)
+                       for close, recv in zip((1.1, 1.2), recepciones)])
+            f['source'] = 'mt5'
+            c = L.nuevo_contador(len(f))
+            f = L.limpiar_ohlcv(f, corte, 'recepcion', c, disp_cierre=cierre)
+            assert f['close'].tolist() == ([1.1] if n else []) and c['excluidas'] == excluidas
+            assert 'version_mt5_revisada' not in c['detalle']
+
+    # Una unica version con fecha posterior conserva la atribucion por fecha, aun si recv tambien supera el corte.
+    for cierre in (False, True):
+        f = marco([('EURUSD', ms(11, 1), 1., 1.3, .9, 1.1, 0., ms(11, 9), None)])
+        f['source'] = 'mt5'
+        c = L.nuevo_contador(1)
+        f = L.limpiar_ohlcv(f, ms(11, 1), 'recepcion', c, disp_cierre=cierre)
+        assert f.empty and c['excluidas'] == {'posterior_al_corte_por_fecha': 1}
+        assert 'version_mt5_revisada' not in c['detalle']
+
+
 def prueba_rejilla_mt5(tmp: str) -> None:
     """MT5 1d exige medianoche UTC exacta, antes de truncar ns o descartar valores invalidos."""
     for i, ts in enumerate((ns(11, 9, 1), ns(11, 9) + 10**6, ns(11, 9) + 1,
@@ -1007,6 +1073,7 @@ def correr() -> None:
         prueba_disponibilidad_recepcion_mt5(tmp)
         prueba_corte_v2_posterior_migracion(tmp)
         prueba_revisiones_mt5(tmp)
+        prueba_mt5_sin_version_al_corte(tmp)
         prueba_rejilla_mt5(tmp)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

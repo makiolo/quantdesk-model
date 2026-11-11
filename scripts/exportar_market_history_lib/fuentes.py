@@ -321,24 +321,29 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: b
                     "El topic market.ohlcv.v2 identifica la fuente por el tag source; `_ts` es la marca de la barra. "
                     "El unico instante respaldado en que el dato existia en el "
                     "sistema es `_recv_ts` (recepcion en qn). Las barras se republican mientras estan abiertas, asi que se "
-                    "conserva la ultima version MT5 1d completa recibida hasta el corte; para otras fuentes e intervalos, "
-                    "la primera completa. Completa significa `_recv_ts` >= cierre real (MT5 1d: 17:00 America/New_York "
-                    "de la fecha UTC de `_ts`; resto: inicio + intervalo). Se "
+                    "conserva la primera version recibida con `_recv_ts` >= cierre real (MT5 1d: 17:00 America/New_York "
+                    "de la fecha UTC de `_ts`; resto: inicio + intervalo) y se "
                     "declara max(_recv_ts, _ts + intervalo) como disponibilidad (A12, DPOL-AVL-002). Para MT5 1d en vivo "
                     "es el fin nominal a las 00:00 UTC del dia siguiente, 2-3 h despues del cierre real. Es conservador: "
                     "un relleno historico queda disponible desde la fecha del relleno, nunca antes." if con_recv else
                     "Las filas no traen `_recv_ts` y el productor no guarda ningun otro instante de publicacion de las barras: "
                     "no hay base para declarar disponibilidad ni para fijar un default_lag_ms, asi que queda sin declarar y la "
                     "tabla NO es consumible causalmente (DPOL-AVL-001 / W-NO-AVAILABILITY).")}})
-    for t in tablas:
-        if disp_cierre and t["table_id"] == "lago_ohlcv_1d" and "mt5" in t["carga"]["source"]:
-            t["disponibilidad"] = {**DISP_OHLCV_PROXY, "justificacion": (
-                "PROXY elegido con --disponibilidad-ohlcv cierre: available_at_ms nulo y default_lag_ms = 0, cierre nominal. "
-                "MT5 1d usa la ultima version completa recibida hasta el corte, nunca una revision posterior al corte. "
-                "Su recepcion puede ser posterior al cierre nominal, por lo que el proxy no demuestra disponibilidad "
-                "al cierre. Las otras fuentes e intervalos conservan la primera completa. Para disponibilidad respaldada "
-                "por la recepcion se usa el modo recepcion.")}
     return tablas, orden
+
+
+def anotar_revisiones_mt5(t: dict) -> None:
+    """Amplia la procedencia solo si la seleccion final realmente sustituyo una primera completa (A12)."""
+    if t["contador"]["detalle"].get("version_mt5_revisada"):
+        t["disponibilidad"] = {**t["disponibilidad"], "justificacion": (
+            "MT5 1d usa la ultima version completa recibida hasta el corte si existe alguna; sin ninguna, conserva la "
+            "primera completa como proxy en cierre y queda fuera en recepcion. Completa significa recepcion desde las "
+            "17:00 America/New_York de la fecha UTC de ts. Otras fuentes e intervalos conservan la primera completa. "
+            + ("PROXY elegido con --disponibilidad-ohlcv cierre: available_at_ms nulo y default_lag_ms = 0; el cierre "
+               "nominal no demuestra disponibilidad y los valores pueden haberse recibido DESPUES del corte."
+               if t.get("disp_cierre") else
+               "Disponibilidad = max(_recv_ts de la version elegida, ts + intervalo), nunca anterior al fin nominal "
+               "(A12, DPOL-AVL-002); para MT5 1d en vivo, 00:00 UTC del dia siguiente, 2-3 h despues del cierre real."))}
 
 
 def _json_dato(d: dict) -> str:

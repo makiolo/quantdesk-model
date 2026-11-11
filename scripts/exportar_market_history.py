@@ -22,7 +22,8 @@ Reglas (el detalle y las cifras de cada exportacion quedan en `procedencia.json`
   `default_lag_ms` queda en null.
 - Limpieza contada, sin rellenar huecos ni aproximar: nulos, no finitos, precios <= 0, volumen < 0, high < low (se excluyen),
   open/close fuera de [low, high] (se conservan y se cuentan), versiones repetidas de una barra (se queda la primera ya
-  cerrada segun la recepcion en qn, salvo MT5 1d: ultima completa recibida hasta el corte), filas posteriores al corte.
+  cerrada segun la recepcion en qn, salvo MT5 1d con alguna completa hasta el corte: ultima de ellas;
+  sin ninguna, primera completa como proxy en cierre y fuera en recepcion), filas posteriores al corte.
 - Universo: lo que hay hoy en la fuente, con el sesgo de supervivencia declarado (D-07) en el manifest y en `procedencia.json`.
 - Fuentes v2: politica versionada en descarga_lago.py; FX 1d solo mt5, sin regla una sola fuente por simbolo/intervalo.
 - Ventana opcional: --desde AAAA-MM-DD excluye y cuenta filas anteriores (por ts_ms); --corte conserva su significado.
@@ -114,10 +115,11 @@ def describir(origenes: list, corte: str, tablas: list, vistas: list, default_la
                   "(disponibles al cierre, sin ningun campo que lo respalde) y sus valores son la version de cada barra que qn "
                   f"recibio DESPUES del corte ({rango}), no la visible al cierre. No es causal "
                   "en sentido estricto; el dataset estricto es el que usa _recv_ts."]
-        if any(t["table_id"] == "lago_ohlcv_1d" and "mt5" in t["carga"]["source"] for t in proxies):
+        if any(t["contador"]["detalle"].get("version_mt5_revisada") for t in proxies):
             partes = [f"Exportacion TI-02-DATA ({MOTOR}) con corte {corte}T00:00:00Z. ATENCION, DISPONIBILIDAD PROXY: "
                       "available_at_ms nulo y default_lag_ms = 0 declaran el cierre nominal sin evidencia de disponibilidad "
-                      "al cierre. MT5 1d usa la ultima version completa recibida hasta el corte; otras fuentes e intervalos "
+                      "al cierre. MT5 1d usa la ultima version completa recibida hasta el corte si existe alguna; sin ninguna, "
+                      "la primera completa como proxy historico. Otras fuentes e intervalos "
                       "conservan la primera completa, que puede recibirse despues del corte. No es causal en sentido estricto; "
                       "el dataset estricto es el que usa _recv_ts."]
     else:
@@ -237,6 +239,7 @@ def exportar(a: argparse.Namespace) -> int:
             except (ValueError, AssertionError) as e:
                 print(f"exportar: DATOS INCONSISTENTES en {t['table_id']}: {e}", file=sys.stderr)
                 return 1
+            S.anotar_revisiones_mt5(t)
             t["frame"] = None  # libera el crudo
             tablas.append(t)
             vistas.append(final)
