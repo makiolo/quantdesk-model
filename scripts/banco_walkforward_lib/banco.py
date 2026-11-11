@@ -121,6 +121,7 @@ def metricas_tabla(pred, modelos, limpia=False):
     pred = pred[pred["modelo"].isin(modelos)]
     if limpia:
         pred = pred[es_origen_limpio(pred["origen_ms"])]
+        pred, _ = validar_predicciones_limpias(pred)
     if pred.duplicated(["instrument", "h", "modelo", "origen_ms"]).any():
         raise ValueError("predicciones duplicadas por activo/h/modelo/origen")
     filas = []
@@ -145,10 +146,40 @@ def metricas_tabla(pred, modelos, limpia=False):
 
 def estado_limpia(pred, met, modelos):
     hay = not pred.empty and bool(es_origen_limpio(pred["origen_ms"]).any())
+    seleccion = pred[pred["modelo"].isin(modelos) & es_origen_limpio(pred["origen_ms"])] if not pred.empty else pred
+    _, validacion = validar_predicciones_limpias(seleccion)
     return {"corte_utc": CORTE_LIMPIO, "regla": "origen_ms > corte (estricto); contexto puede ser anterior",
             "modelos": list(modelos), "estado": "vacia" if met.empty else "calculada", "celdas": len(met),
             "motivo": ("sin origenes posteriores al corte" if not hay else "sin origenes comunes validos")
-                      if met.empty else "", "exclusiones_fincast": metricas.MOTIVO_FINCAST}
+                      if met.empty else "", "exclusiones_fincast": metricas.MOTIVO_FINCAST,
+            "validacion_predicciones": validacion}
+
+
+def validar_predicciones_limpias(pred):
+    """Valida tambien previsiones archivadas antes de formar la nueva comparacion limpia.
+    Un cruce en cualquier h almacenado invalida el origen-modelo entero, como correr_serie.
+    No repara cuantiles ni modifica el archivo de predicciones ni sus criterios principales historicos.
+    """
+    estado = {"origenes_modelo_excluidos": 0, "por_modelo": {}, "ejemplos": [],
+              "alcance": "origenes limpios suministrados, antes de tomar los comunes"}
+    if pred.empty:
+        return pred, estado
+    buenas = pred.loc[pred["ok"]]
+    Q = buenas[QCOLS].to_numpy(float)
+    malas = buenas.loc[~np.isfinite(Q).all(axis=1) | (np.diff(Q, axis=1) < 0).any(axis=1)]
+    claves = ["instrument", "origen_ms", "modelo"]
+    invalidos = malas[claves].drop_duplicates()
+    if invalidos.empty:
+        return pred, estado
+    import pandas as pd
+
+    out = pred.copy()
+    marca = pd.MultiIndex.from_frame(out[claves]).isin(pd.MultiIndex.from_frame(invalidos))
+    out.loc[marca, "ok"] = False
+    out.loc[marca, "error"] = "salida archivada invalida: cuantiles no finitos o no monotonos; excluida de ventana limpia"
+    estado.update(origenes_modelo_excluidos=len(invalidos), por_modelo=invalidos.groupby("modelo").size().to_dict(),
+                  ejemplos=invalidos.head(10).to_dict("records"))
+    return out, estado
 
 
 def ejecutar(dataset, out, nombres_modelos, activos, max_origenes, semilla, hilos, comando, reanudar,

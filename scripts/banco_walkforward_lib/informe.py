@@ -598,6 +598,16 @@ def seccion_limpia(runs):
         L += [f"### {_etiqueta(metas[0])}: ventana limpia", "",
               f"Dataset SHA-256: `{metas[0]['dataset']['dataset_hash']}`. Estado: **{estado['estado']}**. "
               + (estado["motivo"] + "." if met.empty else "Orígenes comunes por activo y horizonte: columna n."), ""]
+        validacion = estado["validacion_predicciones"]
+        if validacion["origenes_modelo_excluidos"]:
+            L += [f"**Predicciones archivadas invalidas:** {validacion['origenes_modelo_excluidos']} pares "
+                  f"origen-modelo ({validacion['por_modelo']}) con cuantiles no finitos/no monotonos, "
+                  "excluidos de TODOS los horizontes de la comparacion limpia. No se reparan cuantiles ni se "
+                  "reescriben predicciones o criterios de las tablas principales historicas. La validacion "
+                  "cuenta todos los origenes limpios suministrados antes de tomar la interseccion; n es "
+                  "el numero comun realmente puntuado por celda. La validacion "
+                  "del archivo solo puede comprobar los horizontes almacenados (1/5/20); una corrida nueva "
+                  "comprueba los 20 horizontes. Ejemplos: " + str(validacion["ejemplos"]) + ".", ""]
         if not met.empty:
             cols = ["instrument", "h", "modelo", *banco.metricas.COLUMNAS_RESUMEN, "crps_deciles"]
             L += ["| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]

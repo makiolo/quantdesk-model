@@ -244,6 +244,8 @@ def selftest() -> int:
     prueba_fincast()
     prueba_monotonia_banco()
     prueba_informe_limpia()
+    prueba_timeout_persistido()
+    prueba_ventana_vacia_persistida()
     print("selftest ok")
     return 0
 
@@ -417,6 +419,17 @@ def prueba_informe_limpia():
         texto, tabla, _ = informe.seccion_limpia(archivos)
         assert "no aplicables" in "\n".join(texto) and "extrapolacion" in "\n".join(texto)
         assert tabla[tabla.modelo == "fincast"].pinball_01.isna().all()
+        # Los archivos SPRINT-01 pueden contener cruces antes aceptados. La nueva tabla limpia los
+        # excluye por origen-modelo entero, los declara y conserva intactos los criterios principales.
+        p = Path(archivos[0], "predicciones.parquet")
+        original = pd.read_parquet(p)
+        roto = original.copy()
+        roto.loc[0, "q01"] = roto.loc[0, "q00"] - 1
+        roto.to_parquet(p, index=False)
+        tabla_rota, estado_roto, _ = informe.cargar_limpia(archivos)
+        assert tabla_rota.empty and estado_roto["validacion_predicciones"]["por_modelo"] == {"hmm": 1}
+        assert len(banco.metricas_tabla(roto, ["hmm"])) == 3
+        original.to_parquet(p, index=False)
         # La comparacion FinCast comprueba tambien la tabla limpia (la principal esta vacia).
         comp = banco.comparar(archivos[-1], archivos[-1])
         assert comp["predicciones_identicas"] and comp["metricas_limpias_identicas"]
@@ -439,3 +452,64 @@ def prueba_informe_limpia():
         except ValueError as exc:
             assert "dataset_hash" in str(exc)
     print("informe limpio: union de corridas, mascara, determinismo y vacio explicito, sin mezclar datasets: ok")
+
+
+def prueba_timeout_persistido():
+    """Cruza trabajador -> banco -> parquet/meta -> informe; el fallo no desaparece al persistir."""
+    import json
+    import sys
+    import tempfile
+    from pathlib import Path
+    from unittest.mock import patch
+    import pandas as pd
+    from . import informe, rutas
+
+    ts0 = datos.rejilla_origenes("2025-01-01", "2025-01-01", 1)[0]
+    close = 100 * np.exp(np.cumsum(simular_garch(500, semilla=17)) / 100)
+    s = datos.series_desde_tabla(_tabla(500, close, ts0=ts0), None)
+    meta_ds = {"dataset_id": "sintetico_timeout", "dataset_hash": "sha256:sintetico_timeout",
+               "intervalos_ms": [DIA], "proxy": False}
+    t = modelos.FinCast(python=sys.executable, falso=True, timeout_s=0.25, fallo_falso="silencio")
+    with tempfile.TemporaryDirectory(prefix="timeout-", dir=rutas.TMP_FINCAST) as tmp:
+        try:
+            with patch.object(datos, "cargar_dataset", return_value=(s, meta_ds)):
+                pred, principal, meta = banco.ejecutar("lago_cierre_c20261101", tmp, ["fincast"], None, 2,
+                                                     banco.SEMILLA, 1, "selftest sintetico sin red", False,
+                                                     lambda nombres, hilos: ([t], {}))
+            assert meta["fallos"] == {"fincast": 1} and principal.empty
+            assert pred.loc[~pred.ok, "origen_ms"].nunique() == 1 and pred.loc[pred.ok, "origen_ms"].nunique() == 1
+            persistido = json.loads(Path(tmp, "meta.json").read_text(encoding="utf-8"))
+            assert persistido["fallos"]["fincast"] == 1 and "timeout" in persistido["errores_ejemplo"][0]["error"]
+            assert pd.read_csv(Path(tmp, "metricas.csv")).empty
+            limpia = pd.read_csv(Path(tmp, "metricas_limpia.csv"))
+            assert (limpia.n == 1).all() and limpia.pinball_01.isna().all()
+            texto, _, _ = informe.seccion_limpia([tmp])
+            assert "timeout" in "\n".join(texto) and "'fincast': 1" in "\n".join(texto)
+        finally:
+            t.cerrar()
+    print("timeout persistido: un origen fallido, siguiente valido, recuento en meta y en informe: ok")
+
+
+def prueba_ventana_vacia_persistida():
+    import tempfile
+    from pathlib import Path
+    from unittest.mock import patch
+    import pandas as pd
+    from . import rutas
+
+    ts0 = datos.rejilla_origenes("2020-01-01", "2020-01-01", 1)[0]
+    close = 100 * np.exp(np.cumsum(simular_garch(1600, semilla=18)) / 100)
+    s = datos.series_desde_tabla(_tabla(1600, close, ts0=ts0), None)
+    meta_ds = {"dataset_id": "sintetico_antiguo", "dataset_hash": "sha256:sintetico_antiguo",
+               "intervalos_ms": [DIA], "proxy": False}
+    os.makedirs(rutas.TMP_FINCAST, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="vacia-", dir=rutas.TMP_FINCAST) as tmp:
+        with patch.object(datos, "cargar_dataset", return_value=(s, meta_ds)):
+            pred, principal, meta = banco.ejecutar("binance_c20261101", tmp, ["chronos2"], None, 0,
+                                                 banco.SEMILLA, 1, "selftest sintetico antiguo", False,
+                                                 lambda nombres, hilos: ([modelos.Trivial()], {}), solo_limpia=True)
+        assert pred.empty and principal.empty and meta["ventana_limpia"]["estado"] == "vacia"
+        assert meta["omitidos"]["SINT"]["fuera_ventana_limpia"] > 0
+        assert "posteriores" in meta["ventana_limpia"]["motivo"]
+        assert pd.read_csv(Path(tmp, "metricas_limpia.csv")).empty
+    print("ventana limpia vacia persistida: dataset antiguo, CSV con cabecera y motivo en meta: ok")

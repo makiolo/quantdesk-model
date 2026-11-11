@@ -1,0 +1,188 @@
+{
+  "lago_cierre_c20261101": {
+    "filas_predicciones": 62244,
+    "celdas": 252,
+    "metricas_sha256": "a02621b6c08101e3760dc7cb58be64ca76c441e41da73cc3c434ea60b851a84b",
+    "metricas_identicas_a_S01": true,
+    "cuantiles_monotonos": false,
+    "filas_no_monotonas_por_modelo": {
+      "chronos2": 187
+    },
+    "ejemplos": [
+      {
+        "instrument": "AUDCHF",
+        "origen_ms": 1789603200000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -2.372264862060547e-05
+      },
+      {
+        "instrument": "AUDCHF",
+        "origen_ms": 1789689600000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -3.230571746826172e-05
+      },
+      {
+        "instrument": "AUDCHF",
+        "origen_ms": 1789776000000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -2.5510787963867188e-05
+      },
+      {
+        "instrument": "AUDCHF",
+        "origen_ms": 1790035200000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -6.794929504394531e-06
+      },
+      {
+        "instrument": "AUDCHF",
+        "origen_ms": 1790121600000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -4.845857620239258e-05
+      },
+      {
+        "instrument": "AUDCHF",
+        "origen_ms": 1790208000000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -3.4809112548828125e-05
+      },
+      {
+        "instrument": "AUDJPY",
+        "origen_ms": 1772150400000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -6.198883056640625e-06
+      },
+      {
+        "instrument": "AUDJPY",
+        "origen_ms": 1772668800000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -1.049041748046875e-05
+      },
+      {
+        "instrument": "AUDJPY",
+        "origen_ms": 1772755200000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -0.00010538101196289062
+      },
+      {
+        "instrument": "AUDJPY",
+        "origen_ms": 1772841600000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -3.814697265625e-05
+      }
+    ],
+    "dataset_hash": "sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356"
+  },
+  "binance_c20261101": {
+    "filas_predicciones": 32310,
+    "celdas": 90,
+    "metricas_sha256": "c5718d7a7d39e0bf172a993c40232e0755c6ee30f6ccb223ace9ae7a31cdf17d",
+    "metricas_identicas_a_S01": true,
+    "cuantiles_monotonos": false,
+    "filas_no_monotonas_por_modelo": {
+      "chronos2": 890
+    },
+    "ejemplos": [
+      {
+        "instrument": "ADAUSDT",
+        "origen_ms": 1738195200000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -0.00012201070785522461
+      },
+      {
+        "instrument": "ADAUSDT",
+        "origen_ms": 1738454400000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -0.00019681453704833984
+      },
+      {
+        "instrument": "ADAUSDT",
+        "origen_ms": 1772928000000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -0.000370025634765625
+      },
+      {
+        "instrument": "ADAUSDT",
+        "origen_ms": 1773187200000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -0.0003317594528198242
+      },
+      {
+        "instrument": "ADAUSDT",
+        "origen_ms": 1773446400000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -0.0005804300308227539
+      },
+      {
+        "instrument": "ADAUSDT",
+        "origen_ms": 1773964800000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -4.172325134277344e-06
+      },
+      {
+        "instrument": "ADAUSDT",
+        "origen_ms": 1774224000000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -0.0006715059280395508
+      },
+      {
+        "instrument": "ADAUSDT",
+        "origen_ms": 1774483200000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -0.00013828277587890625
+      },
+      {
+        "instrument": "ADAUSDT",
+        "origen_ms": 1774742400000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -0.0004945993423461914
+      },
+      {
+        "instrument": "ADAUSDT",
+        "origen_ms": 1775001600000,
+        "h": 1,
+        "modelo": "chronos2",
+        "min_diferencia_cuantil": -0.0006344318389892578
+      }
+    ],
+    "dataset_hash": "sha256:d765d56037f700bd2550a9a2ae9d53fbd2406afd7cddb82bbfeaf2a56670b744"
+  },
+  "toto_lago_cierre_c20261101": {
+    "filas_predicciones": 4200,
+    "celdas": 84,
+    "metricas_sha256": "5fc3ebc91770f82b34ff23359044c1f9a39edaaec461fe3ba8b3fee59abbeaa8",
+    "metricas_identicas_a_S01": true,
+    "cuantiles_monotonos": true,
+    "filas_no_monotonas_por_modelo": {},
+    "ejemplos": [],
+    "dataset_hash": "sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356"
+  },
+  "toto_binance_c20261101": {
+    "filas_predicciones": 1080,
+    "celdas": 30,
+    "metricas_sha256": "a824b54cfa1ed3f3f9b1de2d628e9261593410ab3d3fb8ccecbc2b95de063b78",
+    "metricas_identicas_a_S01": true,
+    "cuantiles_monotonos": true,
+    "filas_no_monotonas_por_modelo": {},
+    "ejemplos": [],
+    "dataset_hash": "sha256:d765d56037f700bd2550a9a2ae9d53fbd2406afd7cddb82bbfeaf2a56670b744"
+  }
+}
