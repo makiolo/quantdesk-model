@@ -96,6 +96,12 @@ tareas L3–L6 en 3 días con la misma cuota; se toma como escenario de confianz
 cada ola se lee la cuota (`claude-or quota --weekly`); si no alcanza, se espera al reinicio en lugar de recortar
 alcance.
 
+Cuota de Codex ×2 esta semana (decisión del usuario del 2026-11-11, retransmitida por la raíz de
+`reinforcement_learning`): «Tengo 1 reset semanal en codex, así que considera que puedo usarlo el doble, una vez
+agotado, calíbralo esta semana, al elegir claude o codex». Al repartir autores y revisores se inclina el reparto hacia
+Codex hasta agotar la primera cuota semanal; tras usar el reinicio se recalibra esta misma semana con el consumo real.
+Autor y revisor siguen siendo de proveedores distintos.
+
 Modelos: el LAUNCH aplica la decisión del usuario del 2026-11-10 (Haiku 5.5 ni autor ni revisor; L3–L6 con Sonnet 5.5
 high o gpt-6.1-sol high hasta L5; tabla «caso borde → test» y revisión obligatoria en L3–L4 hasta el 2026-11-24),
 recogida en [SPRINT_PROJECT §6](../SPRINT_PROJECT.md#6-delegación).
