@@ -97,7 +97,9 @@ def correr_serie(serie, cortes, modelos, semilla, progreso=None):
                     raise ValueError("cuantiles no monotonos (se exige orden no decreciente)")
                 err = None
             except Exception as exc:  # noqa: BLE001 -- se cuenta y se informa, nunca se oculta
-                Q, info, err = None, {}, f"{type(exc).__name__}: {exc}"[:300]
+                Q, info, err = None, {"cpu_s_externo": getattr(exc, "cpu_s_externo", 0.0)}, f"{type(exc).__name__}: {exc}"[:300]
+                if progreso:
+                    print(f"  FALLO {serie.instrument} {c.origen_ms} {m.nombre}: {err}", flush=True)
             # el CPU de un subproceso (Toto) no lo ve process_time: lo mide el trabajador y se suma aqui
             externo = float(info.pop("cpu_s_externo", 0.0)) if isinstance(info, dict) else 0.0
             filas += _filas_corte(serie.instrument, c, m.nombre, Q, info, time.process_time() - t0 + externo, err)
@@ -240,6 +242,7 @@ def ejecutar(dataset, out, nombres_modelos, activos, max_origenes, semilla, hilo
         fp = os.path.join(out, "pred", f"{ins}.parquet")
         if reanudar and os.path.exists(fp):
             partes.append(pd.read_parquet(fp))
+            meta.setdefault("reanudados", []).append(ins)
             print(f"{ins}: reanudado ({len(cortes)} origenes)", flush=True)
             continue
         t0 = time.perf_counter()

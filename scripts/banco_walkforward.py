@@ -121,6 +121,7 @@ def cmd_correr(a) -> int:
                                      a.reanudar, fabrica, cada=a.cada, solo_limpia=a.solo_limpia)
     if "fincast" in nombres:
         meta["config"]["fincast_timeout_s"] = a.fincast_timeout
+        meta["config"]["fincast_driver"] = "errores_sin_recargar_v2"
     if "chronos2" in nombres:
         from banco_walkforward_lib import modelos
 

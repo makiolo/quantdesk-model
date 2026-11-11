@@ -331,6 +331,10 @@ class FinCast:
         threading.Thread(target=enviar, args=(self.p, self._cola), daemon=True).start()
         try:
             r = self._leer(self.timeout_s)
+        except Exception:
+            self.cerrar()
+            raise
+        try:
             if "error" in r:
                 raise RuntimeError(r["error"])
             Q = np.asarray(r["Q"], float)
@@ -339,8 +343,11 @@ class FinCast:
             if (np.diff(Q, axis=1) < 0).any():
                 raise ValueError("FinCast cuantiles no monotonos")
             return Q, {**r["info"], "cpu_s_externo": float(r["cpu_s"])}
-        except Exception:
-            self.cerrar()
+        except Exception as exc:
+            # La linea completa ya se consumio: el protocolo sigue sincronizado. No recargar ~4 GB por
+            # un origen rechazado; conservar tambien la CPU que devolvio una respuesta de error.
+            if isinstance(r, dict):
+                exc.cpu_s_externo = float(r.get("cpu_s", 0.0))
             raise
 
     def cerrar(self):

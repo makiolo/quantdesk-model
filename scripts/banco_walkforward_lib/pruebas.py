@@ -360,11 +360,13 @@ def prueba_fincast():
     for fallo, mensaje in (("silencio", "timeout"), ("error", "error falso"), ("no_monotono", "monoton")):
         t = modelos.FinCast(python=sys.executable, falso=True, timeout_s=0.25, fallo_falso=fallo)
         try:
+            pid_antes = t.p.pid
             t.timeout_arranque_s = 10
             filas = pd.DataFrame(banco.correr_serie(s, cortes, [t], banco.SEMILLA))
             assert not filas.iloc[:3].ok.any() and filas.iloc[:3].error.str.contains(mensaje).all(), filas.error
             assert filas.iloc[3:].ok.all(), "la corrida no sigue tras un origen fallido"
             assert filas.loc[~filas.ok, "origen_ms"].nunique() == 1
+            assert (t.p.pid != pid_antes) == (fallo == "silencio"), "solo el fallo de transporte exige reinicio"
         finally:
             t.cerrar()
     print("fincast: trabajador aislado falso, deciles/z, venv/pesos ausentes, timeout y errores por origen: ok")
@@ -386,6 +388,15 @@ def prueba_monotonia_banco():
     cortes, _ = datos.cortes_de_serie(s, [T0 + 40 * DIA], 30, banco.HMAX)
     p = pd.DataFrame(banco.correr_serie(s, cortes, [Roto()], banco.SEMILLA))
     assert not p.ok.any() and p.error.str.contains("monoton").all()
+
+    class ErrorCPU(Roto):
+        def predecir(self, precios, semilla, hmax):
+            exc = RuntimeError("fallo externo con CPU conocida")
+            exc.cpu_s_externo = 7.25
+            raise exc
+
+    p = pd.DataFrame(banco.correr_serie(s, cortes, [ErrorCPU()], banco.SEMILLA))
+    assert not p.ok.any() and (p.cpu_s >= 7.25).all(), "CPU externa de una respuesta fallida perdida"
     print("banco: cuantiles no monotonos fallan explicitamente para cualquier modelo: ok")
 
 

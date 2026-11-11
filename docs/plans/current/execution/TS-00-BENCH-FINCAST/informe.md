@@ -83,8 +83,14 @@ solo que una revisión posterior de los pesos esté libre de contaminación.
 
 Timeout FinCast por petición **600 s**, configurable con `--fincast-timeout`; arranque **300 s**. El timeout
 mata el trabajador, marca ese origen fallido y reinicia en el siguiente. El contador y el ejemplo de error
-llegan al informe. La CPU externa la devuelve el trabajador; la CPU de una petición sin respuesta no es
+llegan al informe. Una respuesta JSON de error o de cuantiles inválidos conserva el trabajador sincronizado
+y la CPU externa devuelta; no requiere recargar los pesos. La CPU de una petición sin respuesta no es
 recuperable y queda fuera de la suma, pero la pared incluye la espera. Toto conserva su comportamiento.
+La corrida FX ya estaba en curso con el primer driver al añadir esta mejora: en ella los errores normales
+reinician el modelo y no conservan su CPU externa. Se declara esa limitación, se muestran los fallos y se
+registra aparte la CPU por origen válido. No cambia ninguna predicción ni se reparan cuantiles. Las corridas
+posteriores y el gate usan el driver corregido. La CPU de carga inicial está separada de la de predicción;
+las recargas del primer driver están incluidas en pared, sin una medición acumulada de CPU de carga.
 
 ## Entorno y reproducción
 

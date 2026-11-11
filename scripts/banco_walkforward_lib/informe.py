@@ -580,7 +580,8 @@ def seccion_limpia(runs):
               f"Timeout FinCast por peticion: {modelos.FINCAST_TIMEOUT_S:g} s por defecto "
               "(`--fincast-timeout`); arranque 300 s. Un timeout mata el trabajador y marca el origen fallido; "
               "el siguiente origen arranca otro. CPU de peticiones fallidas sin respuesta no recuperable; "
-              "el tiempo de espera si esta en la pared. Toto conserva su comportamiento previo.", "",
+              "el tiempo de espera si esta en la pared. Las respuestas JSON completas de error conservan "
+              "el trabajador sincronizado y su CPU externa con el driver v2. Toto conserva su comportamiento previo.", "",
               "Licencias verificadas el 2026-11-11: [codigo Apache-2.0](https://github.com/vincent05r/FinCast-fts/blob/"
               + modelos.FINCAST_CODIGO_REV + "/LICENSE), SHA-256 de LICENSE "
               "`1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6`; "
@@ -625,6 +626,12 @@ def seccion_limpia(runs):
                      f"`{m['predicciones_sha256']}` |")
             if m.get("saltados"):
                 L.append(f"Modelos saltados declarados: {m['saltados']}.")
+            if ("fincast" in m["config"]["modelos"] and m["fallos"].get("fincast")
+                    and (not m["config"].get("fincast_driver") or m.get("reanudados"))):
+                L.append("Limitacion del driver inicial de esta corrida: CPU externa de respuestas fallidas no "
+                         "conservada y recargas posteriores no sumadas a CPU de carga inicial; si incluidas en "
+                         "pared. La CPU por origen es la registrada, no el coste completo de los fallos. "
+                         "El informe principal adjunta tambien CPU por origen valido.")
             for e in m.get("errores_ejemplo", []):
                 L.append(f"Fallo declarado: {e['instrument']} {e['origen_ms']} {e['modelo']}: {e['error']}.")
         L.append("")
