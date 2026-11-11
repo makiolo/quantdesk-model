@@ -1,0 +1,38 @@
+fecha=2026-11-11 motor=quantdesk 69fdb39d semilla=no_aplica
+git archive 3e35ed54d8190d3679945753cc9e433f2ee13cfe -> E:\quantdesk-lab\tmp\TI-02-DATA-V2\correccion4_final\codigo_3e35ed54d8190d3679945753cc9e433f2ee13cfe
+.venv es junction al venv existente; no se instalan paquetes.
+Cortes: invariantes y revisor 2026-11-01; AUDCAD 2026-11-11 y 2026-11-10T05:00Z/09:35Z/10:00Z.
+cwd=E:\quantdesk-lab\tmp\TI-02-DATA-V2\correccion4_final\codigo_3e35ed54d8190d3679945753cc9e433f2ee13cfe
+
+> S:\Projects\quantdesk-model\.venv\Scripts\python.exe -X utf8 -u scripts/descarga_lago.py --selftest
+selftest ok
+exit=0
+
+> S:\Projects\quantdesk-model\.venv\Scripts\python.exe -X utf8 -u E:\quantdesk-lab\tmp\TI-02-DATA-V2\correccion4_final\codigo_3e35ed54d8190d3679945753cc9e433f2ee13cfe\docs\plans\current\execution\TI-02-DATA-V2\correccion4\verificar.py E:\quantdesk-lab\tmp\TI-02-DATA-V2\correccion4_final\codigo_3e35ed54d8190d3679945753cc9e433f2ee13cfe E:\quantdesk-lab\tmp\TI-02-DATA-V2\correccion4_final
+sin_mt5: hash 2/2; contadores identicos; procedencia igual salvo identificacion de codigo/politica C3.
+mt5_tardia: hash 2/2; contadores identicos; procedencia igual salvo identificacion de codigo/politica C3.
+mt5_tardia_posterior: hash 2/2; contadores identicos; procedencia igual salvo identificacion de codigo/politica C3.
+Historicos: 4/4; exportador 0e67465; sin rehacer; originales byte a byte intactos.
+A12 C4: 12/12 datasets con motor sin violaciones; proxy usa politica que admite lag 0.
+Aserciones: 219 intactas; 2 contadores precisados por A12 C4; casos nuevos.
+exit=0
+
+> S:\Projects\quantdesk-model\.venv\Scripts\python.exe -X utf8 -u scripts/exportar_market_history.py --selftest
+selftest ok
+exit=0
+
+> S:\Projects\quantdesk-model\.venv\Scripts\python.exe -X utf8 -u scripts/run_selftests.py
+OK     scripts/banco_precision.py: selftest ok
+OK     scripts/banco_walkforward.py: selftest ok
+OK     scripts/build_wheels.py: selftest OK
+OK     scripts/cuadre_mt5.py: selftest ok
+OK     scripts/descarga_lago.py: selftest ok
+OK     scripts/exportar_market_history.py: selftest ok
+OK     scripts/extractor_mt5.py: selftest ok
+OK     scripts/ingesta_publica.py: selftest ok
+OK     scripts/inventario_options_chain.py: selftest ok
+OK     scripts/publicador_mt5.py: selftest ok
+OK     scripts/setup_env.py: setup_env selftest ok
+OK     scripts/smoke_env.py: smoke_env: OK (21 comprobaciones; 0 SALTADAS)
+run_selftests: 12 OK, 0 FALLO
+exit=0

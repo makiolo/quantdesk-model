@@ -1,0 +1,4 @@
+Exportador: 221 previas; 234 actuales. 219 intactas; 2 sustituciones exactas por A12 C4.
+Disponibilidad MT5, corte anterior al fin nominal: restaura motivos de 5b70106 (version_posterior_descartada=1 y fecha=1, no fecha=2).
+AUDCAD intermedio, primera conocida y otra futura: restaura version_posterior_descartada=1; los otros casos mantienen 0.
+Ambos cambios conservan valores y disponibilidad; precisan contadores cuando la primera completa no se sustituye. Sin tolerancias ni skips.

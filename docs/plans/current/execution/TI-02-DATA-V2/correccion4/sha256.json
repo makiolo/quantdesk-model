@@ -1,0 +1,21 @@
+{
+  "fecha": "2026-11-11",
+  "motor": "quantdesk 69fdb39d",
+  "semilla": null,
+  "codigo_verificado": "3e35ed54d8190d3679945753cc9e433f2ee13cfe",
+  "normalizacion": "CRLF a LF",
+  "sha256": {
+    "scripts/exportar_market_history.py": "8fa25b09d4ad6e98d640d0a98fa25138878e4a8400201106a42ce425f07c2441",
+    "scripts/exportar_market_history_lib/fuentes.py": "3c69d1f0fd4b706b7035fb437fc097f87e67e1407c3bbcd24fc93944ae920417",
+    "scripts/exportar_market_history_lib/limpieza.py": "ac44088ebdcac05c4688854d8f14f96cddabcb019cc117543674cc605ae64c86",
+    "scripts/exportar_market_history_lib/selftests.py": "709d0dfa1b97470174118ab61124d61c6c2c55fe77edc95a2883fc4527422631",
+    "docs/plans/current/execution/TI-02-DATA-V2/informe.md": "2eb0a0fd8e5d8cbd096edc35bcec8ac8977ed0ea6a61603529433939a919b62d",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion4/A12.json": "adb9df4d887d0f6c623449005efbc3c3f7e71afb99845ba6155d3d1c662e73ec",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion4/aceptacion.log": "5e4e2ca520a3d70353abadafc5ca7211e12d8dac21ac4da0d95ab525154e4947",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion4/aceptar.py": "df53223c939036fbc3f405ab357b765d22dae05c21e62b6b6224dfd11256f292",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion4/alcance.log": "48d21fc424f13e2a20b170ea26525875ad54684cd9aefc8e5ef97385ca269744",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion4/aserciones.log": "f88bf3662c3c24a4d66bd96e81d050fb2d264f08e8c16e805221b728ad96cbf5",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion4/invariantes.json": "97be6e3050199eced05858b02f7f170f3497c578761de330cdaee1ebf9e40e11",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion4/verificar.py": "a14892d26c55f255bcc3fd132d1570157eca6739313029ee3a7241da2c7def18"
+  }
+}

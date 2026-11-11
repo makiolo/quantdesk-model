@@ -220,3 +220,19 @@ Aceptación en `git archive d4103ad`: `.venv/Scripts/python -X utf8 scripts/desc
 | MT5 1d fuera de medianoche → `prueba_rejilla_mt5:964` | 6 rechazos CLI (hora/ms/µs/ns y ms fraccional), guarda directa; otras fuentes/intervalos intactos |
 
 Dudas para revisión: ninguna
+
+## Corrección 4
+
+2026-11-11 · intento 5 · base `ce1150d` · código `3e35ed54d8190d3679945753cc9e433f2ee13cfe` · motor `quantdesk 69fdb39d` · semilla: no aplica; cortes en `correccion4/aceptacion.log`; SHA-256 en `correccion4/sha256.json`.
+A12: MT5 1d elige la última completa ≤ corte si existe; sin ninguna, primera completa como proxy en `cierre` y fuera en `recepcion`. Revisadas y `pares_y_fechas` sólo cuentan barras finales que sustituyen a la primera completa.
+`git archive 3e35ed5`: ambos `--selftest` → **selftest ok**; `run_selftests.py` al final → **12 OK, 0 FALLO** (`correccion4/aceptacion.log`); motor **12/12**, cero violaciones, proxy con lag 0 admitido (`correccion4/A12.json`).
+`correccion4/invariantes.json`: sin MT5 **2/2**, MT5 tardío anterior **2/2**, posterior **2/2**, históricos **4/4**, originales intactos; contadores idénticos a `5b70106`. Procedencia idéntica salvo `codigo_sha256` e identificación de política v2→v3 vigente de C3 (versión, divisas, clasificación y `politica_version`); no se falsean huellas. `lago_cierre_c20261101` conserva ISSUE-LAGO-FX-1D-CLOSE.
+
+| Caso borde → test | Resultado |
+|---|---|
+| 12 EURUSD recibidas 2026-11-09 12:00Z, corte 2026-11-01 → `prueba_mt5_sin_version_al_corte`; `verificar.py` | Cierre 12, recepción 0; mismo hash y contadores que `5b70106` |
+| Una completa antes y otra después; ninguna antes con varias después y abierta previa → `prueba_mt5_sin_version_al_corte` | Primera en ambos modos si conocida; sin conocida, primera sólo en cierre; motivos conservados |
+| Barras fuera por fecha con dos completas conocidas y otra futura; versión única tardía → misma prueba | Sin revisadas ni pares espurios; motivos exactos de `5b70106`, sin filtrar antes de elegir la primera |
+| AUDCAD cortes 11 / 10 05:00Z; cortes exactos y futuras → `prueba_revisiones_mt5` | 0.97762 / 0.9768. 219 aserciones intactas; 2 contadores C3 sustituidos por los de `5b70106` cuando gana la primera o no entra (A12 C4); auditoría en `correccion4/aserciones.log` |
+
+Dudas para revisión: confirmar que la igualdad de procedencia excluye la identificación del código y de la política v3 obligatorias; no puede ser literal frente a `5b70106` sin falsearlas.

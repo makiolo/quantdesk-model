@@ -1,0 +1,333 @@
+{
+  "fecha": "2026-11-11",
+  "base_correccion": "5b70106",
+  "codigo_verificado": "3e35ed54d8190d3679945753cc9e433f2ee13cfe",
+  "motor": "quantdesk 69fdb39d",
+  "semilla": null,
+  "casos_AUDCAD": [
+    {
+      "caso": "audcad_corte_exacto_cierre",
+      "corte_ms": 1794303300000,
+      "close": 0.97762,
+      "volume": 75560.0,
+      "available_at_ms": null,
+      "dataset_hash": "sha256:ecc4a6a85ac2fa1fddbce39e4ccaa9dd53f6059836a6aaf308ac2fbbecec8d98",
+      "ficheros_sha256": {
+        "lago_ohlcv_1d.parquet": "c194293252ff1f935ed809d707932dae3c67a1e438f9b64d8d67940f15f9206e",
+        "manifest.json": "08c6efe0bec83e8a4654cb97ca5b37b42a3b44691a64b3810262b7299c04f549"
+      },
+      "motor_ok": true,
+      "politica_ok": true,
+      "violaciones_lookahead": 0
+    },
+    {
+      "caso": "audcad_corte_exacto_recepcion",
+      "corte_ms": 1794303300000,
+      "close": 0.97762,
+      "volume": 75560.0,
+      "available_at_ms": 1794303300000,
+      "dataset_hash": "sha256:0302e8c3502b8469821f4403b172ba6b7030b32c8a2ea892ff73b88f5e3baaf4",
+      "ficheros_sha256": {
+        "lago_ohlcv_1d.parquet": "2a5eaabca14fe7fd1ccaa328933a2b891574fcec5bb52c8cef15d8162899b8d2",
+        "manifest.json": "e89292024c2d5aec130ddb7ea3c4b6e6f8f9bb3d14b18be2b4cdb273d27881a3"
+      },
+      "motor_ok": true,
+      "politica_ok": true,
+      "violaciones_lookahead": 0
+    },
+    {
+      "caso": "audcad_intermedio_cierre",
+      "corte_ms": 1794286800000,
+      "close": 0.9768,
+      "volume": 68104.0,
+      "available_at_ms": null,
+      "dataset_hash": "sha256:a9b6140661960fff6d2c2619bd18b040cb14c7744152394eeb58c41ebef6d1ea",
+      "ficheros_sha256": {
+        "lago_ohlcv_1d.parquet": "a4757db0c44a93dd3575751c82ea4cca2895580fd55a56145d9e991cdabd5e9b",
+        "manifest.json": "45a95a4eb147a58104d78a3821cef65da31968c27a998ebc483810fe7943b9c9"
+      },
+      "motor_ok": true,
+      "politica_ok": true,
+      "violaciones_lookahead": 0
+    },
+    {
+      "caso": "audcad_intermedio_recepcion",
+      "corte_ms": 1794286800000,
+      "close": 0.9768,
+      "volume": 68104.0,
+      "available_at_ms": 1794268800000,
+      "dataset_hash": "sha256:7406a3db00718f50629a627102a18a74eec1ce4c12158817f215653afc7d5e22",
+      "ficheros_sha256": {
+        "lago_ohlcv_1d.parquet": "821ff0cd90227f070e71280261d75df2e0b5fc8e11c31cd1b056760d2807a0ac",
+        "manifest.json": "280459a02990f509919a5debc3d341cffbf45dbcecf3486f27731662e2a34615"
+      },
+      "motor_ok": true,
+      "politica_ok": true,
+      "violaciones_lookahead": 0
+    },
+    {
+      "caso": "audcad_revisor_cierre",
+      "corte_ms": 1794355200000,
+      "close": 0.97762,
+      "volume": 75560.0,
+      "available_at_ms": null,
+      "dataset_hash": "sha256:ecc4a6a85ac2fa1fddbce39e4ccaa9dd53f6059836a6aaf308ac2fbbecec8d98",
+      "ficheros_sha256": {
+        "lago_ohlcv_1d.parquet": "c194293252ff1f935ed809d707932dae3c67a1e438f9b64d8d67940f15f9206e",
+        "manifest.json": "a345c5f5529ac23f7543ccae9494f452df933594ad5f8f7d8ab89444874d64ee"
+      },
+      "motor_ok": true,
+      "politica_ok": true,
+      "violaciones_lookahead": 0
+    },
+    {
+      "caso": "audcad_revisor_recepcion",
+      "corte_ms": 1794355200000,
+      "close": 0.97762,
+      "volume": 75560.0,
+      "available_at_ms": 1794303300000,
+      "dataset_hash": "sha256:0302e8c3502b8469821f4403b172ba6b7030b32c8a2ea892ff73b88f5e3baaf4",
+      "ficheros_sha256": {
+        "lago_ohlcv_1d.parquet": "2a5eaabca14fe7fd1ccaa328933a2b891574fcec5bb52c8cef15d8162899b8d2",
+        "manifest.json": "120f29793f2a5bc482b79d0f6247c9b4b781041ebc181b39fccfc451ecc9faee"
+      },
+      "motor_ok": true,
+      "politica_ok": true,
+      "violaciones_lookahead": 0
+    },
+    {
+      "caso": "audcad_tres_cierre",
+      "corte_ms": 1794355200000,
+      "close": 0.978,
+      "volume": 76000.0,
+      "available_at_ms": null,
+      "dataset_hash": "sha256:faab6e20fd93091602dbe6cc4891b8b76533b0c73a67255e8ae691fb2cdb5a35",
+      "ficheros_sha256": {
+        "lago_ohlcv_1d.parquet": "5f51fa07490b56f10e93ddd9e09ac4a4eb2ce0c26b5116ddb408536ac4c05f50",
+        "manifest.json": "d25ce51e64dc32a03feb63aed9530be979851bb639c9f2bf4cecea630fdc4270"
+      },
+      "motor_ok": true,
+      "politica_ok": true,
+      "violaciones_lookahead": 0
+    },
+    {
+      "caso": "audcad_tres_intermedio_cierre",
+      "corte_ms": 1794304800000,
+      "close": 0.97762,
+      "volume": 75560.0,
+      "available_at_ms": null,
+      "dataset_hash": "sha256:ecc4a6a85ac2fa1fddbce39e4ccaa9dd53f6059836a6aaf308ac2fbbecec8d98",
+      "ficheros_sha256": {
+        "lago_ohlcv_1d.parquet": "c194293252ff1f935ed809d707932dae3c67a1e438f9b64d8d67940f15f9206e",
+        "manifest.json": "e53716aafa9c3ae43ad9acc92e1385fd62563bfc24cf66b253018ca99070aec6"
+      },
+      "motor_ok": true,
+      "politica_ok": true,
+      "violaciones_lookahead": 0
+    },
+    {
+      "caso": "audcad_tres_intermedio_recepcion",
+      "corte_ms": 1794304800000,
+      "close": 0.97762,
+      "volume": 75560.0,
+      "available_at_ms": 1794303300000,
+      "dataset_hash": "sha256:0302e8c3502b8469821f4403b172ba6b7030b32c8a2ea892ff73b88f5e3baaf4",
+      "ficheros_sha256": {
+        "lago_ohlcv_1d.parquet": "2a5eaabca14fe7fd1ccaa328933a2b891574fcec5bb52c8cef15d8162899b8d2",
+        "manifest.json": "1f45e68ed8ba4927705b379603d2439bff3fa7833a022412acb7962b3348cf91"
+      },
+      "motor_ok": true,
+      "politica_ok": true,
+      "violaciones_lookahead": 0
+    },
+    {
+      "caso": "audcad_tres_recepcion",
+      "corte_ms": 1794355200000,
+      "close": 0.978,
+      "volume": 76000.0,
+      "available_at_ms": 1794312000000,
+      "dataset_hash": "sha256:a42bca3c5eaadc252403ef1f9045e1363cbfb5208ad27d876b7fa0ce97db7961",
+      "ficheros_sha256": {
+        "lago_ohlcv_1d.parquet": "b29de919407e03ce3907201ad5ca3bc74602c9cefcd26c717d018da4527eb0bd",
+        "manifest.json": "95bcd47f180fb5b6775033868ae369c8fb345f2ad776adad33e86696d59358f6"
+      },
+      "motor_ok": true,
+      "politica_ok": true,
+      "violaciones_lookahead": 0
+    }
+  ],
+  "casos_revisor": [
+    {
+      "caso": "mt5_posterior_cierre",
+      "validacion": {
+        "llamadas": {
+          "describe": "data_py.dataset_describe_json(\"E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion4_final/nuevos/c4_out/mt5_posterior_cierre\", True)",
+          "disponibilidad": "data_py.availability_report_json(dir, table_id, \"{}\", \"reject\")",
+          "politica": "data_py.verify_policy_json(mode=feed, policy={\"availability\": {\"require_available_at\": true}, \"schema\": \"engine.data-policy\", \"timezone\": {\"require_declared\": true}, \"version\": \"v1\"}, vendor_root=\"E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion4_final/nuevos/c4_out\", dataset_id=\"mt5_posterior_cierre\", revision_policy=\"reject\")",
+          "vendor": "data_py.vendor_describe_json(\"E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion4_final/nuevos/c4_out\")"
+        },
+        "describe": {
+          "dataset_id": "mt5_posterior_cierre",
+          "tablas": [
+            {
+              "table_id": "lago_ohlcv_1d",
+              "schema": "ohlcv/v1",
+              "rows": 12,
+              "rows_declared": 12,
+              "row_groups": 1,
+              "ts_min_ms": 1792022400000,
+              "ts_max_ms": 1792972800000,
+              "file_size_bytes": 3026,
+              "codecs": [
+                "SNAPPY"
+              ],
+              "logical_hash": "sha256:3007436e0d62334267c4c160c5569947cfe0a81b7ae55e8f60ab8f5903a47bf6",
+              "hash_verified": true
+            }
+          ]
+        },
+        "vendor": {
+          "dataset_hash_del_motor": "sha256:283cd6b4f1afb6a10b5e77b4c140cf61596530e0cf57c33f8814a688d3d8a847",
+          "issues": []
+        },
+        "disponibilidad": {
+          "lago_ohlcv_1d": {
+            "rows": 12,
+            "declared": 0,
+            "defaulted": 12,
+            "undeclared": 0,
+            "violaciones_dpol_avl_002": 0,
+            "ejemplos_de_violacion": [],
+            "revisiones_conservadas": 12,
+            "revisiones_descartadas": 0,
+            "estado": "proxy_default_lag",
+            "consumible_causal": false
+          }
+        },
+        "parquet": {
+          "lago_ohlcv_1d": {
+            "filas": 12,
+            "grupos": 1,
+            "codec": "SNAPPY",
+            "max_cierre_ms": 1793059200000,
+            "con_disponibilidad": 0,
+            "problemas": []
+          }
+        },
+        "politica": {
+          "ok": false,
+          "descriptor_hash": "sha256:d22f3e97ae63cd445e99102a3a8b30cc2b8f320085bb0c8cd8527d2eb8c39d79",
+          "report_hash": "sha256:611272cf0ff52c83253f1fe4f92998e2ef5e6ea3241ab7c73673e928fcfb347a",
+          "violaciones": [
+            {
+              "code": "DPOL-AVL-001",
+              "severity": "error",
+              "instrument": null,
+              "detail": "table 'lago_ohlcv_1d': 12/12 row(s) lack available_at_ms and the default lag (0) is not accepted (max_default_lag_ms unset)"
+            }
+          ]
+        },
+        "tablas_no_consumibles_causalmente": [
+          "lago_ohlcv_1d"
+        ],
+        "tablas_vacias": [],
+        "tablas_proxy": [
+          "lago_ohlcv_1d"
+        ],
+        "default_lag_ms": 0,
+        "politica_con_lag_admitido": {
+          "max_default_lag_ms": 0,
+          "ok": true,
+          "violaciones": []
+        },
+        "lookahead": {
+          "violaciones": [],
+          "violaciones_por_fila": 0
+        },
+        "problemas": [],
+        "ok": true,
+        "dataset_hash": "sha256:283cd6b4f1afb6a10b5e77b4c140cf61596530e0cf57c33f8814a688d3d8a847"
+      }
+    },
+    {
+      "caso": "mt5_posterior_recepcion",
+      "validacion": {
+        "llamadas": {
+          "describe": "data_py.dataset_describe_json(\"E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion4_final/nuevos/c4_out/mt5_posterior_recepcion\", True)",
+          "disponibilidad": "data_py.availability_report_json(dir, table_id, \"{}\", \"reject\")",
+          "politica": "data_py.verify_policy_json(mode=feed, policy={\"availability\": {\"require_available_at\": true}, \"schema\": \"engine.data-policy\", \"timezone\": {\"require_declared\": true}, \"version\": \"v1\"}, vendor_root=\"E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion4_final/nuevos/c4_out\", dataset_id=\"mt5_posterior_recepcion\", revision_policy=\"reject\")",
+          "vendor": "data_py.vendor_describe_json(\"E:/quantdesk-lab/tmp/TI-02-DATA-V2/correccion4_final/nuevos/c4_out\")"
+        },
+        "describe": {
+          "dataset_id": "mt5_posterior_recepcion",
+          "tablas": [
+            {
+              "table_id": "lago_ohlcv_1d",
+              "schema": "ohlcv/v1",
+              "rows": 0,
+              "rows_declared": 0,
+              "row_groups": 1,
+              "ts_min_ms": null,
+              "ts_max_ms": null,
+              "file_size_bytes": 1671,
+              "codecs": [
+                "SNAPPY"
+              ],
+              "logical_hash": "sha256:f0989bd1f6994e8c1562854f7e87da94d25865ec060a8e78c06c1f4805f44426",
+              "hash_verified": true
+            }
+          ]
+        },
+        "vendor": {
+          "dataset_hash_del_motor": "sha256:323395c6b6f492b4ffebc63cd14d5807cde5a89313b1c0fd3d80d666847eae72",
+          "issues": []
+        },
+        "disponibilidad": {
+          "lago_ohlcv_1d": {
+            "rows": 0,
+            "declared": 0,
+            "defaulted": 0,
+            "undeclared": 0,
+            "violaciones_dpol_avl_002": 0,
+            "ejemplos_de_violacion": [],
+            "revisiones_conservadas": 0,
+            "revisiones_descartadas": 0,
+            "estado": "vacia",
+            "consumible_causal": null
+          }
+        },
+        "parquet": {
+          "lago_ohlcv_1d": {
+            "filas": 0,
+            "grupos": 1,
+            "codec": "SNAPPY",
+            "problemas": []
+          }
+        },
+        "politica": {
+          "ok": true,
+          "descriptor_hash": "sha256:f04c37db15c81c1060f30805d1df22f70d4cf0a5c87fc3b0d41276b9029d9119",
+          "report_hash": "sha256:c5e9d6f9a602dc3dcb3ad14683b93c74180f7a17e4a4f603e1f40af2df7a2c5b",
+          "violaciones": []
+        },
+        "tablas_no_consumibles_causalmente": [],
+        "tablas_vacias": [
+          "lago_ohlcv_1d"
+        ],
+        "tablas_proxy": [],
+        "default_lag_ms": null,
+        "lookahead": {
+          "violaciones": [],
+          "violaciones_por_fila": 0
+        },
+        "problemas": [],
+        "ok": true,
+        "dataset_hash": "sha256:323395c6b6f492b4ffebc63cd14d5807cde5a89313b1c0fd3d80d666847eae72"
+      }
+    }
+  ],
+  "tests": [
+    "prueba_mt5_sin_version_al_corte",
+    "prueba_revisiones_mt5"
+  ]
+}

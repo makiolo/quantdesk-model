@@ -1,0 +1,35 @@
+commit e211f31b5306d7626e106e643d8c53b953e16319
+Author:     Ricardo Marmolejo <makiolo@gmail.com>
+AuthorDate: Wed Nov 11 12:03:10 2026 +0100
+Commit:     Ricardo Marmolejo <makiolo@gmail.com>
+CommitDate: Wed Nov 11 12:03:10 2026 +0100
+
+    TI-02-DATA-V2: conservar proxy historico MT5 sin version conocida al corte
+
+A	docs/plans/current/execution/TI-02-DATA-V2/correccion4/aceptar.py
+A	docs/plans/current/execution/TI-02-DATA-V2/correccion4/verificar.py
+M	scripts/exportar_market_history.py
+M	scripts/exportar_market_history_lib/fuentes.py
+M	scripts/exportar_market_history_lib/limpieza.py
+M	scripts/exportar_market_history_lib/selftests.py
+
+commit 3e35ed54d8190d3679945753cc9e433f2ee13cfe
+Author:     Ricardo Marmolejo <makiolo@gmail.com>
+AuthorDate: Wed Nov 11 12:27:17 2026 +0100
+Commit:     Ricardo Marmolejo <makiolo@gmail.com>
+CommitDate: Wed Nov 11 12:27:17 2026 +0100
+
+    TI-02-DATA-V2: preservar contadores cuando no se sustituye la primera completa
+
+M	docs/plans/current/execution/TI-02-DATA-V2/correccion4/verificar.py
+M	scripts/exportar_market_history_lib/limpieza.py
+M	scripts/exportar_market_history_lib/selftests.py
+
+Estado concurrente preservado:
+ M docs/plans/current/EXECUTION.md
+ M docs/plans/current/execution/TI-02-DATA-V2/informe.md
+?? bash.exe.stackdump
+?? docs/plans/current/execution/TI-02-DATA-V2/correccion4/A12.json
+?? docs/plans/current/execution/TI-02-DATA-V2/correccion4/aceptacion.log
+?? docs/plans/current/execution/TI-02-DATA-V2/correccion4/aserciones.log
+?? docs/plans/current/execution/TI-02-DATA-V2/correccion4/invariantes.json
