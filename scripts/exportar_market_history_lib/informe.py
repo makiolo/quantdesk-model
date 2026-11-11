@@ -25,6 +25,17 @@ def _detalle_limpieza(t: dict) -> list:
     c, carga, out = t["limpieza"], t["carga"], []
     out.append(f"- `{t['table_id']}`: {c['filas_origen']} filas de origen = {c['filas_finales']} finales + "
                f"{sum(c['excluidas'].values())} excluidas ({_motivos(c)}).")
+    sel = carga.get("seleccion_fuentes")
+    if sel:
+        out.append(f"  - Politica de fuentes `{sel['politica_version']}`; source admitidas (tags, filas validas de carga): "
+                   f"{carga['source']}; leidas {sel['leidas_por_source']}; excluidas {sel['excluidas_por_source']}.")
+        for s in sel["series"]:
+            out.append(f"  - {s['symbol']} {s['interval']} source={s['source']}: {s['filas_leidas']} leidas, "
+                       f"{s['filas_excluidas_por_fuente']} excluidas por fuente; regla {s['regla'] or 'una sola fuente'}.")
+        for symbol in sorted({s['symbol'] for s in sel['series']}):
+            ss = [s for s in sel['series'] if s['symbol'] == symbol]
+            if any(s['regla'] for s in ss) and not any(s['admitida'] and s['filas_leidas'] for s in ss):
+                out.append(f"  - AVISO: {symbol}: sin barras de la fuente exigida; no se usa una fuente alternativa.")
     d = c["detalle"]
     if "nulo_o_nan_por_columna" in d:
         out.append(f"  - Nulos o NaN por columna: {d['nulo_o_nan_por_columna']}.")

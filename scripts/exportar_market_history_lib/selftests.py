@@ -1,6 +1,6 @@
 """Selftest del exportador: sin red y sin datos reales. Volcado sintetico del lago con la forma real (esquemas del inventario
 TI-01-INV: `_ts`/`_recv_ts` en ns, tags en el nombre del fichero) y datasets sinteticos de TI-13-PUB; el script real se lanza
-como subproceso. Todo bajo E:/quantdesk-lab/tmp/TI-02-DATA/ y se borra al terminar."""
+como subproceso. Todo bajo E:/quantdesk-lab/tmp/TI-02-DATA-V2/ y se borra al terminar."""
 from __future__ import annotations
 
 import json
@@ -25,7 +25,7 @@ from .fuentes import a_ms as A_MS
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO = os.path.dirname(HERE)
 SCRIPT = os.path.join(HERE, "exportar_market_history.py")
-LAB_TMP = "E:/quantdesk-lab/tmp/TI-02-DATA"
+LAB_TMP = "E:/quantdesk-lab/tmp/TI-02-DATA-V2"
 CORTE = "2026-11-01"
 H, DIA, MIN = 3_600_000, 86_400_000, 60_000
 
@@ -296,7 +296,9 @@ def datos_lago(futuro: bool = False, sin_recv: bool = False) -> dict:
         rendimiento("2026-10-30", None, ns(10, 30, 17)), rendimiento("2026-11-01", 0.7, ns(11, 1, 17))]
     if futuro:
         perf.append(rendimiento("2026-11-04", 0.9, ns(11, 4, 17)))
-    return {"market.ohlcv": ohlcv,
+    for et, _ in ohlcv:
+        et["source"] = "market_scraper"
+    return {"market.ohlcv.v2": ohlcv,
             "market.rates.quotes": [({"currency": "AUD", "curve_type": "IBOR", "tenor": "10Y"}, aud),
                                     ({"currency": "USD", "curve_type": "OIS", "tenor": "1D"}, usd)],
             "market.performance": [({"period": "D", "symbol": "EUR"}, perf)]}
@@ -443,7 +445,7 @@ def prueba_exportar_lago(tmp: str) -> None:
     escribir_volcado(inc, datos_lago(), completo=False)
     cod, out, err = cli("--lago", inc, "--corte", CORTE, "--nombre", "x", "--salida-raiz", os.path.join(tmp, "r4"), runs=runs)
     assert cod == 2 and "incompleto" in err, (cod, err)
-    with open(os.path.join(dump, "market.ohlcv", "interval=1d,symbol=AAA.ndjson"), "a", encoding="utf-8") as f:
+    with open(os.path.join(dump, "market.ohlcv.v2", "interval=1d,source=market_scraper,symbol=AAA.ndjson"), "a", encoding="utf-8") as f:
         f.write("{}\n")
     cod, out, err = cli(*base, "--salida-raiz", os.path.join(tmp, "r5"), runs=runs)
     assert cod == 2 and "SHA-256" in err, (cod, err)
@@ -586,7 +588,8 @@ def prueba_integracion_con_descarga(tmp: str) -> None:
     try:
         url = f"http://127.0.0.1:{srv.server_address[1]}/qn"
         volcado = os.path.join(tmp, "integracion_volcado")
-        cod, out, err = D.lanzar(url, volcado, "--desde", "2026-10-01", "--hasta", "2026-11-07")
+        cod, out, err = D.lanzar(url, volcado, "--desde", "2026-10-01", "--hasta", "2026-11-07",
+                                 "--topics", ",".join(D.CATALOGO_PRUEBA))
         assert cod == 0, (out, err)
     finally:
         srv.shutdown()
@@ -601,9 +604,140 @@ def prueba_integracion_con_descarga(tmp: str) -> None:
     assert filas == {"lago_ohlcv_1d": 60, "lago_ohlcv_1h": 30, "lago_rates_quotes": 32, "lago_performance": 30}, filas
     d1 = p["tablas"][0]["limpieza"]["excluidas"]
     assert d1 == {"posterior_al_corte_por_disponibilidad": 2, "posterior_al_corte_por_fecha": 14}, d1
-    assert p["origenes"][0]["fuente"]["filas_por_topic"]["market.ohlcv"] == 3 * 38 and p["origenes"][0]["fuente"]["ficheros"] == 5
+    assert p["origenes"][0]["fuente"]["filas_por_topic"]["market.ohlcv.v2"] == 3 * 38 and p["origenes"][0]["fuente"]["ficheros"] == 5
     reg = json.load(open(os.path.join(runs, "lago_i.json"), encoding="utf-8"))["validacion"]
     assert reg["ok"] and reg["tablas_no_consumibles_causalmente"] == [] and reg["lookahead"]["violaciones_por_fila"] == 0
+
+
+def prueba_fuentes_v2(tmp: str) -> None:
+    """Tabla de reglas, conflictos, ausencia de source, republicacion y contabilidad por la CLI real."""
+    from . import fuentes as S
+    from descarga_lago import regla_fuente
+    from extractor_mt5_lib.inventario import FX28
+
+    assert len(FX28) == 28 and all(regla_fuente(s, '1d')['source'] == 'mt5' for s in FX28)
+    assert all(regla_fuente(s, iv) is None for s, iv in [('XAUUSD', '1d'), ('BTCUSD', '1d'), ('DE40', '1d'),
+                                                                       ('EURUSD', '1h'), ('USDEURX', '1d'), ('USDUSD', '1d')])
+    runs = os.path.join(tmp, 'v2_runs')
+    def exportar(caso, series, *extra):
+        dump = os.path.join(tmp, 'v2_' + caso)
+        escribir_volcado(dump, {'market.ohlcv.v2': series})
+        raiz = os.path.join(tmp, 'v2_out_' + caso)
+        nombre = caso + ('_cierre' if 'cierre' in extra else '')
+        c, out, err = cli('--lago', dump, '--corte', CORTE, '--nombre', nombre, '--salida-raiz', raiz, *extra, runs=runs)
+        return c, out, err, raiz, nombre, dump
+
+    def serie(symbol, source, filas=None, interval='1d'):
+        et = {'symbol': symbol, 'interval': interval}
+        if source is not None:
+            et['source'] = source
+        filas = [normal(10, 27)] if filas is None else filas
+        # qn devuelve los tags junto al objeto, no source como propiedad del objeto publicado.
+        return et, [{**r, **et} for r in filas]
+
+    # Dos fuentes de FX diario: los valores de market_scraper no se pueden colar ni como republicacion.
+    filas_mt5 = [normal(10, 27), normal(10, 28)]
+    mixto = [serie('EURUSD', 'mt5', filas_mt5), serie('EURUSD', 'market_scraper', [normal(10, 27, c=1.19)])]
+    c, out, err, raiz, nombre, dump = exportar('fx_doble', mixto)
+    assert c == 0 and '1 barras excluidas' in out, (out, err)
+    p = leer(raiz, nombre)
+    t = p['tablas'][0]
+    assert t['filas'] == 2 and t['limpieza']['filas_origen'] == 3
+    assert t['limpieza']['excluidas'] == {'fuente_excluida_por_regla': 1}
+    assert t['carga']['source'] == {'mt5': 2} and t['carga']['seleccion_fuentes']['excluidas_por_source'] == {'market_scraper': 1}
+    df = pq.read_table(os.path.join(raiz, nombre, 'lago_ohlcv_1d.parquet')).to_pandas()
+    assert df['close'].tolist() == [1.1, 1.1] and df['available_at_ms'].tolist() == [ms(10, 28, 0, 10), ms(10, 29, 0, 10)]
+    assert p['origenes'][0]['fuente']['politica_fuentes']['version'] == 'ti-02-data.fuentes/v1'
+    man = json.load(open(os.path.join(raiz, nombre, 'manifest.json'), encoding='utf-8'))
+    assert "fuentes por tag source {'mt5': 2}" in man['description']
+    from . import informe
+    md = informe.generar(raiz, runs, [nombre])
+    assert 'market_scraper' in md and 'fuente_excluida_por_regla 1' in md and 'ti-02-data.fuentes/v1' in md
+    # Mismas entradas y corte: mismos hashes de todos los ficheros y hash del motor.
+    r2 = os.path.join(tmp, 'v2_repetida')
+    c, out, err = cli('--lago', dump, '--corte', CORTE, '--nombre', nombre, '--salida-raiz', r2, '--repeticion', runs=runs)
+    assert c == 0, (out, err)
+    reg, rep = [json.load(open(os.path.join(runs, nombre + ext + '.json'), encoding='utf-8')) for ext in ('', '.repeticion')]
+    assert reg['validacion']['dataset_hash'] == rep['validacion']['dataset_hash'] == p['dataset_hash']
+    assert reg['ficheros_sha256'] == rep['ficheros_sha256']
+    assert reg['validacion']['lookahead']['violaciones_por_fila'] == 0 and reg['validacion']['ok']
+
+    # Clase sin regla, dos fuentes con la misma clave: error antes de elegir ninguna version.
+    c, _, err, raiz, _, _ = exportar('indice_doble', [serie('DE40', 'mt5'), serie('DE40', 'market_scraper')])
+    assert c == 2 and 'dos fuentes sin regla' in err and all(s in err for s in ('DE40', '1d', 'mt5', 'market_scraper')), err
+    assert not os.path.exists(raiz)
+    # Ni siquiera se empalman silenciosamente dos historias no solapadas sin regla.
+    c, _, err, _, _, _ = exportar('indice_empalme', [serie('DE40', 'mt5'), serie('DE40', 'market_scraper', [normal(10, 28)])])
+    assert c == 2 and 'dos fuentes sin regla' in err, err
+    c, _, err, raiz, nombre, _ = exportar('indice_unica', [serie('DE40', 'yahoo')])
+    assert c == 0, err
+    t = leer(raiz, nombre)['tablas'][0]
+    assert t['filas'] == 1 and t['carga']['source'] == {'yahoo': 1}
+    assert t['carga']['seleccion_fuentes']['series'][0]['regla'] is None
+
+    # Sin MT5 no hay sustitucion por otra fuente, ni en recepcion ni en cierre; todas las filas se cuentan.
+    for extra in ((), ('--disponibilidad-ohlcv', 'cierre')):
+        c, out, err, raiz, nombre, _ = exportar('fx_sin_mt5', [serie('EURUSD', 'market_scraper')], *extra)
+        assert c == 0 and 'sin barras de la fuente exigida' in out, (out, err)
+        t = leer(raiz, nombre)['tablas'][0]
+        assert t['filas'] == 0 and t['limpieza']['filas_origen'] == 1
+        assert t['limpieza']['excluidas'] == {'fuente_excluida_por_regla': 1} and t['carga']['source'] == {}
+        assert 'sin barras de la fuente exigida' in informe.generar(raiz, runs, [nombre])
+
+    c, _, err, _, _, _ = exportar('sin_tag', [serie('DE40', None)])
+    assert c == 2 and "tag 'source'" in err, err
+    # Volcado v1: rechazo explicito, aunque tenga filas y hashes correctos.
+    viejo = os.path.join(tmp, 'volcado_v1')
+    escribir_volcado(viejo, {'market.ohlcv.v2'.removesuffix('.v2'): [serie('DE40', 'mt5')]})
+    c, _, err = cli('--lago', viejo, '--corte', CORTE, '--salida-raiz', os.path.join(tmp, 'v1_out'), runs=runs)
+    assert c == 2 and 'v1 esta congelado' in err and '0e67465' in err, err
+    # Republicaciones de UNA fuente: primera recibida >= cierre; se preserva incluso si cambia el close.
+    versiones = [barra(ns(10, 27), ns(10, 27, 12), c=1.0), normal(10, 27, c=1.1),
+                 barra(ns(10, 27), ns(10, 29), c=1.15)]
+    c, _, err, raiz, nombre, _ = exportar('versiones_mt5', [serie('EURUSD', 'mt5', versiones)])
+    assert c == 0, err
+    t = leer(raiz, nombre)['tablas'][0]
+    assert t['limpieza']['excluidas'] == {'version_en_curso': 1, 'version_posterior_descartada': 1}
+    fila = pq.read_table(os.path.join(raiz, nombre, 'lago_ohlcv_1d.parquet')).to_pandas().iloc[0]
+    assert fila['close'] == 1.1 and fila['available_at_ms'] == ms(10, 28, 0, 10)
+    # Inicio de ventana: elimina y cuenta solo las barras anteriores al inicio, con el cierre intacto.
+    c, _, err, raiz, nombre, _ = exportar('ventana_mt5', [serie('EURUSD', 'mt5', filas_mt5)], '--desde', '2026-10-28')
+    assert c == 0, err
+    p = leer(raiz, nombre)
+    assert p['desde'] == '2026-10-28' and p['tablas'][0]['filas'] == 1
+    assert p['tablas'][0]['limpieza']['excluidas'] == {'anterior_al_inicio_de_ventana': 1}
+    assert A_MS('2026-11-10T23:59:59.999999Z', arriba=True) == ms(11, 11)
+    assert A_MS('2026-11-10T23:59:59.999999999Z') == ms(11, 11) - 1
+    assert A_MS('2026-11-11T01:00:00.000001+01:00', arriba=True) == ms(11, 11) + 1
+    assert A_MS('2026-11-11T00:00:00') is None and A_MS('invalido') is None
+    assert S.sub_ms('2026-11-11T00:00:00.000001Z') and not S.sub_ms('2026-11-11T00:00:00.001000Z')
+
+
+def prueba_corte_v2_posterior_migracion(tmp: str) -> None:
+    """Paso 1 sin --topics y paso 2 real: barras posteriores al corte a v2, RFC3339 y sin look-ahead."""
+    import descarga_lago as D
+    estado = D.QnFalso()
+    estado.catalogo[D.TOPIC_OHLCV] = [{'symbol': 'EURUSD', 'interval': '1d', 'source': 'mt5'}]
+    srv = D.servidor_falso(estado)
+    dump = os.path.join(tmp, 'posterior_migracion')
+    try:
+        c, out, err = D.lanzar(f'http://127.0.0.1:{srv.server_address[1]}/qn', dump,
+                             '--desde', '2026-11-09', '--hasta', '2026-11-12', '--source', 'mt5', '--interval', '1d', '--symbols', 'EURUSD')
+        assert c == 0, (out, err)
+    finally:
+        srv.shutdown()
+        srv.server_close()
+    m = json.load(open(os.path.join(dump, 'manifest.json'), encoding='utf-8'))
+    assert set(m['topics']) == {'market.ohlcv.v2'}
+    raiz, runs = os.path.join(tmp, 'posterior_out'), os.path.join(tmp, 'posterior_runs')
+    c, out, err = cli('--lago', dump, '--corte', '2026-11-12', '--nombre', 'posterior', '--salida-raiz', raiz, runs=runs)
+    assert c == 0, (out, err)
+    df = pq.read_table(os.path.join(raiz, 'posterior', 'lago_ohlcv_1d.parquet')).to_pandas()
+    assert df['ts_ms'].tolist() == [ms(11, 9), ms(11, 10)] and (df['available_at_ms'] <= ms(11, 12)).all()
+    p = leer(raiz, 'posterior')
+    assert p['tablas'][0]['limpieza']['excluidas'] == {'posterior_al_corte_por_fecha': 1, 'posterior_al_corte_por_disponibilidad': 1}
+    v = json.load(open(os.path.join(runs, 'posterior.json'), encoding='utf-8'))['validacion']
+    assert v['ok'] and v['lookahead']['violaciones_por_fila'] == 0
 
 
 def correr() -> None:
@@ -622,6 +756,8 @@ def correr() -> None:
         prueba_exportar_lago(tmp)
         prueba_guardia_default_lag(tmp)
         prueba_integracion_con_descarga(tmp)
+        prueba_fuentes_v2(tmp)
+        prueba_corte_v2_posterior_migracion(tmp)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print("selftest ok")

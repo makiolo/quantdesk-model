@@ -1,0 +1,14 @@
+Mutacion: TOPICS_DEFECTO vuelve a v1
+Comando: .venv/Scripts/python -X utf8 E:/quantdesk-lab/tmp/TI-02-DATA-V2/default_v1_mutante.py --selftest
+Resultado esperado: salida 1, AssertionError: el topic por defecto debe ser exclusivamente v2
+Resultado real: salida 1
+Traceback (most recent call last):
+  File "E:\quantdesk-lab\tmp\TI-02-DATA-V2\default_v1_mutante.py", line 899, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "E:\quantdesk-lab\tmp\TI-02-DATA-V2\default_v1_mutante.py", line 865, in main
+    selftest()
+  File "E:\quantdesk-lab\tmp\TI-02-DATA-V2\default_v1_mutante.py", line 594, in selftest
+    assert TOPICS_DEFECTO == ('market.ohlcv.v2',), 'el topic por defecto debe ser exclusivamente v2'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: el topic por defecto debe ser exclusivamente v2

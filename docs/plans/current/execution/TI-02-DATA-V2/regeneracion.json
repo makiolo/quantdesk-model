@@ -1,0 +1,94 @@
+{
+  "base_codigo": "0e67465",
+  "resultados": [
+    {
+      "dataset": "binance_c20261101",
+      "original": "sha256:d765d56037f700bd2550a9a2ae9d53fbd2406afd7cddb82bbfeaf2a56670b744",
+      "regenerado": "sha256:d765d56037f700bd2550a9a2ae9d53fbd2406afd7cddb82bbfeaf2a56670b744",
+      "coincide": true,
+      "comando": "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe -X utf8 E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\v1code\\scripts\\exportar_market_history.py --binance --corte 2026-11-01 --nombre binance_c20261101 --salida-raiz E:/quantdesk-lab/tmp/TI-02-DATA-V2/regen --runs E:/quantdesk-lab/tmp/TI-02-DATA-V2/regen_runs",
+      "versiones": {
+        "python": "3.12.3",
+        "pyarrow": "26.0.1",
+        "pandas": "3.1.1",
+        "numpy": "2.5.4",
+        "motor": "quantdesk 69fdb39d"
+      },
+      "validacion_ok": true,
+      "violaciones": 0
+    },
+    {
+      "dataset": "lago_c20261101",
+      "original": "sha256:cce80ad2bb82374e71a92ba27c4f9a89ad6ad0d7901697b853c15e24b39f70ea",
+      "regenerado": "sha256:cce80ad2bb82374e71a92ba27c4f9a89ad6ad0d7901697b853c15e24b39f70ea",
+      "coincide": true,
+      "comando": "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe -X utf8 E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\v1code\\scripts\\exportar_market_history.py --lago E:/quantdesk-lab/data/lago/2026-11-08 --corte 2026-11-01 --nombre lago_c20261101 --salida-raiz E:/quantdesk-lab/tmp/TI-02-DATA-V2/regen --runs E:/quantdesk-lab/tmp/TI-02-DATA-V2/regen_runs",
+      "versiones": {
+        "python": "3.12.3",
+        "pyarrow": "26.0.1",
+        "pandas": "3.1.1",
+        "numpy": "2.5.4",
+        "motor": "quantdesk 69fdb39d"
+      },
+      "validacion_ok": true,
+      "violaciones": 0
+    },
+    {
+      "dataset": "lago_cierre_c20261101",
+      "original": "sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356",
+      "regenerado": "sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356",
+      "coincide": true,
+      "comando": "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe -X utf8 E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\v1code\\scripts\\exportar_market_history.py --lago E:/quantdesk-lab/data/lago/2026-11-08 --corte 2026-11-01 --nombre lago_cierre_c20261101 --disponibilidad-ohlcv cierre --salida-raiz E:/quantdesk-lab/tmp/TI-02-DATA-V2/regen --runs E:/quantdesk-lab/tmp/TI-02-DATA-V2/regen_runs",
+      "versiones": {
+        "python": "3.12.3",
+        "pyarrow": "26.0.1",
+        "pandas": "3.1.1",
+        "numpy": "2.5.4",
+        "motor": "quantdesk 69fdb39d"
+      },
+      "validacion_ok": true,
+      "violaciones": 0
+    },
+    {
+      "dataset": "lago_c20261107",
+      "original": "sha256:853d8e8a111005d87836732266d800bb52a44f200eaba3599440d91b555c1495",
+      "regenerado": "sha256:853d8e8a111005d87836732266d800bb52a44f200eaba3599440d91b555c1495",
+      "coincide": true,
+      "comando": "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe -X utf8 E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\v1code\\scripts\\exportar_market_history.py --lago E:/quantdesk-lab/data/lago/2026-11-08 --corte 2026-11-07 --nombre lago_c20261107 --salida-raiz E:/quantdesk-lab/tmp/TI-02-DATA-V2/regen --runs E:/quantdesk-lab/tmp/TI-02-DATA-V2/regen_runs",
+      "versiones": {
+        "python": "3.12.3",
+        "pyarrow": "26.0.1",
+        "pandas": "3.1.1",
+        "numpy": "2.5.4",
+        "motor": "quantdesk 69fdb39d"
+      },
+      "validacion_ok": true,
+      "violaciones": 0
+    }
+  ],
+  "originales_sin_cambios": true,
+  "ficheros_originales_sha256": {
+    "binance_c20261101/binance_ohlcv_1d.parquet": "96fe095b48e949df1ef06c58935a8680c5d35880cb200fba14a2189cf919a111",
+    "binance_c20261101/binance_ohlcv_1h.parquet": "9f38054ea55a42b7e7a01015cd2d9fff193d230785951de25efa155e89b8de1a",
+    "binance_c20261101/manifest.json": "1c10ff5aea053a77a196953d24feb3aa449470ea707d50caa96edc266832e477",
+    "binance_c20261101/procedencia.json": "ae96189e6290da9c85c37782cecda180e4b697a0f545408dc6c5169550b705bd",
+    "lago_c20261101/lago_ohlcv_1d.parquet": "b5ed885a9d1ec0f0ce75b5fa5c3d2fdacca899737aa63161791e508e89d19d5a",
+    "lago_c20261101/lago_ohlcv_1h.parquet": "b5ed885a9d1ec0f0ce75b5fa5c3d2fdacca899737aa63161791e508e89d19d5a",
+    "lago_c20261101/lago_performance.parquet": "d22cb49914ee33517cc86d748bfbe05e800a4b536dc9bcbaf8046089be523285",
+    "lago_c20261101/lago_rates_quotes.parquet": "b37bbd23af3dfdfbb778301866beb3189cebb7acb962d05c58bfaab1512ca98e",
+    "lago_c20261101/manifest.json": "3d52df0b42847b4672f72929c8d781f13e222b99c8a2e37d3bf024fe64a904c4",
+    "lago_c20261101/procedencia.json": "cdb3b82fbe65c45406308e8fcc2abdbdfb8a63d0bb23f94e6f2ebb963211352b",
+    "lago_cierre_c20261101/lago_ohlcv_1d.parquet": "f783a1777719ffd1f7ceff5a00bff1fe0638b584d81234f295500647bd7ed3c8",
+    "lago_cierre_c20261101/lago_ohlcv_1h.parquet": "667620b456b001d6cd7f3ab72e8d19128737bd772302e9a5f72381af8b3ef33c",
+    "lago_cierre_c20261101/lago_performance.parquet": "d22cb49914ee33517cc86d748bfbe05e800a4b536dc9bcbaf8046089be523285",
+    "lago_cierre_c20261101/lago_rates_quotes.parquet": "b37bbd23af3dfdfbb778301866beb3189cebb7acb962d05c58bfaab1512ca98e",
+    "lago_cierre_c20261101/manifest.json": "18939e1b4811dec72bb9f739302b2330342922d2a34895816c4559ee31ae47f0",
+    "lago_cierre_c20261101/procedencia.json": "50e46cf1b9443b2915324c6601f4f52b8c7611d56af2f0462fce35be64ad2645",
+    "lago_c20261107/lago_ohlcv_1d.parquet": "4edf9b546527bac2457a62d1088a691243caad267b5a3e1ba9932dbde11e57a7",
+    "lago_c20261107/lago_ohlcv_1h.parquet": "50d834c65bd98eafe336b13d32ea5d62bd11d85396bab553e3ace33c7fc2597c",
+    "lago_c20261107/lago_performance.parquet": "202b6b18357bc6e9f0724c5f0a28ceef7a7c33cfa55468411535871f37d4c93b",
+    "lago_c20261107/lago_rates_quotes.parquet": "5a61a6dff2a8054b48be13809960266e4bac8d715e16857d2767ef8ab1701514",
+    "lago_c20261107/manifest.json": "26ced98ff18a685f81e30ee903b591352378b1dd34c422683e4b27e602409d78",
+    "lago_c20261107/procedencia.json": "21c04c385394d7c9b4e1a10341d5fd47dbfb26ecf6be39da6cab15d2a0692131"
+  }
+}

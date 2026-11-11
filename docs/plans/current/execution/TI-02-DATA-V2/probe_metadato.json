@@ -1,0 +1,10 @@
+{
+  "script_sha256_original": "1989f121885c0ca3338278c9f35d690e5889d223dd5317646c96280b9e09dace",
+  "hashes_git": {
+    "a3d6a0e": "1989f121885c0ca3338278c9f35d690e5889d223dd5317646c96280b9e09dace",
+    "0e67465": "5faf3e1b93a41fb77f2778a94314766fba2553bde998558424c14bb313ae59d0"
+  },
+  "dataset_hash": "sha256:853d8e8a111005d87836732266d800bb52a44f200eaba3599440d91b555c1495",
+  "coincide": true,
+  "comando": "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe -X utf8 E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\v1code\\scripts\\exportar_market_history.py --lago E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\volcado_metadato --corte 2026-11-07 --nombre lago_metadato --salida-raiz E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\probe --runs E:\\quantdesk-lab\\tmp\\TI-02-DATA-V2\\probe_runs"
+}

@@ -19,6 +19,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from .limpieza import nuevo_contador
+from descarga_lago import POLITICA_FUENTES, TOPIC_OHLCV, ns_rfc3339, regla_fuente, seleccionar_series, validar_etiquetas
 
 INTERVALOS_MS = {"1m": 60_000, "5m": 300_000, "15m": 900_000, "30m": 1_800_000, "1h": 3_600_000, "4h": 14_400_000,
                  "1d": 86_400_000, "1w": 604_800_000}
@@ -111,9 +112,15 @@ def cargar_binance(raiz: str) -> dict:
 # ---------------------------------------------------------------------------------------------------------------------
 
 def a_ms(v, arriba: bool = False) -> int | None:
-    """Marca numerica del lago (s, ms, us o ns, por magnitud) a milisegundos UTC; None si no es una marca plausible.
+    """Marca del lago (RFC3339 con zona, o numerica s/ms/us/ns por magnitud) a ms UTC; None si no es plausible.
     Redondea hacia abajo (instante de un evento) o, con `arriba`, hacia arriba: una disponibilidad nunca debe quedar por
     delante de la recepcion real."""
+    if isinstance(v, str):
+        ns = ns_rfc3339(v)
+        if ns is None:
+            return None
+        ms = -(-ns // 10 ** 6) if arriba else ns // 10 ** 6
+        return ms if 631_152_000_000 <= ms <= 4_102_444_800_000 else None
     if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
         return None
     m = abs(v)
@@ -127,6 +134,9 @@ def a_ms(v, arriba: bool = False) -> int | None:
 
 def sub_ms(v) -> bool:
     """La marca en ns tiene resolucion inferior al milisegundo (se pierde al pasar a ms)."""
+    if isinstance(v, str):
+        n = ns_rfc3339(v)
+        return n is not None and n % 10 ** 6 != 0
     return isinstance(v, int) and not isinstance(v, bool) and abs(v) >= 1e17 and v % 10 ** 6 != 0
 
 
@@ -177,6 +187,9 @@ def abrir_volcado(directorio: str) -> dict:
         raise ValueError(f"{ruta} no es el manifest de descarga_lago.py ({ESQUEMA_VOLCADO})")
     if not m.get("completo"):
         raise ValueError(f"{directorio}: el volcado esta incompleto (completo=false); termina la descarga antes de exportar")
+    if TOPIC_OHLCV.removesuffix('.v2') in m["topics"]:
+        raise ValueError("market.ohlcv v1 esta congelado y no se admite; usa un volcado de market.ohlcv.v2. "
+                         "Para reproducir datasets antiguos ejecuta el exportador historico de git (0e67465).")
     for topic, t in m["topics"].items():
         for fich in t["ficheros"]:
             r = os.path.join(directorio, *fich["ruta"].split("/"))
@@ -202,20 +215,38 @@ DISP_OHLCV_PROXY = {
 def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: bool = False) -> tuple[list, int]:
     por_iv: dict = {}
     orden = orden0
+    aceptadas, _ = seleccionar_series([f["etiquetas"] for f in topic["ficheros"]])
     for fich in sorted(topic["ficheros"], key=lambda x: x["ruta"]):
         et = fich["etiquetas"]
+        validar_etiquetas(et, fich["ruta"])
         iv = et.get("interval")
+        source = et["source"]
+        admitida = (et["symbol"], iv, source) in aceptadas
         if iv not in INTERVALOS_MS:
             raise ValueError(f"{fich['ruta']}: intervalo {iv!r} desconocido (conocidos: {', '.join(INTERVALOS_MS)}); no se adivina")
         a = por_iv.setdefault(iv, {"cols": {k: [] for k in ("instrument", "ts_ms", "open", "high", "low", "close", "volume",
                                                             "recv_ms", "orden")},
                                    "leidas": 0, "sin_ts": 0, "sub_ms": 0, "con_recv": 0, "recv_antes_de_ts": 0,
                                    "desfases": Counter(), "con_date": 0, "mismo_dia": 0, "ejemplos_dia": [],
-                                   "fuentes": Counter(), "recv_min": None, "recv_max": None, "rango_desfase": {}})
+                                   "fuentes": Counter(), "fuentes_leidas": Counter(), "fuentes_excluidas": Counter(),
+                                   "series": {}, "excluidas_fuente": 0,
+                                   "recv_min": None, "recv_max": None, "rango_desfase": {}})
+        serie = a["series"].setdefault((et["symbol"], source), {
+            "symbol": et["symbol"], "interval": iv, "source": source, "regla": regla_fuente(et["symbol"], iv),
+            "admitida": admitida, "filas_leidas": 0, "filas_excluidas_por_fuente": 0})
         cols = a["cols"]
         for r in leer_ndjson(os.path.join(directorio, *fich["ruta"].split("/"))):
             a["leidas"] += 1
+            a["fuentes_leidas"][source] += 1
+            serie["filas_leidas"] += 1
             orden += 1
+            if not isinstance(r, dict) or any(k in r and r[k] != et[k] for k in ("symbol", "interval", "source")):
+                raise ValueError(f"{fich['ruta']}: tags de la fila distintos de las etiquetas del fichero")
+            if not admitida:
+                a["excluidas_fuente"] += 1
+                a["fuentes_excluidas"][source] += 1
+                serie["filas_excluidas_por_fuente"] += 1
+                continue
             ts = a_ms(r.get("_ts"))
             if ts is None:
                 a["sin_ts"] += 1
@@ -233,7 +264,7 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: b
                 cols[k].append(num(r.get(k)))
             cols["recv_ms"].append(recv)
             cols["orden"].append(orden)
-            a["fuentes"][str(r.get("source"))] += 1
+            a["fuentes"][source] += 1
             dc = contenido_ms(r.get("date"))
             if dc is not None:
                 a["con_date"] += 1
@@ -258,12 +289,17 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: b
         tablas.append({
             "table_id": f"lago_ohlcv_{iv}", "schema": "ohlcv/v1", "frame": marco, "duplicados": "recepcion", "calendario": "fx",
             "disp_cierre": disp_cierre,
-            "contador": nuevo_contador(a["leidas"], {"sin_ts_valido": a["sin_ts"]} if a["sin_ts"] else {}),
+            "contador": nuevo_contador(a["leidas"], {k: v for k, v in {
+                "sin_ts_valido": a["sin_ts"], "fuente_excluida_por_regla": a["excluidas_fuente"]}.items() if v}),
             "carga": {"filas_leidas": a["leidas"], "ts_con_resolucion_inferior_al_ms": a["sub_ms"],
                       "filas_con_recv_ts": a["con_recv"], "recv_ts_anterior_a_ts": a["recv_antes_de_ts"],
                       "recv_ts_primero": iso_ms(a["recv_min"]) if a["recv_min"] is not None else None,
                       "recv_ts_ultimo": iso_ms(a["recv_max"]) if a["recv_max"] is not None else None,
                       "source": dict(a["fuentes"]),
+                      "seleccion_fuentes": {"politica_version": POLITICA_FUENTES["version"],
+                                            "leidas_por_source": dict(a["fuentes_leidas"]),
+                                            "excluidas_por_source": dict(a["fuentes_excluidas"]),
+                                            "series": [s for _, s in sorted(a["series"].items())]},
                       "date_frente_a_ts": {
                           "filas_con_date": a["con_date"], "mismo_dia_utc": a["mismo_dia"],
                           "dia_utc_distinto": a["con_date"] - a["mismo_dia"],
@@ -276,8 +312,8 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: b
                 "campo": "_recv_ts (instante en que qn recibio la version elegida de la barra)" if con_recv else None,
                 "declarada": "por fila" if con_recv else "no declarada",
                 "justificacion": (
-                    "El productor (market_scrapper/qn_sink.py, quantdesk-backend) pone en `_ts` el inicio de la barra de "
-                    "yfinance y no guarda ningun instante de publicacion; el unico instante en que el dato existia en el "
+                    "El topic market.ohlcv.v2 identifica la fuente por el tag source; `_ts` es la marca de la barra. "
+                    "El unico instante respaldado en que el dato existia en el "
                     "sistema es `_recv_ts` (recepcion en qn). Las barras se republican mientras estan abiertas, asi que se "
                     "conserva la primera version recibida con `_recv_ts` >= cierre de la barra (inicio + intervalo) y se "
                     "declara su `_recv_ts` como disponibilidad. Es conservador: un relleno historico queda disponible desde "
@@ -388,11 +424,11 @@ def cargar_lago(directorio: str, disp_cierre: bool = False) -> dict:
     m = abrir_volcado(directorio)
     tablas, orden = [], 0
     universo = {}
-    if "market.ohlcv" in m["topics"]:
-        nuevas, orden = _cargar_lago_ohlcv(directorio, m["topics"]["market.ohlcv"], orden, disp_cierre)
+    if TOPIC_OHLCV in m["topics"]:
+        nuevas, orden = _cargar_lago_ohlcv(directorio, m["topics"][TOPIC_OHLCV], orden, disp_cierre)
         tablas += nuevas
-        universo["market.ohlcv"] = sorted({f"{f['etiquetas'].get('interval')}:{f['etiquetas'].get('symbol')}"
-                                           for f in m["topics"]["market.ohlcv"]["ficheros"]})
+        universo[TOPIC_OHLCV] = sorted({f"{f['etiquetas'].get('interval')}:{f['etiquetas'].get('symbol')}:{f['etiquetas'].get('source')}"
+                                      for f in m["topics"][TOPIC_OHLCV]["ficheros"]})
     for cfg in EVENTOS_LAGO:
         if cfg["topic"] in m["topics"]:
             t, orden = _cargar_lago_eventos(directorio, m["topics"][cfg["topic"]], orden, cfg)
@@ -405,6 +441,9 @@ def cargar_lago(directorio: str, disp_cierre: bool = False) -> dict:
                    "fecha_utc": m.get("fecha_utc"), "base": m.get("base"), "env": m.get("env"), "desde": m.get("desde"),
                    "hasta": m.get("hasta"), "descarga_lago_sha256": m.get("script_sha256"), "python_descarga": m.get("python"),
                    "ficheros": sum(len(t["ficheros"]) for t in m["topics"].values()),
+                   "politica_fuentes": POLITICA_FUENTES,
+                   "seleccion_volcado": m.get("seleccion"),
+                   "avisos_volcado": m.get("avisos", []),
                    "filas_por_topic": {k: t["filas"] for k, t in m["topics"].items()}},
         "universo": {
             "texto": ("Los instrumentos que listaba /latest de qn en la fecha de la descarga: lo que hay hoy en la fuente, sin "

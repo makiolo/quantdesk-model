@@ -1,0 +1,48 @@
+git diff --name-status 934d9af
+M	docs/plans/current/EXECUTION.md
+A	docs/plans/current/execution/TI-02-DATA-V2/alcance_git.log
+A	docs/plans/current/execution/TI-02-DATA-V2/aserciones.log
+A	docs/plans/current/execution/TI-02-DATA-V2/default_mutacion.log
+A	docs/plans/current/execution/TI-02-DATA-V2/descarga_selftest.log
+A	docs/plans/current/execution/TI-02-DATA-V2/evidencia_sha256.json
+A	docs/plans/current/execution/TI-02-DATA-V2/exportador_selftest.log
+A	docs/plans/current/execution/TI-02-DATA-V2/informe.md
+A	docs/plans/current/execution/TI-02-DATA-V2/probe_metadato.json
+A	docs/plans/current/execution/TI-02-DATA-V2/regeneracion.json
+A	docs/plans/current/execution/TI-02-DATA-V2/suite.log
+A	docs/plans/current/execution/TS-00-BENCH-FINCAST/entorno.json
+A	docs/plans/current/execution/TS-00-BENCH-FINCAST/procedencia.json
+A	docs/plans/current/execution/TS-00-BENCH-FINCAST/requirements-fincast.txt
+M	scripts/banco_walkforward.py
+M	scripts/banco_walkforward_lib/banco.py
+A	scripts/banco_walkforward_lib/fincast_trabajador.py
+M	scripts/banco_walkforward_lib/informe.py
+M	scripts/banco_walkforward_lib/metricas.py
+M	scripts/banco_walkforward_lib/modelos.py
+M	scripts/banco_walkforward_lib/pruebas.py
+M	scripts/banco_walkforward_lib/rutas.py
+M	scripts/descarga_lago.py
+M	scripts/exportar_market_history.py
+M	scripts/exportar_market_history_lib/fuentes.py
+M	scripts/exportar_market_history_lib/informe.py
+M	scripts/exportar_market_history_lib/selftests.py
+
+No versionados:
+bash.exe.stackdump
+
+Diff acotado a rutas autorizadas:
+A	docs/plans/current/execution/TI-02-DATA-V2/alcance_git.log
+A	docs/plans/current/execution/TI-02-DATA-V2/aserciones.log
+A	docs/plans/current/execution/TI-02-DATA-V2/default_mutacion.log
+A	docs/plans/current/execution/TI-02-DATA-V2/descarga_selftest.log
+A	docs/plans/current/execution/TI-02-DATA-V2/evidencia_sha256.json
+A	docs/plans/current/execution/TI-02-DATA-V2/exportador_selftest.log
+A	docs/plans/current/execution/TI-02-DATA-V2/informe.md
+A	docs/plans/current/execution/TI-02-DATA-V2/probe_metadato.json
+A	docs/plans/current/execution/TI-02-DATA-V2/regeneracion.json
+A	docs/plans/current/execution/TI-02-DATA-V2/suite.log
+M	scripts/descarga_lago.py
+M	scripts/exportar_market_history.py
+M	scripts/exportar_market_history_lib/fuentes.py
+M	scripts/exportar_market_history_lib/informe.py
+M	scripts/exportar_market_history_lib/selftests.py

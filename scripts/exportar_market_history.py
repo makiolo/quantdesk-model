@@ -24,6 +24,8 @@ Reglas (el detalle y las cifras de cada exportacion quedan en `procedencia.json`
   open/close fuera de [low, high] (se conservan y se cuentan), versiones repetidas de una barra (se queda la primera ya
   cerrada segun la recepcion en qn), filas posteriores al corte.
 - Universo: lo que hay hoy en la fuente, con el sesgo de supervivencia declarado (D-07) en el manifest y en `procedencia.json`.
+- Fuentes v2: politica versionada en descarga_lago.py; FX 1d solo mt5, sin regla una sola fuente por simbolo/intervalo.
+- Ventana opcional: --desde AAAA-MM-DD excluye y cuenta filas anteriores (por ts_ms); --corte conserva su significado.
 - Determinismo: orden estable de filas y tablas, ninguna marca de ejecucion dentro del dataset; dos exportaciones del mismo
   origen y corte dan el mismo `logical_hash` y los mismos bytes.
 
@@ -81,7 +83,8 @@ def hash_codigo(raiz: str = HERE) -> dict:
     """SHA-256 del exportador y de los modulos que deciden el contenido del dataset (no los selftests, el informe ni la
     validacion): la procedencia del codigo que lo produjo. Con CRLF normalizado a LF, para que no dependa del checkout."""
     lib = os.path.join(raiz, "exportar_market_history_lib")
-    ficheros = [os.path.join(raiz, "exportar_market_history.py")] + [os.path.join(lib, n) for n in ("formato.py", "fuentes.py", "limpieza.py")]
+    ficheros = [os.path.join(raiz, n) for n in ("exportar_market_history.py", "descarga_lago.py")] + [
+        os.path.join(lib, n) for n in ("formato.py", "fuentes.py", "limpieza.py")]
     return {os.path.relpath(f, raiz).replace(os.sep, "/"): F.sha256_codigo(f) for f in ficheros}
 
 
@@ -104,11 +107,12 @@ def describir(origenes: list, corte: str, tablas: list, vistas: list, default_la
     """Descripcion del manifest: solo depende de lo que entra en el dataset (no de filas posteriores al corte)."""
     proxies = [t for t in tablas if t["disponibilidad"]["tipo"] == "proxy por default_lag_ms"]
     if proxies:
-        recibidas = [t["carga"][k] for t in proxies for k in ("recv_ts_primero", "recv_ts_ultimo")]
+        recibidas = [t["carga"][k] for t in proxies for k in ("recv_ts_primero", "recv_ts_ultimo") if t["carga"][k] is not None]
+        rango = f"entre {min(recibidas)} y {max(recibidas)}" if recibidas else "sin recepciones admisibles"
         partes = [f"Exportacion TI-02-DATA ({MOTOR}) con corte {corte}T00:00:00Z. ATENCION, DISPONIBILIDAD PROXY: ninguna fila tiene "
                   "su cierre posterior al corte, pero las tablas ohlcv del lago llevan available_at_ms nulo y default_lag_ms = 0 "
                   "(disponibles al cierre, sin ningun campo que lo respalde) y sus valores son la version de cada barra que qn "
-                  f"recibio DESPUES del corte (entre {min(recibidas)} y {max(recibidas)}), no la visible al cierre. No es causal "
+                  f"recibio DESPUES del corte ({rango}), no la visible al cierre. No es causal "
                   "en sentido estricto; el dataset estricto es el que usa _recv_ts."]
     else:
         partes = [f"Exportacion TI-02-DATA ({MOTOR}) con corte {corte}T00:00:00Z: ninguna fila tiene su cierre ni su "
@@ -120,6 +124,14 @@ def describir(origenes: list, corte: str, tablas: list, vistas: list, default_la
         partes.append(f"{t['table_id']}: {v['instrument'].nunique()} instrumentos con datos hasta el corte; disponibilidad "
                       f"{d['declarada']}; campo: {d['campo'] or 'ninguno'}"
                       + (", no consumible causalmente." if d["tipo"] == "no declarada" else "."))
+        if "seleccion_fuentes" in t["carga"]:
+            fuentes_finales = {}
+            for s in t["carga"]["seleccion_fuentes"]["series"]:
+                n = int((v["instrument"] == s["symbol"]).sum()) if s["admitida"] else 0
+                if n:
+                    fuentes_finales[s["source"]] = fuentes_finales.get(s["source"], 0) + n
+            partes.append(f"{t['table_id']}: fuentes por tag source {dict(sorted(fuentes_finales.items()))}; "
+                          f"politica {S.POLITICA_FUENTES['version']}; descartes contados en procedencia.json.")
     partes.append("default_lag_ms nulo: ninguna disponibilidad se inventa." if default_lag_ms is None else
                   f"default_lag_ms = {default_lag_ms} solo por el proxy declarado arriba.")
     partes.append("Huecos y datos descartados contados en procedencia.json.")
@@ -144,8 +156,11 @@ def exportar(a: argparse.Namespace) -> int:
     comprobar_disco()
     try:
         corte_ms = corte_a_ms(a.corte)
+        desde_ms = corte_a_ms(a.desde) if a.desde else None
+        if desde_ms is not None and desde_ms >= corte_ms:
+            raise ValueError("ventana vacia")
     except ValueError:
-        print("exportar: --corte debe ser AAAA-MM-DD", file=sys.stderr)
+        print("exportar: --corte y --desde deben ser AAAA-MM-DD y --desde anterior al corte", file=sys.stderr)
         return 2
     if not (a.binance or a.lago):
         print("exportar: indica al menos una fuente (--binance y/o --lago DIR)", file=sys.stderr)
@@ -186,7 +201,20 @@ def exportar(a: argparse.Namespace) -> int:
     for o in origenes:
         for t in o["tablas"]:
             c = t["contador"]
+            seleccion = t["carga"].get("seleccion_fuentes")
+            if seleccion:
+                for s in seleccion["series"]:
+                    if not s["admitida"]:
+                        print(f"AVISO: {s['symbol']} {s['interval']} source={s['source']}: "
+                              f"{s['filas_excluidas_por_fuente']} barras excluidas; solo se admite "
+                              f"{s['regla']['source']} ({s['regla']['motivo']})")
+                for symbol in sorted({s["symbol"] for s in seleccion["series"]}):
+                    ss = [s for s in seleccion["series"] if s["symbol"] == symbol]
+                    if any(s["regla"] for s in ss) and not any(s["admitida"] and s["filas_leidas"] for s in ss):
+                        print(f"AVISO: {symbol}: sin barras de la fuente exigida; no se usa una fuente alternativa")
             try:
+                if desde_ms is not None:
+                    t["frame"] = L.quitar(t["frame"], t["frame"]["ts_ms"] < desde_ms, "anterior_al_inicio_de_ventana", c)
                 if t["schema"] == "ohlcv/v1":
                     final = L.limpiar_ohlcv(t["frame"], corte_ms, t["duplicados"], c, t["calendario"], t.get("disp_cierre", False))
                 else:
@@ -211,14 +239,18 @@ def exportar(a: argparse.Namespace) -> int:
     construccion = os.path.join(a.salida_raiz, ".construyendo")
     dir_ds = os.path.join(construccion, nombre)
     shutil.rmtree(dir_ds, ignore_errors=True)
+    descripcion = describir(origenes, a.corte, tablas, vistas, default_lag)
+    if a.desde:
+        descripcion += f" Ventana desde {a.desde}T00:00:00Z (ts_ms inclusivo)."
     entradas = F.escribir_dataset(
-        dir_ds, nombre, describir(origenes, a.corte, tablas, vistas, default_lag), a.zona,
+        dir_ds, nombre, descripcion, a.zona,
         [{"table_id": t["table_id"], "schema": t["schema"], "frame": f} for t, f in zip(tablas, vistas)], default_lag)["tables"]
     ds_hash = hash_dataset(entradas)
     proc = {
         "esquema": "ti-02-data.procedencia/v1", "dataset_id": nombre, "dataset_hash": ds_hash, "corte": a.corte,
         "corte_utc": a.corte + "T00:00:00Z", "corte_ms": corte_ms, "modo_disponibilidad_ohlcv": modo,
         "default_lag_ms": default_lag,
+        "desde": a.desde, "desde_ms": desde_ms,
         "semantica_del_corte": "entra una fila si su cierre (ts_ms + interval_ms; ts_ms en eventos) y su available_at_ms, si lo tiene, son <= corte",
         "zona_horaria_del_mercado": a.zona, "versiones": versiones(), "codigo_sha256": hash_codigo(),
         "origenes": [{"nombre": o["nombre"], "licencia": o["licencia"], "fuente": o["fuente"], "universo": o["universo"]}
@@ -284,6 +316,7 @@ def revalidar(a: argparse.Namespace) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(description="Exportador a engine.market-history/v1 (TI-02-DATA, paso 2).")
     ap.add_argument("--corte", help="fecha de corte AAAA-MM-DD (el instante 00:00:00Z de ese dia)")
+    ap.add_argument("--desde", help="inicio inclusivo de ventana por ts_ms, AAAA-MM-DD; por defecto toda la historia")
     ap.add_argument("--binance", action="store_true", help="velas 1d y 1h de Binance de TI-13-PUB")
     ap.add_argument("--ti13", default=TI13, help="raiz de datasets/TI-13-PUB")
     ap.add_argument("--lago", help="directorio del volcado de descarga_lago.py")
