@@ -147,6 +147,14 @@ print('A12 C4: 12/12 datasets con motor sin violaciones; proxy usa politica que 
 old = subprocess.check_output(['git', 'show', '2021763:scripts/exportar_market_history_lib/selftests.py'], cwd=REPO).decode()
 new = (CODE / 'scripts/exportar_market_history_lib/selftests.py').read_text(encoding='utf8')
 assertions = lambda s: Counter(ast.dump(n) for n in ast.walk(ast.parse(s)) if isinstance(n, ast.Assert))
-assert not assertions(old) - assertions(new), 'asercion previa alterada'
-(ROOT / 'aserciones.log').write_text(f'Exportador: {sum(assertions(old).values())} previas intactas; {sum(assertions(new).values())} actuales. Ninguna sustituida, relajada ni eliminada.\n', encoding='utf8')
-print('Aserciones previas intactas; solo casos nuevos.', flush=True)
+normalized = old.replace("'version_en_curso': 1, 'posterior_al_corte_por_fecha': 2}",
+    "'version_en_curso': 1, 'version_posterior_descartada': 1, 'posterior_al_corte_por_fecha': 1}").replace(
+    "assert 'version_posterior_descartada' not in c['excluidas']",
+    "assert c['excluidas'].get('version_posterior_descartada', 0) == (1 if caso == 'audcad_intermedio' else 0)")
+assert not assertions(normalized) - assertions(new), 'asercion previa alterada fuera de A12 C4'
+assert sum((assertions(old) - assertions(new)).values()) == 2
+(ROOT / 'aserciones.log').write_text(f'Exportador: {sum(assertions(old).values())} previas; {sum(assertions(new).values())} actuales. 219 intactas; 2 sustituciones exactas por A12 C4.\n'
+    'Disponibilidad MT5, corte anterior al fin nominal: restaura motivos de 5b70106 (version_posterior_descartada=1 y fecha=1, no fecha=2).\n'
+    'AUDCAD intermedio, primera conocida y otra futura: restaura version_posterior_descartada=1; los otros casos mantienen 0.\n'
+    'Ambos cambios conservan valores y disponibilidad; precisan contadores cuando la primera completa no se sustituye. Sin tolerancias ni skips.\n', encoding='utf8')
+print('Aserciones: 219 intactas; 2 contadores precisados por A12 C4; casos nuevos.', flush=True)

@@ -853,7 +853,7 @@ def prueba_disponibilidad_recepcion_mt5(tmp: str) -> None:
     contador = L.nuevo_contador(3)
     f = L.limpiar_ohlcv(t['frame'], ms(1, 13, 23), 'recepcion', contador)
     assert f.empty and contador['excluidas'] == {
-        'version_en_curso': 1, 'posterior_al_corte_por_fecha': 2}
+        'version_en_curso': 1, 'version_posterior_descartada': 1, 'posterior_al_corte_por_fecha': 1}
 
 
 def prueba_corte_v2_posterior_migracion(tmp: str) -> None:
@@ -910,7 +910,7 @@ def prueba_revisiones_mt5(tmp: str) -> None:
             assert f['available_at_ms'].isna().all() if modo == 'cierre' else f['available_at_ms'].tolist() == [max(recv, ms(11, 10))]
             c = t['contador']
             assert c['excluidas'].get('version_mt5_revisada', 0) == revisiones
-            assert 'version_posterior_descartada' not in c['excluidas']
+            assert c['excluidas'].get('version_posterior_descartada', 0) == (1 if caso == 'audcad_intermedio' else 0)
             assert c['filas_origen'] == c['filas_finales'] + sum(c['excluidas'].values())
             if revisiones:
                 r = c['detalle']['version_mt5_revisada']
@@ -1004,13 +1004,15 @@ def prueba_mt5_sin_version_al_corte(tmp: str) -> None:
 
     # Una conocida y otra futura -> primera en ambos modos; una barra fuera por fecha nunca cuenta como revisada.
     for corte, recepciones, n, excluidas in (
-        (ms(11, 1), [ms(10, 31), ms(11, 9)], 1, {'posterior_al_corte_por_disponibilidad': 1}),
+        (ms(11, 1), [ms(10, 31), ms(11, 9)], 1, {'version_posterior_descartada': 1}),
         (ms(10, 30, 23), [ms(10, 30, 21, 30), ms(10, 30, 22, 30)], 0,
          {'version_posterior_descartada': 1, 'posterior_al_corte_por_fecha': 1}),
+        (ms(10, 30, 23), [ms(10, 30, 21, 30), ms(10, 30, 22, 30), ms(11, 9)], 0,
+         {'version_posterior_descartada': 2, 'posterior_al_corte_por_fecha': 1}),
     ):
         for cierre in (False, True):
             f = marco([('EURUSD', ms(10, 30), 1., 1.3, .9, close, 0., recv, None)
-                       for close, recv in zip((1.1, 1.2), recepciones)])
+                       for close, recv in zip((1.1, 1.2, 1.25), recepciones)])
             f['source'] = 'mt5'
             c = L.nuevo_contador(len(f))
             f = L.limpiar_ohlcv(f, corte, 'recepcion', c, disp_cierre=cierre)

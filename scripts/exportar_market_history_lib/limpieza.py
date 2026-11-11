@@ -151,22 +151,21 @@ def limpiar_ohlcv(df: pd.DataFrame, corte_ms: int, duplicados: str, c: dict, cal
         del_dataset = df[(df["ts_ms"] + df["interval_ms"]) <= corte_ms]  # barras que pueden entrar en el dataset
         # entre versiones ya cerradas; si ninguna cambia, con las abiertas y marcado (`solo_cerradas` false) para el informe
         completa_conocida = es_mt5_diaria(df) & (df["recv_ms"] >= cierre.loc[df.index]) & (df["recv_ms"] <= corte_ms)
-        tiene_conocida = completa_conocida.groupby([df[k] for k in CLAVE_OHLCV]).transform("any")
+        completas_conocidas = completa_conocida.groupby([df[k] for k in CLAVE_OHLCV]).transform("sum")
+        tiene_conocida = completas_conocidas > 0
         conocidas = del_dataset[~es_mt5_diaria(del_dataset) | ~tiene_conocida.loc[del_dataset.index]
                                 | (del_dataset["recv_ms"] <= corte_ms)]
         c["detalle"]["version_mayor_diferencia"] = mayor_diferencia(conocidas) or mayor_diferencia(conocidas, False)
         df = quitar(df, df["recv_ms"].isna(), "sin_marca_de_recepcion", c)
         df = quitar(df, df["recv_ms"] < cierre.loc[df.index], "version_en_curso", c)
-        # A12 (correccion 4): solo las barras con una completa conocida al corte descartan revisiones futuras.
-        # Sin ninguna, se conserva la primera completa y el corte habitual decide: cierre admite el proxy historico;
-        # recepcion la excluye por disponibilidad. Asi tambien se conservan los motivos y detalles anteriores.
-        futura = es_mt5_diaria(df) & tiene_conocida.loc[df.index] & (df["recv_ms"] > corte_ms)
-        df = quitar(df, futura & (df["ts_ms"] + df["interval_ms"] > corte_ms),
-                    "posterior_al_corte_por_fecha", c)
-        df = quitar(df, futura.loc[df.index], "posterior_al_corte_por_disponibilidad", c)
+        # A12 (correccion 4): solo las barras finales que sustituyen a la primera completa filtran revisiones futuras.
+        # Para las demas basta elegir la primera y aplicar el corte habitual, con los motivos y detalles anteriores:
+        # sin ninguna conocida, cierre admite el proxy historico y recepcion la excluye por disponibilidad.
+        revisable = (es_mt5_diaria(df) & (completas_conocidas.loc[df.index] > 1)
+                     & (df["ts_ms"] + df["interval_ms"] <= corte_ms))
+        df = quitar(df, revisable & (df["recv_ms"] > corte_ms), "posterior_al_corte_por_disponibilidad", c)
         # Solo se cuentan como revisadas las barras que entraran con una version distinta de la primera completa.
-        revisable = (es_mt5_diaria(df) & tiene_conocida.loc[df.index]
-                     & (df["ts_ms"] + df["interval_ms"] <= corte_ms) & df.duplicated(CLAVE_OHLCV, keep=False))
+        revisable = revisable.loc[df.index]
         revisables = df.loc[revisable].sort_values(["recv_ms", "orden"], kind="mergesort")
         afectadas = []
         for clave, g in revisables[revisables.duplicated(CLAVE_OHLCV, keep=False)].groupby(CLAVE_OHLCV, sort=True):
