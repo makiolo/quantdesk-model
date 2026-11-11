@@ -1,0 +1,82 @@
+{
+  "base": "934d9af",
+  "commits_propios": {
+    "f3f8a4d": [
+      "docs/plans/current/execution/TS-00-BENCH-FINCAST/entorno.json",
+      "docs/plans/current/execution/TS-00-BENCH-FINCAST/procedencia.json",
+      "docs/plans/current/execution/TS-00-BENCH-FINCAST/requirements-fincast.txt",
+      "scripts/banco_walkforward.py",
+      "scripts/banco_walkforward_lib/banco.py",
+      "scripts/banco_walkforward_lib/fincast_trabajador.py",
+      "scripts/banco_walkforward_lib/informe.py",
+      "scripts/banco_walkforward_lib/metricas.py",
+      "scripts/banco_walkforward_lib/modelos.py",
+      "scripts/banco_walkforward_lib/pruebas.py",
+      "scripts/banco_walkforward_lib/rutas.py"
+    ],
+    "a98cea8": [
+      "docs/plans/current/execution/TS-00-BENCH-FINCAST/informe.md",
+      "docs/plans/current/execution/TS-00-BENCH-FINCAST/regresion-s01.json",
+      "scripts/banco_walkforward_lib/banco.py",
+      "scripts/banco_walkforward_lib/informe.py",
+      "scripts/banco_walkforward_lib/pruebas.py"
+    ],
+    "84fe1a9": [
+      "docs/plans/current/execution/TS-00-BENCH-FINCAST/informe.md",
+      "scripts/banco_walkforward.py",
+      "scripts/banco_walkforward_lib/banco.py",
+      "scripts/banco_walkforward_lib/informe.py",
+      "scripts/banco_walkforward_lib/modelos.py",
+      "scripts/banco_walkforward_lib/pruebas.py"
+    ]
+  },
+  "solo_rutas_autorizadas_en_commits_propios": true,
+  "tests_y_auxiliares_previos_inalterados": [
+    "_sin_red",
+    "_cerca",
+    "simular_garch",
+    "prueba_metricas",
+    "_tabla",
+    "prueba_look_ahead",
+    "prueba_garch_conocido",
+    "prueba_reproducible",
+    "prueba_toto"
+  ],
+  "selftest_solo_anade_invocaciones": true,
+  "tests_nuevos": [
+    "prueba_deciles_independientes",
+    "prueba_fincast",
+    "prueba_informe_limpia",
+    "prueba_monotonia_banco",
+    "prueba_timeout_persistido",
+    "prueba_ventana_limpia",
+    "prueba_ventana_vacia_persistida"
+  ],
+  "presets_semilla_horizontes_default_modelos_inalterados": true,
+  "metricas_previas_y_clases_modelos_previas_inalteradas": true,
+  "sin_cambios_requirements_lock_toto_trabajador_datos": true,
+  "rutas_ajenas_en_diff_global_no_tocadas_por_este_autor": [
+    "docs/plans/current/EXECUTION.md",
+    "docs/plans/current/execution/TI-02-DATA-V2/alcance_git.log",
+    "docs/plans/current/execution/TI-02-DATA-V2/aserciones.log",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion1/A12.json",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion1/aceptacion.log",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion1/aserciones.log",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion1/invariantes.json",
+    "docs/plans/current/execution/TI-02-DATA-V2/correccion1/sha256.json",
+    "docs/plans/current/execution/TI-02-DATA-V2/default_mutacion.log",
+    "docs/plans/current/execution/TI-02-DATA-V2/descarga_selftest.log",
+    "docs/plans/current/execution/TI-02-DATA-V2/evidencia_sha256.json",
+    "docs/plans/current/execution/TI-02-DATA-V2/exportador_selftest.log",
+    "docs/plans/current/execution/TI-02-DATA-V2/informe.md",
+    "docs/plans/current/execution/TI-02-DATA-V2/probe_metadato.json",
+    "docs/plans/current/execution/TI-02-DATA-V2/regeneracion.json",
+    "docs/plans/current/execution/TI-02-DATA-V2/suite.log",
+    "scripts/descarga_lago.py",
+    "scripts/exportar_market_history.py",
+    "scripts/exportar_market_history_lib/fuentes.py",
+    "scripts/exportar_market_history_lib/informe.py",
+    "scripts/exportar_market_history_lib/limpieza.py",
+    "scripts/exportar_market_history_lib/selftests.py"
+  ]
+}

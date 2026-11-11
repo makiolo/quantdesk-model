@@ -1,0 +1,152 @@
+{
+ "lago_cierre_c20261101": {
+  "corte_utc": "2025-08-27T00:00:00Z",
+  "regla": "origen_ms > corte (estricto); contexto puede ser anterior",
+  "modelos": [
+   "chronos2",
+   "fincast",
+   "garch",
+   "hmm",
+   "toto"
+  ],
+  "estado": "calculada",
+  "celdas": 420,
+  "motivo": "",
+  "exclusiones_fincast": "FinCast: solo crps_deciles y QLIKE en ventana limpia; crps de 21 niveles y criterios de colas no aplicables porque incluyen cuantiles interpolados/extrapolados",
+  "validacion_predicciones": {
+   "origenes_modelo_excluidos": 187,
+   "por_modelo": {
+    "chronos2": 187
+   },
+   "ejemplos": [
+    {
+     "instrument": "AUDCHF",
+     "origen_ms": 1789603200000,
+     "modelo": "chronos2"
+    },
+    {
+     "instrument": "AUDCHF",
+     "origen_ms": 1789689600000,
+     "modelo": "chronos2"
+    },
+    {
+     "instrument": "AUDCHF",
+     "origen_ms": 1789776000000,
+     "modelo": "chronos2"
+    },
+    {
+     "instrument": "AUDCHF",
+     "origen_ms": 1790035200000,
+     "modelo": "chronos2"
+    },
+    {
+     "instrument": "AUDCHF",
+     "origen_ms": 1790121600000,
+     "modelo": "chronos2"
+    },
+    {
+     "instrument": "AUDCHF",
+     "origen_ms": 1790208000000,
+     "modelo": "chronos2"
+    },
+    {
+     "instrument": "AUDJPY",
+     "origen_ms": 1772150400000,
+     "modelo": "chronos2"
+    },
+    {
+     "instrument": "AUDJPY",
+     "origen_ms": 1772668800000,
+     "modelo": "chronos2"
+    },
+    {
+     "instrument": "AUDJPY",
+     "origen_ms": 1772755200000,
+     "modelo": "chronos2"
+    },
+    {
+     "instrument": "AUDJPY",
+     "origen_ms": 1772841600000,
+     "modelo": "chronos2"
+    }
+   ],
+   "alcance": "origenes limpios suministrados, antes de tomar los comunes"
+  },
+  "metricas_sha256": "d835c0008c3fd53cdd493a5d965be05425618b2b56331ed1cac75b12f44c974c"
+ },
+ "binance_c20261101": {
+  "corte_utc": "2025-08-27T00:00:00Z",
+  "regla": "origen_ms > corte (estricto); contexto puede ser anterior",
+  "modelos": [
+   "chronos2",
+   "fincast",
+   "garch",
+   "hmm",
+   "toto"
+  ],
+  "estado": "calculada",
+  "celdas": 150,
+  "motivo": "",
+  "exclusiones_fincast": "FinCast: solo crps_deciles y QLIKE en ventana limpia; crps de 21 niveles y criterios de colas no aplicables porque incluyen cuantiles interpolados/extrapolados",
+  "validacion_predicciones": {
+   "origenes_modelo_excluidos": 283,
+   "por_modelo": {
+    "chronos2": 283
+   },
+   "ejemplos": [
+    {
+     "instrument": "ADAUSDT",
+     "origen_ms": 1772928000000,
+     "modelo": "chronos2"
+    },
+    {
+     "instrument": "ADAUSDT",
+     "origen_ms": 1773187200000,
+     "modelo": "chronos2"
+    },
+    {
+     "instrument": "ADAUSDT",
+     "origen_ms": 1773446400000,
+     "modelo": "chronos2"
+    },
+    {
+     "instrument": "ADAUSDT",
+     "origen_ms": 1773964800000,
+     "modelo": "chronos2"
+    },
+    {
+     "instrument": "ADAUSDT",
+     "origen_ms": 1774224000000,
+     "modelo": "chronos2"
+    },
+    {
+     "instrument": "ADAUSDT",
+     "origen_ms": 1774483200000,
+     "modelo": "chronos2"
+    },
+    {
+     "instrument": "ADAUSDT",
+     "origen_ms": 1774742400000,
+     "modelo": "chronos2"
+    },
+    {
+     "instrument": "ADAUSDT",
+     "origen_ms": 1775001600000,
+     "modelo": "chronos2"
+    },
+    {
+     "instrument": "ADAUSDT",
+     "origen_ms": 1775260800000,
+     "modelo": "chronos2"
+    },
+    {
+     "instrument": "ADAUSDT",
+     "origen_ms": 1775520000000,
+     "modelo": "chronos2"
+    }
+   ],
+   "alcance": "origenes limpios suministrados, antes de tomar los comunes"
+  },
+  "metricas_sha256": "76bc4c9bd6da96679232f9bc56bb096327d0502434541e4126308d7accde02d7"
+ }
+}

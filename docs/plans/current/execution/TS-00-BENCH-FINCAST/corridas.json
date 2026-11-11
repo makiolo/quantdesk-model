@@ -1,0 +1,1467 @@
+{
+  "piloto_fx_v1": {
+    "dataset": {
+      "dataset_id": "lago_cierre_c20261101",
+      "dataset_hash": "sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356",
+      "tabla": "lago_ohlcv_1d",
+      "logical_hash": "sha256:640959ade547195c4913a0db2b3f4852fc3ce94e0d97ac75e3ad0db31108f575",
+      "filas": 14448,
+      "default_lag_ms": 0,
+      "filas_available_at_nulo": 14448,
+      "proxy": true,
+      "intervalos_ms": [
+        86400000
+      ]
+    },
+    "config": {
+      "tabla": "lago_ohlcv_1d",
+      "ventana": 250,
+      "inicio": "2025-10-20",
+      "fin": "2026-10-03",
+      "paso_dias": 1,
+      "horizontes": [
+        1,
+        5,
+        20
+      ],
+      "semilla": 20261101,
+      "s_caminos": {
+        "fincast": null
+      },
+      "hilos_torch": 2,
+      "activos": [
+        "EURUSD"
+      ],
+      "max_origenes": 2,
+      "cada": 1,
+      "modelos": [
+        "fincast"
+      ],
+      "n_rejilla": 349,
+      "solo_limpia": true,
+      "fincast_timeout_s": 600.0
+    },
+    "comando": ".venv/Scripts/python -X utf8 scripts/banco_walkforward.py --dataset lago_cierre_c20261101 --activos EURUSD --modelos fincast --max-origenes 2 --out E:/quantdesk-lab/runs/TS-00-BENCH-FINCAST/piloto_fx_v1",
+    "versiones": {
+      "python": "3.12.3",
+      "plataforma": "Windows-10-10.0.19045-SP0",
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "pandas": "3.1.1",
+      "pyarrow": "26.0.1",
+      "arch": "8.0.0",
+      "torch": "2.15.0+cpu",
+      "transformers": "5.22.2",
+      "chronos-forecasting": "2.3.2",
+      "huggingface_hub": "2.4.0",
+      "motor": "quantdesk 69fdb39d",
+      "motor_commit": "69fdb39d0b67969dbdafa77f5da656511342f175",
+      "rueda_quantdesk_sha256": "sha256=28c1ed662a79a1075a11e544a0f4fe3f10be70d0a9917a4abbf6eccad4c3c3fd"
+    },
+    "omitidos": {
+      "EURUSD": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 2
+      }
+    },
+    "cpu_carga_modelos_s": 0.0,
+    "saltados": {},
+    "versiones_externas": {
+      "fincast": {
+        "python": "3.12.3",
+        "numpy": "2.1.3",
+        "ejecutable": "E:\\quantdesk-lab\\venvs\\fincast\\Scripts\\python.exe",
+        "torch": "2.7.0+cpu",
+        "einops": "0.8.1",
+        "einx": "0.3.0",
+        "beartype": "0.20.2",
+        "CoLT5-attention": "0.11.1"
+      }
+    },
+    "pesos": {
+      "fincast": {
+        "repo": "Vincent05R/FinCast",
+        "revision": "2d7d90b159db8961d27c2cf165d51195902ef92b",
+        "ficheros": {
+          "v1.pth": "d5ca999b02c944effa60d2b94174dc4d5a0cd2c0543ae289b2e36f37431492a8"
+        },
+        "codigo_revision": "488b19d1d85fa2b3d4b93469530cefdcf1cc97a4",
+        "carga": "torch.load(weights_only=True), strict=True"
+      }
+    },
+    "ventana_limpia": {
+      "corte_utc": "2025-08-27T00:00:00Z",
+      "regla": "origen_ms > corte (estricto); contexto puede ser anterior",
+      "modelos": [
+        "fincast"
+      ],
+      "estado": "calculada",
+      "celdas": 3,
+      "motivo": "",
+      "exclusiones_fincast": "FinCast: solo crps_deciles y QLIKE en ventana limpia; crps de 21 niveles y criterios de colas no aplicables porque incluyen cuantiles interpolados/extrapolados",
+      "metricas_sha256": "d228a4f8f9ad57e9eab9e99aebd25d5e6e54e7826b5f02d5d4e5ed4e22383dc9"
+    },
+    "cpu": {
+      "fincast": {
+        "total_s": 3.4375,
+        "por_origen_s": 1.71875,
+        "n": 2
+      }
+    },
+    "fallos": {
+      "fincast": 0
+    },
+    "errores_ejemplo": [],
+    "convergencia": {},
+    "pared_s": 3.1295820000232197,
+    "predicciones_sha256": "4c1442d2feeb31ad5d324f1e449ffa195b9fd95c1c58a6c793c08d35b7ef054f",
+    "metricas_sha256": "91667446343c2bebde9e418508f30f4751d2ba92ac998e9d3cd76886f2f81a74",
+    "parquet_sha256": "32e849e6d0375a1d9e177865b1e98238164f1ec8047fd682fc305b64e9bc547f",
+    "cpu_origenes_validos": {
+      "n": 2,
+      "por_origen_s": 1.71875
+    }
+  },
+  "piloto_binance": {
+    "dataset": {
+      "dataset_id": "binance_c20261101",
+      "dataset_hash": "sha256:d765d56037f700bd2550a9a2ae9d53fbd2406afd7cddb82bbfeaf2a56670b744",
+      "tabla": "binance_ohlcv_1d",
+      "logical_hash": "sha256:cc4e7be3736b289a111c04cf02e0cc2eb6a31e4dbf706dd6238abc4f66cfbea5",
+      "filas": 30336,
+      "default_lag_ms": null,
+      "filas_available_at_nulo": 0,
+      "proxy": false,
+      "intervalos_ms": [
+        86400000
+      ]
+    },
+    "config": {
+      "tabla": "binance_ohlcv_1d",
+      "ventana": 1000,
+      "inicio": "2023-11-01",
+      "fin": "2026-10-12",
+      "paso_dias": 3,
+      "horizontes": [
+        1,
+        5,
+        20
+      ],
+      "semilla": 20261101,
+      "s_caminos": {
+        "fincast": null
+      },
+      "hilos_torch": 2,
+      "activos": [
+        "BTCUSDT"
+      ],
+      "max_origenes": 2,
+      "cada": 1,
+      "modelos": [
+        "fincast"
+      ],
+      "n_rejilla": 359,
+      "solo_limpia": true,
+      "fincast_timeout_s": 600.0
+    },
+    "comando": ".venv/Scripts/python -X utf8 scripts/banco_walkforward.py --dataset binance_c20261101 --activos BTCUSDT --modelos fincast --max-origenes 2 --out E:/quantdesk-lab/runs/TS-00-BENCH-FINCAST/piloto_binance",
+    "versiones": {
+      "python": "3.12.3",
+      "plataforma": "Windows-10-10.0.19045-SP0",
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "pandas": "3.1.1",
+      "pyarrow": "26.0.1",
+      "arch": "8.0.0",
+      "torch": "2.15.0+cpu",
+      "transformers": "5.22.2",
+      "chronos-forecasting": "2.3.2",
+      "huggingface_hub": "2.4.0",
+      "motor": "quantdesk 69fdb39d",
+      "motor_commit": "69fdb39d0b67969dbdafa77f5da656511342f175",
+      "rueda_quantdesk_sha256": "sha256=28c1ed662a79a1075a11e544a0f4fe3f10be70d0a9917a4abbf6eccad4c3c3fd"
+    },
+    "omitidos": {
+      "BTCUSDT": {
+        "sin_ventana": 0,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 0,
+        "fuera_ventana_limpia": 222,
+        "evaluados": 2
+      }
+    },
+    "cpu_carga_modelos_s": 40.421875,
+    "saltados": {},
+    "pared_carga_modelos_s": 45.75335289997747,
+    "versiones_externas": {
+      "fincast": {
+        "python": "3.12.3",
+        "numpy": "2.1.3",
+        "ejecutable": "E:\\quantdesk-lab\\venvs\\fincast\\Scripts\\python.exe",
+        "torch": "2.7.0+cpu",
+        "einops": "0.8.1",
+        "einx": "0.3.0",
+        "beartype": "0.20.2",
+        "CoLT5-attention": "0.11.1"
+      }
+    },
+    "pesos": {
+      "fincast": {
+        "repo": "Vincent05R/FinCast",
+        "revision": "2d7d90b159db8961d27c2cf165d51195902ef92b",
+        "ficheros": {
+          "v1.pth": "d5ca999b02c944effa60d2b94174dc4d5a0cd2c0543ae289b2e36f37431492a8"
+        },
+        "codigo_revision": "488b19d1d85fa2b3d4b93469530cefdcf1cc97a4",
+        "carga": "torch.load(weights_only=True), strict=True",
+        "licencia_codigo_sha256": "1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6",
+        "codigo_ficheros_sha256": {
+          "ffm/pytorch_patched_decoder_MOE.py": "b7df152bfe7666c10a2c5a643459468e53f2ef2a7c489de8c9a9bd6c924d5147",
+          "st_moe_pytorch/__init__.py": "549246007614aab738d7a5543efb29d82d3acba4ab0fec4fe02fcf907cc9b132",
+          "st_moe_pytorch/st_moe_pytorch.py": "33e9afc0597933c35ffecc8149be9d166f84f919401750bed52dbf88052c3bf7",
+          "st_moe_pytorch/distributed.py": "ab8dc35f4919418650b33d1c50c10f3bd79bc8eb6bf2ac2d4696c0af25e8499d"
+        }
+      }
+    },
+    "ventana_limpia": {
+      "corte_utc": "2025-08-27T00:00:00Z",
+      "regla": "origen_ms > corte (estricto); contexto puede ser anterior",
+      "modelos": [
+        "fincast"
+      ],
+      "estado": "calculada",
+      "celdas": 3,
+      "motivo": "",
+      "exclusiones_fincast": "FinCast: solo crps_deciles y QLIKE en ventana limpia; crps de 21 niveles y criterios de colas no aplicables porque incluyen cuantiles interpolados/extrapolados",
+      "metricas_sha256": "8937c58e72c3f1793cdab55fad8331ce6263d66bd9830652bb92d2cbec4b2dc7"
+    },
+    "cpu": {
+      "fincast": {
+        "total_s": 5.46875,
+        "por_origen_s": 2.734375,
+        "n": 2
+      }
+    },
+    "fallos": {
+      "fincast": 0
+    },
+    "errores_ejemplo": [],
+    "convergencia": {},
+    "pared_s": 4.715578999981517,
+    "pared_total_s": 52.5347591000027,
+    "predicciones_sha256": "db2bce5f46b482193bdf0e62d19a5b8e68d605417646feb5c2896563d66cde71",
+    "metricas_sha256": "91667446343c2bebde9e418508f30f4751d2ba92ac998e9d3cd76886f2f81a74",
+    "parquet_sha256": "c4c3e3d2cbdcc0354ca9e2c4ec361afd88e54db00de5943798fe93d799871002",
+    "cpu_origenes_validos": {
+      "n": 2,
+      "por_origen_s": 2.734375
+    }
+  },
+  "fincast_fx": {
+    "dataset": {
+      "dataset_id": "lago_cierre_c20261101",
+      "dataset_hash": "sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356",
+      "tabla": "lago_ohlcv_1d",
+      "logical_hash": "sha256:640959ade547195c4913a0db2b3f4852fc3ce94e0d97ac75e3ad0db31108f575",
+      "filas": 14448,
+      "default_lag_ms": 0,
+      "filas_available_at_nulo": 14448,
+      "proxy": true,
+      "intervalos_ms": [
+        86400000
+      ]
+    },
+    "config": {
+      "tabla": "lago_ohlcv_1d",
+      "ventana": 250,
+      "inicio": "2025-10-20",
+      "fin": "2026-10-03",
+      "paso_dias": 1,
+      "horizontes": [
+        1,
+        5,
+        20
+      ],
+      "semilla": 20261101,
+      "s_caminos": {
+        "fincast": null
+      },
+      "hilos_torch": 2,
+      "activos": [
+        "AUDCAD",
+        "AUDCHF",
+        "AUDJPY",
+        "AUDNZD",
+        "AUDUSD",
+        "CADCHF",
+        "CADJPY",
+        "CHFJPY",
+        "EURAUD",
+        "EURCAD",
+        "EURCHF",
+        "EURGBP",
+        "EURJPY",
+        "EURNZD",
+        "EURUSD",
+        "GBPAUD",
+        "GBPCAD",
+        "GBPCHF",
+        "GBPJPY",
+        "GBPNZD",
+        "GBPUSD",
+        "NZDCAD",
+        "NZDCHF",
+        "NZDJPY",
+        "NZDUSD",
+        "USDCAD",
+        "USDCHF",
+        "USDJPY"
+      ],
+      "max_origenes": 0,
+      "cada": 5,
+      "modelos": [
+        "fincast"
+      ],
+      "n_rejilla": 349,
+      "solo_limpia": true,
+      "fincast_timeout_s": 600.0,
+      "fincast_driver": "errores_sin_recargar_v2"
+    },
+    "comando": ".venv/Scripts/python -X utf8 scripts/banco_walkforward.py --dataset lago_cierre_c20261101 --modelos fincast --out E:/quantdesk-lab/runs/TS-00-BENCH-FINCAST/fincast_fx --cada 5 --reanudar",
+    "versiones": {
+      "python": "3.12.3",
+      "plataforma": "Windows-10-10.0.19045-SP0",
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "pandas": "3.1.1",
+      "pyarrow": "26.0.1",
+      "arch": "8.0.0",
+      "torch": "2.15.0+cpu",
+      "transformers": "5.22.2",
+      "chronos-forecasting": "2.3.2",
+      "huggingface_hub": "2.4.0",
+      "motor": "quantdesk 69fdb39d",
+      "motor_commit": "69fdb39d0b67969dbdafa77f5da656511342f175",
+      "rueda_quantdesk_sha256": "sha256=28c1ed662a79a1075a11e544a0f4fe3f10be70d0a9917a4abbf6eccad4c3c3fd"
+    },
+    "omitidos": {
+      "AUDCAD": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "AUDCHF": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "AUDJPY": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "AUDNZD": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "AUDUSD": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "CADCHF": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "CADJPY": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "CHFJPY": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "EURAUD": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "EURCAD": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "EURCHF": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "EURGBP": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "EURJPY": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "EURNZD": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "EURUSD": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "GBPAUD": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "GBPCAD": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "GBPCHF": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "GBPJPY": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "GBPNZD": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "GBPUSD": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "NZDCAD": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "NZDCHF": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "NZDJPY": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "NZDUSD": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "USDCAD": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "USDCHF": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      },
+      "USDJPY": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 50
+      }
+    },
+    "cpu_carga_modelos_s": 58.625,
+    "saltados": {},
+    "pared_carga_modelos_s": 122.68592819999321,
+    "versiones_externas": {
+      "fincast": {
+        "python": "3.12.3",
+        "numpy": "2.1.3",
+        "ejecutable": "E:\\quantdesk-lab\\venvs\\fincast\\Scripts\\python.exe",
+        "torch": "2.7.0+cpu",
+        "einops": "0.8.1",
+        "einx": "0.3.0",
+        "beartype": "0.20.2",
+        "CoLT5-attention": "0.11.1"
+      }
+    },
+    "pesos": {
+      "fincast": {
+        "repo": "Vincent05R/FinCast",
+        "revision": "2d7d90b159db8961d27c2cf165d51195902ef92b",
+        "ficheros": {
+          "v1.pth": "d5ca999b02c944effa60d2b94174dc4d5a0cd2c0543ae289b2e36f37431492a8"
+        },
+        "codigo_revision": "488b19d1d85fa2b3d4b93469530cefdcf1cc97a4",
+        "carga": "torch.load(weights_only=True), strict=True",
+        "licencia_codigo_sha256": "1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6",
+        "codigo_ficheros_sha256": {
+          "ffm/pytorch_patched_decoder_MOE.py": "b7df152bfe7666c10a2c5a643459468e53f2ef2a7c489de8c9a9bd6c924d5147",
+          "st_moe_pytorch/__init__.py": "549246007614aab738d7a5543efb29d82d3acba4ab0fec4fe02fcf907cc9b132",
+          "st_moe_pytorch/st_moe_pytorch.py": "33e9afc0597933c35ffecc8149be9d166f84f919401750bed52dbf88052c3bf7",
+          "st_moe_pytorch/distributed.py": "ab8dc35f4919418650b33d1c50c10f3bd79bc8eb6bf2ac2d4696c0af25e8499d"
+        }
+      }
+    },
+    "reanudados": [
+      "AUDCAD",
+      "AUDCHF",
+      "AUDJPY",
+      "AUDNZD",
+      "AUDUSD",
+      "CADCHF",
+      "CADJPY",
+      "CHFJPY",
+      "EURAUD",
+      "EURCAD",
+      "EURCHF",
+      "EURGBP",
+      "EURJPY",
+      "EURNZD"
+    ],
+    "ventana_limpia": {
+      "corte_utc": "2025-08-27T00:00:00Z",
+      "regla": "origen_ms > corte (estricto); contexto puede ser anterior",
+      "modelos": [
+        "fincast"
+      ],
+      "estado": "calculada",
+      "celdas": 84,
+      "motivo": "",
+      "exclusiones_fincast": "FinCast: solo crps_deciles y QLIKE en ventana limpia; crps de 21 niveles y criterios de colas no aplicables porque incluyen cuantiles interpolados/extrapolados",
+      "validacion_predicciones": {
+        "origenes_modelo_excluidos": 0,
+        "por_modelo": {},
+        "ejemplos": [],
+        "alcance": "origenes limpios suministrados, antes de tomar los comunes"
+      },
+      "metricas_sha256": "99c9872aefd2ff70b26f1a9dbea5592b39a1fe48ac5879dcb3ef280273325ae5"
+    },
+    "cpu": {
+      "fincast": {
+        "total_s": 2303.0625,
+        "por_origen_s": 1.6450446428571428,
+        "n": 1400
+      }
+    },
+    "fallos": {
+      "fincast": 9
+    },
+    "errores_ejemplo": [
+      {
+        "instrument": "AUDNZD",
+        "origen_ms": 1766534400000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      },
+      {
+        "instrument": "CADCHF",
+        "origen_ms": 1768521600000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      },
+      {
+        "instrument": "EURAUD",
+        "origen_ms": 1788480000000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      },
+      {
+        "instrument": "EURAUD",
+        "origen_ms": 1790294400000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      },
+      {
+        "instrument": "EURJPY",
+        "origen_ms": 1776384000000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      },
+      {
+        "instrument": "EURUSD",
+        "origen_ms": 1765929600000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      },
+      {
+        "instrument": "EURUSD",
+        "origen_ms": 1767916800000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      },
+      {
+        "instrument": "NZDCHF",
+        "origen_ms": 1768521600000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      },
+      {
+        "instrument": "USDCHF",
+        "origen_ms": 1764720000000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      }
+    ],
+    "convergencia": {},
+    "pared_s": 1732.0938202000107,
+    "pared_total_s": 1856.4765409000101,
+    "predicciones_sha256": "1ea978134e8c6949f3bd32de7a6e70fa6db62f5d97db8e0daf60bf139832356e",
+    "metricas_sha256": "91667446343c2bebde9e418508f30f4751d2ba92ac998e9d3cd76886f2f81a74",
+    "parquet_sha256": "f51bff47b8d8de17c52c24f6fe1e1d2a195704e9b2291a5aed523badaf8fc0a1",
+    "cpu_origenes_validos": {
+      "n": 1391,
+      "por_origen_s": 1.651633267433501
+    },
+    "primer_segmento": {
+      "estado_previo": {
+        "controlador_pid": 46048,
+        "inicio_utc": "2026-11-11T08:38:29Z",
+        "corridas": [
+          {
+            "nombre": "fincast_fx",
+            "pid": 19044,
+            "comando": [
+              "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+              "-X",
+              "utf8",
+              "scripts/banco_walkforward.py",
+              "--dataset",
+              "lago_cierre_c20261101",
+              "--modelos",
+              "fincast",
+              "--out",
+              "E:\\quantdesk-lab\\runs\\TS-00-BENCH-FINCAST\\fincast_fx",
+              "--cada",
+              "5"
+            ],
+            "log": "E:\\quantdesk-lab\\runs\\TS-00-BENCH-FINCAST\\fincast_fx.log"
+          }
+        ]
+      },
+      "inicio_utc": "2026-11-11T08:38:29Z",
+      "driver_previo": "f3f8a4d",
+      "ficheros_guardados": [
+        "AUDCAD.parquet",
+        "AUDCHF.parquet",
+        "AUDJPY.parquet",
+        "AUDNZD.parquet",
+        "AUDUSD.parquet",
+        "CADCHF.parquet",
+        "CADJPY.parquet",
+        "CHFJPY.parquet",
+        "EURAUD.parquet",
+        "EURCAD.parquet",
+        "EURCHF.parquet",
+        "EURGBP.parquet",
+        "EURJPY.parquet",
+        "EURNZD.parquet"
+      ],
+      "interrupcion_utc": "2026-11-11T09:31:47.9275412Z",
+      "pared_previa_s": 3198.927541,
+      "log_previo": "E:/quantdesk-lab/runs/TS-00-BENCH-FINCAST/fincast_fx_intento1.log",
+      "motivo": "Reanudar con driver v2: errores JSON sin recargar pesos, CPU externa de fallos conservada",
+      "ficheros_sha256": {
+        "AUDCAD.parquet": "16618411458bb4829ae41a369f43493f9b0cd3f02cd9a28808121eee96b5f115",
+        "AUDCHF.parquet": "d2e20e1dd3e99143617e7f2abce8ecfff254e6b3515cc02aae16a2f64b717b3b",
+        "AUDJPY.parquet": "0bbb2abe8ad647402adb518a21f3df0a9615fc994ba1577418ff08340ddc3c01",
+        "AUDNZD.parquet": "abd014f9a50bd38dfc3e466da93dcc26aa9910f54cc834fe0ba67aa3cc6942c0",
+        "AUDUSD.parquet": "237b78710ce5b6eceb4800a1b5cee0a68605833ac0c92369f9be2703a9438962",
+        "CADCHF.parquet": "cb442f21480791c8e22c69c4a05b89f3b755e6becc79b8c5e69315c815d239e2",
+        "CADJPY.parquet": "817046ec6d9a874578a3c1da8f2428b26190004171ce793aee5045152cc56b29",
+        "CHFJPY.parquet": "dd17d0bb0a9028d48992fae36b0747b39eeb507fb46d8a3eb882738c297ffef5",
+        "EURAUD.parquet": "06ac9545d1417709ed7209c81d17d74e2f90e9a2f11a60713014a77395c31cb7",
+        "EURCAD.parquet": "69698aa8d544a84a23c820392989324bd08e8d4992700e686547aec6c7967cd3",
+        "EURCHF.parquet": "396458f7f34b91792736aab0eb3a7d9c00d6c644fcd15389ebaf8f46a4594060",
+        "EURGBP.parquet": "b3798feb576ba4f4e6d69904fd9552071068d0594a07a896a263f7139f726f29",
+        "EURJPY.parquet": "f75879cb9e31eefd63a9f5a642e4d347aff7b792e4d26958176e0edb02aa7f87",
+        "EURNZD.parquet": "d8026a1e545bd60dd85128020fc6f941d0239bf317d3ead1df5042f453249b6e"
+      }
+    },
+    "pared_acumulada_s": 5055.40408190001
+  },
+  "fincast_binance": {
+    "dataset": {
+      "dataset_id": "binance_c20261101",
+      "dataset_hash": "sha256:d765d56037f700bd2550a9a2ae9d53fbd2406afd7cddb82bbfeaf2a56670b744",
+      "tabla": "binance_ohlcv_1d",
+      "logical_hash": "sha256:cc4e7be3736b289a111c04cf02e0cc2eb6a31e4dbf706dd6238abc4f66cfbea5",
+      "filas": 30336,
+      "default_lag_ms": null,
+      "filas_available_at_nulo": 0,
+      "proxy": false,
+      "intervalos_ms": [
+        86400000
+      ]
+    },
+    "config": {
+      "tabla": "binance_ohlcv_1d",
+      "ventana": 1000,
+      "inicio": "2023-11-01",
+      "fin": "2026-10-12",
+      "paso_dias": 3,
+      "horizontes": [
+        1,
+        5,
+        20
+      ],
+      "semilla": 20261101,
+      "s_caminos": {
+        "fincast": null
+      },
+      "hilos_torch": 2,
+      "activos": [
+        "ADAUSDT",
+        "BNBUSDT",
+        "BTCUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "LINKUSDT",
+        "LTCUSDT",
+        "SOLUSDT",
+        "TRXUSDT",
+        "XRPUSDT"
+      ],
+      "max_origenes": 0,
+      "cada": 10,
+      "modelos": [
+        "fincast"
+      ],
+      "n_rejilla": 359,
+      "solo_limpia": true,
+      "fincast_timeout_s": 600.0,
+      "fincast_driver": "errores_sin_recargar_v2"
+    },
+    "comando": ".venv/Scripts/python -X utf8 scripts/banco_walkforward.py --dataset binance_c20261101 --modelos fincast --out E:/quantdesk-lab/runs/TS-00-BENCH-FINCAST/fincast_binance --cada 10",
+    "versiones": {
+      "python": "3.12.3",
+      "plataforma": "Windows-10-10.0.19045-SP0",
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "pandas": "3.1.1",
+      "pyarrow": "26.0.1",
+      "arch": "8.0.0",
+      "torch": "2.15.0+cpu",
+      "transformers": "5.22.2",
+      "chronos-forecasting": "2.3.2",
+      "huggingface_hub": "2.4.0",
+      "motor": "quantdesk 69fdb39d",
+      "motor_commit": "69fdb39d0b67969dbdafa77f5da656511342f175",
+      "rueda_quantdesk_sha256": "sha256=28c1ed662a79a1075a11e544a0f4fe3f10be70d0a9917a4abbf6eccad4c3c3fd"
+    },
+    "omitidos": {
+      "ADAUSDT": {
+        "sin_ventana": 0,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 0,
+        "fuera_ventana_limpia": 23,
+        "evaluados": 13
+      },
+      "BNBUSDT": {
+        "sin_ventana": 0,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 0,
+        "fuera_ventana_limpia": 23,
+        "evaluados": 13
+      },
+      "BTCUSDT": {
+        "sin_ventana": 0,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 0,
+        "fuera_ventana_limpia": 23,
+        "evaluados": 13
+      },
+      "DOGEUSDT": {
+        "sin_ventana": 0,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 0,
+        "fuera_ventana_limpia": 23,
+        "evaluados": 13
+      },
+      "ETHUSDT": {
+        "sin_ventana": 0,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 0,
+        "fuera_ventana_limpia": 23,
+        "evaluados": 13
+      },
+      "LINKUSDT": {
+        "sin_ventana": 0,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 0,
+        "fuera_ventana_limpia": 23,
+        "evaluados": 13
+      },
+      "LTCUSDT": {
+        "sin_ventana": 0,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 0,
+        "fuera_ventana_limpia": 23,
+        "evaluados": 13
+      },
+      "SOLUSDT": {
+        "sin_ventana": 0,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 0,
+        "fuera_ventana_limpia": 23,
+        "evaluados": 13
+      },
+      "TRXUSDT": {
+        "sin_ventana": 0,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 0,
+        "fuera_ventana_limpia": 23,
+        "evaluados": 13
+      },
+      "XRPUSDT": {
+        "sin_ventana": 0,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 0,
+        "fuera_ventana_limpia": 23,
+        "evaluados": 13
+      }
+    },
+    "cpu_carga_modelos_s": 38.1875,
+    "saltados": {},
+    "pared_carga_modelos_s": 50.32325580000179,
+    "versiones_externas": {
+      "fincast": {
+        "python": "3.12.3",
+        "numpy": "2.1.3",
+        "ejecutable": "E:\\quantdesk-lab\\venvs\\fincast\\Scripts\\python.exe",
+        "torch": "2.7.0+cpu",
+        "einops": "0.8.1",
+        "einx": "0.3.0",
+        "beartype": "0.20.2",
+        "CoLT5-attention": "0.11.1"
+      }
+    },
+    "pesos": {
+      "fincast": {
+        "repo": "Vincent05R/FinCast",
+        "revision": "2d7d90b159db8961d27c2cf165d51195902ef92b",
+        "ficheros": {
+          "v1.pth": "d5ca999b02c944effa60d2b94174dc4d5a0cd2c0543ae289b2e36f37431492a8"
+        },
+        "codigo_revision": "488b19d1d85fa2b3d4b93469530cefdcf1cc97a4",
+        "carga": "torch.load(weights_only=True), strict=True",
+        "licencia_codigo_sha256": "1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6",
+        "codigo_ficheros_sha256": {
+          "ffm/pytorch_patched_decoder_MOE.py": "b7df152bfe7666c10a2c5a643459468e53f2ef2a7c489de8c9a9bd6c924d5147",
+          "st_moe_pytorch/__init__.py": "549246007614aab738d7a5543efb29d82d3acba4ab0fec4fe02fcf907cc9b132",
+          "st_moe_pytorch/st_moe_pytorch.py": "33e9afc0597933c35ffecc8149be9d166f84f919401750bed52dbf88052c3bf7",
+          "st_moe_pytorch/distributed.py": "ab8dc35f4919418650b33d1c50c10f3bd79bc8eb6bf2ac2d4696c0af25e8499d"
+        }
+      }
+    },
+    "ventana_limpia": {
+      "corte_utc": "2025-08-27T00:00:00Z",
+      "regla": "origen_ms > corte (estricto); contexto puede ser anterior",
+      "modelos": [
+        "fincast"
+      ],
+      "estado": "calculada",
+      "celdas": 30,
+      "motivo": "",
+      "exclusiones_fincast": "FinCast: solo crps_deciles y QLIKE en ventana limpia; crps de 21 niveles y criterios de colas no aplicables porque incluyen cuantiles interpolados/extrapolados",
+      "validacion_predicciones": {
+        "origenes_modelo_excluidos": 0,
+        "por_modelo": {},
+        "ejemplos": [],
+        "alcance": "origenes limpios suministrados, antes de tomar los comunes"
+      },
+      "metricas_sha256": "59f7c9b24647150ff2f246435ec807e91554e59b0ca083d856cdfab6f84054ac"
+    },
+    "cpu": {
+      "fincast": {
+        "total_s": 248.46875,
+        "por_origen_s": 1.911298076923077,
+        "n": 130
+      }
+    },
+    "fallos": {
+      "fincast": 20
+    },
+    "errores_ejemplo": [
+      {
+        "instrument": "ADAUSDT",
+        "origen_ms": 1768780800000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      },
+      {
+        "instrument": "ADAUSDT",
+        "origen_ms": 1773964800000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      },
+      {
+        "instrument": "ADAUSDT",
+        "origen_ms": 1776556800000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      },
+      {
+        "instrument": "ADAUSDT",
+        "origen_ms": 1779148800000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      },
+      {
+        "instrument": "ADAUSDT",
+        "origen_ms": 1781740800000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      },
+      {
+        "instrument": "BTCUSDT",
+        "origen_ms": 1763596800000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      },
+      {
+        "instrument": "BTCUSDT",
+        "origen_ms": 1779148800000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      },
+      {
+        "instrument": "BTCUSDT",
+        "origen_ms": 1786924800000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      },
+      {
+        "instrument": "DOGEUSDT",
+        "origen_ms": 1781740800000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      },
+      {
+        "instrument": "DOGEUSDT",
+        "origen_ms": 1786924800000,
+        "modelo": "fincast",
+        "error": "RuntimeError: ValueError: deciles nativos no monotonos"
+      }
+    ],
+    "convergencia": {},
+    "pared_s": 142.48430139999255,
+    "pared_total_s": 194.2701355999743,
+    "predicciones_sha256": "1a7e2f8a4591c05109de841bab09b38cf6294e481958d0afc9792839145e93ce",
+    "metricas_sha256": "91667446343c2bebde9e418508f30f4751d2ba92ac998e9d3cd76886f2f81a74",
+    "parquet_sha256": "3eb4909d6694dc772001ead000f23c8cf35a9d8cf94637edae7994a059b00af9",
+    "cpu_origenes_validos": {
+      "n": 110,
+      "por_origen_s": 1.9125
+    }
+  },
+  "repeticion_fx": {
+    "dataset": {
+      "dataset_id": "lago_cierre_c20261101",
+      "dataset_hash": "sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356",
+      "tabla": "lago_ohlcv_1d",
+      "logical_hash": "sha256:640959ade547195c4913a0db2b3f4852fc3ce94e0d97ac75e3ad0db31108f575",
+      "filas": 14448,
+      "default_lag_ms": 0,
+      "filas_available_at_nulo": 14448,
+      "proxy": true,
+      "intervalos_ms": [
+        86400000
+      ]
+    },
+    "config": {
+      "tabla": "lago_ohlcv_1d",
+      "ventana": 250,
+      "inicio": "2025-10-20",
+      "fin": "2026-10-03",
+      "paso_dias": 1,
+      "horizontes": [
+        1,
+        5,
+        20
+      ],
+      "semilla": 20261101,
+      "s_caminos": {
+        "fincast": null
+      },
+      "hilos_torch": 2,
+      "activos": [
+        "EURUSD"
+      ],
+      "max_origenes": 2,
+      "cada": 1,
+      "modelos": [
+        "fincast"
+      ],
+      "n_rejilla": 349,
+      "solo_limpia": true,
+      "fincast_timeout_s": 600.0,
+      "fincast_driver": "errores_sin_recargar_v2"
+    },
+    "comando": ".venv/Scripts/python -X utf8 scripts/banco_walkforward.py --dataset lago_cierre_c20261101 --modelos fincast --out E:/quantdesk-lab/runs/TS-00-BENCH-FINCAST/repeticion_fx --activos EURUSD --max-origenes 2 --comparar E:/quantdesk-lab/runs/TS-00-BENCH-FINCAST/piloto_fx_v1",
+    "versiones": {
+      "python": "3.12.3",
+      "plataforma": "Windows-10-10.0.19045-SP0",
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "pandas": "3.1.1",
+      "pyarrow": "26.0.1",
+      "arch": "8.0.0",
+      "torch": "2.15.0+cpu",
+      "transformers": "5.22.2",
+      "chronos-forecasting": "2.3.2",
+      "huggingface_hub": "2.4.0",
+      "motor": "quantdesk 69fdb39d",
+      "motor_commit": "69fdb39d0b67969dbdafa77f5da656511342f175",
+      "rueda_quantdesk_sha256": "sha256=28c1ed662a79a1075a11e544a0f4fe3f10be70d0a9917a4abbf6eccad4c3c3fd"
+    },
+    "omitidos": {
+      "EURUSD": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "fuera_ventana_limpia": 0,
+        "evaluados": 2
+      }
+    },
+    "cpu_carga_modelos_s": 37.453125,
+    "saltados": {},
+    "pared_carga_modelos_s": 35.758795000001555,
+    "versiones_externas": {
+      "fincast": {
+        "python": "3.12.3",
+        "numpy": "2.1.3",
+        "ejecutable": "E:\\quantdesk-lab\\venvs\\fincast\\Scripts\\python.exe",
+        "torch": "2.7.0+cpu",
+        "einops": "0.8.1",
+        "einx": "0.3.0",
+        "beartype": "0.20.2",
+        "CoLT5-attention": "0.11.1"
+      }
+    },
+    "pesos": {
+      "fincast": {
+        "repo": "Vincent05R/FinCast",
+        "revision": "2d7d90b159db8961d27c2cf165d51195902ef92b",
+        "ficheros": {
+          "v1.pth": "d5ca999b02c944effa60d2b94174dc4d5a0cd2c0543ae289b2e36f37431492a8"
+        },
+        "codigo_revision": "488b19d1d85fa2b3d4b93469530cefdcf1cc97a4",
+        "carga": "torch.load(weights_only=True), strict=True",
+        "licencia_codigo_sha256": "1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6",
+        "codigo_ficheros_sha256": {
+          "ffm/pytorch_patched_decoder_MOE.py": "b7df152bfe7666c10a2c5a643459468e53f2ef2a7c489de8c9a9bd6c924d5147",
+          "st_moe_pytorch/__init__.py": "549246007614aab738d7a5543efb29d82d3acba4ab0fec4fe02fcf907cc9b132",
+          "st_moe_pytorch/st_moe_pytorch.py": "33e9afc0597933c35ffecc8149be9d166f84f919401750bed52dbf88052c3bf7",
+          "st_moe_pytorch/distributed.py": "ab8dc35f4919418650b33d1c50c10f3bd79bc8eb6bf2ac2d4696c0af25e8499d"
+        }
+      }
+    },
+    "ventana_limpia": {
+      "corte_utc": "2025-08-27T00:00:00Z",
+      "regla": "origen_ms > corte (estricto); contexto puede ser anterior",
+      "modelos": [
+        "fincast"
+      ],
+      "estado": "calculada",
+      "celdas": 3,
+      "motivo": "",
+      "exclusiones_fincast": "FinCast: solo crps_deciles y QLIKE en ventana limpia; crps de 21 niveles y criterios de colas no aplicables porque incluyen cuantiles interpolados/extrapolados",
+      "validacion_predicciones": {
+        "origenes_modelo_excluidos": 0,
+        "por_modelo": {},
+        "ejemplos": [],
+        "alcance": "origenes limpios suministrados, antes de tomar los comunes"
+      },
+      "metricas_sha256": "d228a4f8f9ad57e9eab9e99aebd25d5e6e54e7826b5f02d5d4e5ed4e22383dc9"
+    },
+    "cpu": {
+      "fincast": {
+        "total_s": 3.5625,
+        "por_origen_s": 1.78125,
+        "n": 2
+      }
+    },
+    "fallos": {
+      "fincast": 0
+    },
+    "errores_ejemplo": [],
+    "convergencia": {},
+    "pared_s": 2.3175523999962024,
+    "pared_total_s": 38.44738269998925,
+    "predicciones_sha256": "4c1442d2feeb31ad5d324f1e449ffa195b9fd95c1c58a6c793c08d35b7ef054f",
+    "metricas_sha256": "91667446343c2bebde9e418508f30f4751d2ba92ac998e9d3cd76886f2f81a74",
+    "comparacion": {
+      "referencia": "E:/quantdesk-lab/runs/TS-00-BENCH-FINCAST/piloto_fx_v1",
+      "filas": 6,
+      "filas_sin_pareja": 0,
+      "max_dif_predicciones": 0.0,
+      "predicciones_identicas": true,
+      "max_dif_metricas": 0.0,
+      "metricas_identicas": true,
+      "metricas_limpias_identicas": true,
+      "ref_dataset_hash": "sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356"
+    },
+    "parquet_sha256": "b53d33427d8765aa2a9d639b2eef9fb98db61f298556db6827b4d7f4922567fa",
+    "cpu_origenes_validos": {
+      "n": 2,
+      "por_origen_s": 1.78125
+    }
+  },
+  "repeticion_binance": {
+    "dataset": {
+      "dataset_id": "binance_c20261101",
+      "dataset_hash": "sha256:d765d56037f700bd2550a9a2ae9d53fbd2406afd7cddb82bbfeaf2a56670b744",
+      "tabla": "binance_ohlcv_1d",
+      "logical_hash": "sha256:cc4e7be3736b289a111c04cf02e0cc2eb6a31e4dbf706dd6238abc4f66cfbea5",
+      "filas": 30336,
+      "default_lag_ms": null,
+      "filas_available_at_nulo": 0,
+      "proxy": false,
+      "intervalos_ms": [
+        86400000
+      ]
+    },
+    "config": {
+      "tabla": "binance_ohlcv_1d",
+      "ventana": 1000,
+      "inicio": "2023-11-01",
+      "fin": "2026-10-12",
+      "paso_dias": 3,
+      "horizontes": [
+        1,
+        5,
+        20
+      ],
+      "semilla": 20261101,
+      "s_caminos": {
+        "fincast": null
+      },
+      "hilos_torch": 2,
+      "activos": [
+        "BTCUSDT"
+      ],
+      "max_origenes": 2,
+      "cada": 1,
+      "modelos": [
+        "fincast"
+      ],
+      "n_rejilla": 359,
+      "solo_limpia": true,
+      "fincast_timeout_s": 600.0,
+      "fincast_driver": "errores_sin_recargar_v2"
+    },
+    "comando": ".venv/Scripts/python -X utf8 scripts/banco_walkforward.py --dataset binance_c20261101 --modelos fincast --out E:/quantdesk-lab/runs/TS-00-BENCH-FINCAST/repeticion_binance --activos BTCUSDT --max-origenes 2 --comparar E:/quantdesk-lab/runs/TS-00-BENCH-FINCAST/piloto_binance",
+    "versiones": {
+      "python": "3.12.3",
+      "plataforma": "Windows-10-10.0.19045-SP0",
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "pandas": "3.1.1",
+      "pyarrow": "26.0.1",
+      "arch": "8.0.0",
+      "torch": "2.15.0+cpu",
+      "transformers": "5.22.2",
+      "chronos-forecasting": "2.3.2",
+      "huggingface_hub": "2.4.0",
+      "motor": "quantdesk 69fdb39d",
+      "motor_commit": "69fdb39d0b67969dbdafa77f5da656511342f175",
+      "rueda_quantdesk_sha256": "sha256=28c1ed662a79a1075a11e544a0f4fe3f10be70d0a9917a4abbf6eccad4c3c3fd"
+    },
+    "omitidos": {
+      "BTCUSDT": {
+        "sin_ventana": 0,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 0,
+        "fuera_ventana_limpia": 222,
+        "evaluados": 2
+      }
+    },
+    "cpu_carga_modelos_s": 39.390625,
+    "saltados": {},
+    "pared_carga_modelos_s": 34.76905249999254,
+    "versiones_externas": {
+      "fincast": {
+        "python": "3.12.3",
+        "numpy": "2.1.3",
+        "ejecutable": "E:\\quantdesk-lab\\venvs\\fincast\\Scripts\\python.exe",
+        "torch": "2.7.0+cpu",
+        "einops": "0.8.1",
+        "einx": "0.3.0",
+        "beartype": "0.20.2",
+        "CoLT5-attention": "0.11.1"
+      }
+    },
+    "pesos": {
+      "fincast": {
+        "repo": "Vincent05R/FinCast",
+        "revision": "2d7d90b159db8961d27c2cf165d51195902ef92b",
+        "ficheros": {
+          "v1.pth": "d5ca999b02c944effa60d2b94174dc4d5a0cd2c0543ae289b2e36f37431492a8"
+        },
+        "codigo_revision": "488b19d1d85fa2b3d4b93469530cefdcf1cc97a4",
+        "carga": "torch.load(weights_only=True), strict=True",
+        "licencia_codigo_sha256": "1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6",
+        "codigo_ficheros_sha256": {
+          "ffm/pytorch_patched_decoder_MOE.py": "b7df152bfe7666c10a2c5a643459468e53f2ef2a7c489de8c9a9bd6c924d5147",
+          "st_moe_pytorch/__init__.py": "549246007614aab738d7a5543efb29d82d3acba4ab0fec4fe02fcf907cc9b132",
+          "st_moe_pytorch/st_moe_pytorch.py": "33e9afc0597933c35ffecc8149be9d166f84f919401750bed52dbf88052c3bf7",
+          "st_moe_pytorch/distributed.py": "ab8dc35f4919418650b33d1c50c10f3bd79bc8eb6bf2ac2d4696c0af25e8499d"
+        }
+      }
+    },
+    "ventana_limpia": {
+      "corte_utc": "2025-08-27T00:00:00Z",
+      "regla": "origen_ms > corte (estricto); contexto puede ser anterior",
+      "modelos": [
+        "fincast"
+      ],
+      "estado": "calculada",
+      "celdas": 3,
+      "motivo": "",
+      "exclusiones_fincast": "FinCast: solo crps_deciles y QLIKE en ventana limpia; crps de 21 niveles y criterios de colas no aplicables porque incluyen cuantiles interpolados/extrapolados",
+      "validacion_predicciones": {
+        "origenes_modelo_excluidos": 0,
+        "por_modelo": {},
+        "ejemplos": [],
+        "alcance": "origenes limpios suministrados, antes de tomar los comunes"
+      },
+      "metricas_sha256": "8937c58e72c3f1793cdab55fad8331ce6263d66bd9830652bb92d2cbec4b2dc7"
+    },
+    "cpu": {
+      "fincast": {
+        "total_s": 5.015625,
+        "por_origen_s": 2.5078125,
+        "n": 2
+      }
+    },
+    "fallos": {
+      "fincast": 0
+    },
+    "errores_ejemplo": [],
+    "convergencia": {},
+    "pared_s": 3.3439042000100017,
+    "pared_total_s": 39.49696829999448,
+    "predicciones_sha256": "db2bce5f46b482193bdf0e62d19a5b8e68d605417646feb5c2896563d66cde71",
+    "metricas_sha256": "91667446343c2bebde9e418508f30f4751d2ba92ac998e9d3cd76886f2f81a74",
+    "comparacion": {
+      "referencia": "E:/quantdesk-lab/runs/TS-00-BENCH-FINCAST/piloto_binance",
+      "filas": 6,
+      "filas_sin_pareja": 0,
+      "max_dif_predicciones": 0.0,
+      "predicciones_identicas": true,
+      "max_dif_metricas": 0.0,
+      "metricas_identicas": true,
+      "metricas_limpias_identicas": true,
+      "ref_dataset_hash": "sha256:d765d56037f700bd2550a9a2ae9d53fbd2406afd7cddb82bbfeaf2a56670b744"
+    },
+    "parquet_sha256": "1e236d9de3695bf493d8ed483a88791143d6c5c0305a53b923ed7fb7d346a36f",
+    "cpu_origenes_validos": {
+      "n": 2,
+      "por_origen_s": 2.5078125
+    }
+  },
+  "regresion_s01": {
+    "dataset": {
+      "dataset_id": "lago_cierre_c20261101",
+      "dataset_hash": "sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356",
+      "tabla": "lago_ohlcv_1d",
+      "logical_hash": "sha256:640959ade547195c4913a0db2b3f4852fc3ce94e0d97ac75e3ad0db31108f575",
+      "filas": 14448,
+      "default_lag_ms": 0,
+      "filas_available_at_nulo": 14448,
+      "proxy": true,
+      "intervalos_ms": [
+        86400000
+      ]
+    },
+    "config": {
+      "tabla": "lago_ohlcv_1d",
+      "ventana": 250,
+      "inicio": "2025-10-20",
+      "fin": "2026-10-03",
+      "paso_dias": 1,
+      "horizontes": [
+        1,
+        5,
+        20
+      ],
+      "semilla": 20261101,
+      "s_caminos": {
+        "hmm": 1000,
+        "garch": 1000
+      },
+      "hilos_torch": 2,
+      "activos": [
+        "EURUSD"
+      ],
+      "max_origenes": 3,
+      "cada": 1,
+      "modelos": [
+        "hmm",
+        "garch"
+      ],
+      "n_rejilla": 349,
+      "solo_limpia": false
+    },
+    "comando": ".venv/Scripts/python -X utf8 scripts/banco_walkforward.py --dataset lago_cierre_c20261101 --activos EURUSD --modelos hmm,garch --max-origenes 3 --out E:/quantdesk-lab/runs/TS-00-BENCH-FINCAST/regresion_s01 --comparar E:/quantdesk-lab/runs/TS-00-BENCH/lago_cierre_c20261101",
+    "versiones": {
+      "python": "3.12.3",
+      "plataforma": "Windows-10-10.0.19045-SP0",
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "pandas": "3.1.1",
+      "pyarrow": "26.0.1",
+      "arch": "8.0.0",
+      "torch": "2.15.0+cpu",
+      "transformers": "5.22.2",
+      "chronos-forecasting": "2.3.2",
+      "huggingface_hub": "2.4.0",
+      "motor": "quantdesk 69fdb39d",
+      "motor_commit": "69fdb39d0b67969dbdafa77f5da656511342f175",
+      "rueda_quantdesk_sha256": "sha256=28c1ed662a79a1075a11e544a0f4fe3f10be70d0a9917a4abbf6eccad4c3c3fd"
+    },
+    "omitidos": {
+      "EURUSD": {
+        "sin_ventana": 2,
+        "sin_objetivo": 0,
+        "sin_barra_nueva": 100,
+        "evaluados": 3
+      }
+    },
+    "cpu_carga_modelos_s": 1.484375,
+    "saltados": {},
+    "pared_carga_modelos_s": 1.7397186000016518,
+    "ventana_limpia": {
+      "corte_utc": "2025-08-27T00:00:00Z",
+      "regla": "origen_ms > corte (estricto); contexto puede ser anterior",
+      "modelos": [
+        "hmm",
+        "garch"
+      ],
+      "estado": "calculada",
+      "celdas": 6,
+      "motivo": "",
+      "exclusiones_fincast": "FinCast: solo crps_deciles y QLIKE en ventana limpia; crps de 21 niveles y criterios de colas no aplicables porque incluyen cuantiles interpolados/extrapolados",
+      "metricas_sha256": "81950dcf9c93c364c749f37589b2a57af47050877b6d240d9a7c86ac5a246a8a"
+    },
+    "cpu": {
+      "garch": {
+        "total_s": 0.109375,
+        "por_origen_s": 0.036458333333333336,
+        "n": 3
+      },
+      "hmm": {
+        "total_s": 0.484375,
+        "por_origen_s": 0.16145833333333334,
+        "n": 3
+      }
+    },
+    "fallos": {
+      "garch": 0,
+      "hmm": 0
+    },
+    "errores_ejemplo": [],
+    "convergencia": {
+      "garch": {
+        "no_convergido": 0,
+        "n": 3
+      },
+      "hmm": {
+        "no_convergido": 1,
+        "n": 3
+      }
+    },
+    "pared_s": 0.7327954999927897,
+    "pared_total_s": 2.9045174999919254,
+    "predicciones_sha256": "0661ec1d6ff99f63018eea96081e008d5fa9b8a7a05422faea6fda9e86b70595",
+    "metricas_sha256": "548c94a051ac46f7eba699c51980f893079fbc3eb5458a7d511881f9dc5eca3c",
+    "comparacion": {
+      "referencia": "E:/quantdesk-lab/runs/TS-00-BENCH/lago_cierre_c20261101",
+      "filas": 18,
+      "filas_sin_pareja": 0,
+      "max_dif_predicciones": 0.0,
+      "predicciones_identicas": true,
+      "max_dif_metricas": 0.0,
+      "metricas_identicas": true,
+      "metricas_limpias_identicas": true,
+      "ref_dataset_hash": "sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356"
+    },
+    "parquet_sha256": "a2ba88bdf83003c982ac30d7bf9f72d50fc1b80e0d0dbbb1f54a0c2c4dceba5c"
+  }
+}

@@ -1,0 +1,439 @@
+{
+  "lago_cierre_c20261101": {
+    "dataset_hash": "sha256:aff96e6cb64296f1a55032354a3b6b3642a7527c0f40c55d3f83630a344fd356",
+    "intentos": 1400,
+    "validos": 1391,
+    "fallos": 9,
+    "activos_sin_origenes_comunes": [],
+    "por_activo": [
+      {
+        "instrument": "AUDCAD",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 50,
+          "5": 50,
+          "20": 50
+        }
+      },
+      {
+        "instrument": "AUDCHF",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 49,
+          "5": 49,
+          "20": 49
+        }
+      },
+      {
+        "instrument": "AUDJPY",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 42,
+          "5": 42,
+          "20": 42
+        }
+      },
+      {
+        "instrument": "AUDNZD",
+        "intentos": 50,
+        "validos": 49,
+        "fallos": 1,
+        "comunes_por_h": {
+          "1": 46,
+          "5": 46,
+          "20": 46
+        }
+      },
+      {
+        "instrument": "AUDUSD",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 50,
+          "5": 50,
+          "20": 50
+        }
+      },
+      {
+        "instrument": "CADCHF",
+        "intentos": 50,
+        "validos": 49,
+        "fallos": 1,
+        "comunes_por_h": {
+          "1": 49,
+          "5": 49,
+          "20": 49
+        }
+      },
+      {
+        "instrument": "CADJPY",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 50,
+          "5": 50,
+          "20": 50
+        }
+      },
+      {
+        "instrument": "CHFJPY",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 42,
+          "5": 42,
+          "20": 42
+        }
+      },
+      {
+        "instrument": "EURAUD",
+        "intentos": 50,
+        "validos": 48,
+        "fallos": 2,
+        "comunes_por_h": {
+          "1": 48,
+          "5": 48,
+          "20": 48
+        }
+      },
+      {
+        "instrument": "EURCAD",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 50,
+          "5": 50,
+          "20": 50
+        }
+      },
+      {
+        "instrument": "EURCHF",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 50,
+          "5": 50,
+          "20": 50
+        }
+      },
+      {
+        "instrument": "EURGBP",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 50,
+          "5": 50,
+          "20": 50
+        }
+      },
+      {
+        "instrument": "EURJPY",
+        "intentos": 50,
+        "validos": 49,
+        "fallos": 1,
+        "comunes_por_h": {
+          "1": 42,
+          "5": 42,
+          "20": 42
+        }
+      },
+      {
+        "instrument": "EURNZD",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 47,
+          "5": 47,
+          "20": 47
+        }
+      },
+      {
+        "instrument": "EURUSD",
+        "intentos": 50,
+        "validos": 48,
+        "fallos": 2,
+        "comunes_por_h": {
+          "1": 48,
+          "5": 48,
+          "20": 48
+        }
+      },
+      {
+        "instrument": "GBPAUD",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 50,
+          "5": 50,
+          "20": 50
+        }
+      },
+      {
+        "instrument": "GBPCAD",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 50,
+          "5": 50,
+          "20": 50
+        }
+      },
+      {
+        "instrument": "GBPCHF",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 49,
+          "5": 49,
+          "20": 49
+        }
+      },
+      {
+        "instrument": "GBPJPY",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 50,
+          "5": 50,
+          "20": 50
+        }
+      },
+      {
+        "instrument": "GBPNZD",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 50,
+          "5": 50,
+          "20": 50
+        }
+      },
+      {
+        "instrument": "GBPUSD",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 50,
+          "5": 50,
+          "20": 50
+        }
+      },
+      {
+        "instrument": "NZDCAD",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 50,
+          "5": 50,
+          "20": 50
+        }
+      },
+      {
+        "instrument": "NZDCHF",
+        "intentos": 50,
+        "validos": 49,
+        "fallos": 1,
+        "comunes_por_h": {
+          "1": 49,
+          "5": 49,
+          "20": 49
+        }
+      },
+      {
+        "instrument": "NZDJPY",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 50,
+          "5": 50,
+          "20": 50
+        }
+      },
+      {
+        "instrument": "NZDUSD",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 50,
+          "5": 50,
+          "20": 50
+        }
+      },
+      {
+        "instrument": "USDCAD",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 50,
+          "5": 50,
+          "20": 50
+        }
+      },
+      {
+        "instrument": "USDCHF",
+        "intentos": 50,
+        "validos": 49,
+        "fallos": 1,
+        "comunes_por_h": {
+          "1": 49,
+          "5": 49,
+          "20": 49
+        }
+      },
+      {
+        "instrument": "USDJPY",
+        "intentos": 50,
+        "validos": 50,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 42,
+          "5": 42,
+          "20": 42
+        }
+      }
+    ],
+    "origenes_fallidos_del_primer_tramo_sin_cpu_externa": 5
+  },
+  "binance_c20261101": {
+    "dataset_hash": "sha256:d765d56037f700bd2550a9a2ae9d53fbd2406afd7cddb82bbfeaf2a56670b744",
+    "intentos": 130,
+    "validos": 110,
+    "fallos": 20,
+    "activos_sin_origenes_comunes": [],
+    "por_activo": [
+      {
+        "instrument": "ADAUSDT",
+        "intentos": 13,
+        "validos": 8,
+        "fallos": 5,
+        "comunes_por_h": {
+          "1": 5,
+          "5": 5,
+          "20": 5
+        }
+      },
+      {
+        "instrument": "BNBUSDT",
+        "intentos": 13,
+        "validos": 13,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 11,
+          "5": 11,
+          "20": 11
+        }
+      },
+      {
+        "instrument": "BTCUSDT",
+        "intentos": 13,
+        "validos": 10,
+        "fallos": 3,
+        "comunes_por_h": {
+          "1": 8,
+          "5": 8,
+          "20": 8
+        }
+      },
+      {
+        "instrument": "DOGEUSDT",
+        "intentos": 13,
+        "validos": 11,
+        "fallos": 2,
+        "comunes_por_h": {
+          "1": 10,
+          "5": 10,
+          "20": 10
+        }
+      },
+      {
+        "instrument": "ETHUSDT",
+        "intentos": 13,
+        "validos": 13,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 11,
+          "5": 11,
+          "20": 11
+        }
+      },
+      {
+        "instrument": "LINKUSDT",
+        "intentos": 13,
+        "validos": 13,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 13,
+          "5": 13,
+          "20": 13
+        }
+      },
+      {
+        "instrument": "LTCUSDT",
+        "intentos": 13,
+        "validos": 13,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 10,
+          "5": 10,
+          "20": 10
+        }
+      },
+      {
+        "instrument": "SOLUSDT",
+        "intentos": 13,
+        "validos": 11,
+        "fallos": 2,
+        "comunes_por_h": {
+          "1": 10,
+          "5": 10,
+          "20": 10
+        }
+      },
+      {
+        "instrument": "TRXUSDT",
+        "intentos": 13,
+        "validos": 5,
+        "fallos": 8,
+        "comunes_por_h": {
+          "1": 1,
+          "5": 1,
+          "20": 1
+        }
+      },
+      {
+        "instrument": "XRPUSDT",
+        "intentos": 13,
+        "validos": 13,
+        "fallos": 0,
+        "comunes_por_h": {
+          "1": 11,
+          "5": 11,
+          "20": 11
+        }
+      }
+    ]
+  }
+}

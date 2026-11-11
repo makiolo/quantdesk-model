@@ -1,0 +1,65 @@
+{
+  "estado_previo": {
+    "controlador_pid": 46048,
+    "inicio_utc": "2026-11-11T08:38:29Z",
+    "corridas": [
+      {
+        "nombre": "fincast_fx",
+        "pid": 19044,
+        "comando": [
+          "S:\\Projects\\quantdesk-model\\.venv\\Scripts\\python.exe",
+          "-X",
+          "utf8",
+          "scripts/banco_walkforward.py",
+          "--dataset",
+          "lago_cierre_c20261101",
+          "--modelos",
+          "fincast",
+          "--out",
+          "E:\\quantdesk-lab\\runs\\TS-00-BENCH-FINCAST\\fincast_fx",
+          "--cada",
+          "5"
+        ],
+        "log": "E:\\quantdesk-lab\\runs\\TS-00-BENCH-FINCAST\\fincast_fx.log"
+      }
+    ]
+  },
+  "inicio_utc": "2026-11-11T08:38:29Z",
+  "driver_previo": "f3f8a4d",
+  "ficheros_guardados": [
+    "AUDCAD.parquet",
+    "AUDCHF.parquet",
+    "AUDJPY.parquet",
+    "AUDNZD.parquet",
+    "AUDUSD.parquet",
+    "CADCHF.parquet",
+    "CADJPY.parquet",
+    "CHFJPY.parquet",
+    "EURAUD.parquet",
+    "EURCAD.parquet",
+    "EURCHF.parquet",
+    "EURGBP.parquet",
+    "EURJPY.parquet",
+    "EURNZD.parquet"
+  ],
+  "interrupcion_utc": "2026-11-11T09:31:47.9275412Z",
+  "pared_previa_s": 3198.927541,
+  "log_previo": "E:/quantdesk-lab/runs/TS-00-BENCH-FINCAST/fincast_fx_intento1.log",
+  "motivo": "Reanudar con driver v2: errores JSON sin recargar pesos, CPU externa de fallos conservada",
+  "ficheros_sha256": {
+    "AUDCAD.parquet": "16618411458bb4829ae41a369f43493f9b0cd3f02cd9a28808121eee96b5f115",
+    "AUDCHF.parquet": "d2e20e1dd3e99143617e7f2abce8ecfff254e6b3515cc02aae16a2f64b717b3b",
+    "AUDJPY.parquet": "0bbb2abe8ad647402adb518a21f3df0a9615fc994ba1577418ff08340ddc3c01",
+    "AUDNZD.parquet": "abd014f9a50bd38dfc3e466da93dcc26aa9910f54cc834fe0ba67aa3cc6942c0",
+    "AUDUSD.parquet": "237b78710ce5b6eceb4800a1b5cee0a68605833ac0c92369f9be2703a9438962",
+    "CADCHF.parquet": "cb442f21480791c8e22c69c4a05b89f3b755e6becc79b8c5e69315c815d239e2",
+    "CADJPY.parquet": "817046ec6d9a874578a3c1da8f2428b26190004171ce793aee5045152cc56b29",
+    "CHFJPY.parquet": "dd17d0bb0a9028d48992fae36b0747b39eeb507fb46d8a3eb882738c297ffef5",
+    "EURAUD.parquet": "06ac9545d1417709ed7209c81d17d74e2f90e9a2f11a60713014a77395c31cb7",
+    "EURCAD.parquet": "69698aa8d544a84a23c820392989324bd08e8d4992700e686547aec6c7967cd3",
+    "EURCHF.parquet": "396458f7f34b91792736aab0eb3a7d9c00d6c644fcd15389ebaf8f46a4594060",
+    "EURGBP.parquet": "b3798feb576ba4f4e6d69904fd9552071068d0594a07a896a263f7139f726f29",
+    "EURJPY.parquet": "f75879cb9e31eefd63a9f5a642e4d347aff7b792e4d26958176e0edb02aa7f87",
+    "EURNZD.parquet": "d8026a1e545bd60dd85128020fc6f941d0239bf317d3ead1df5042f453249b6e"
+  }
+}

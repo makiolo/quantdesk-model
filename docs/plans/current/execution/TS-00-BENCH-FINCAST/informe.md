@@ -10,10 +10,15 @@ driver y no identifica una GPU utilizable. DL-02-GATES no está habilitado y el 
 
 ## Estado
 
-Integración en `f3f8a4d`. Selftest del banco en verde, dos pilotos reales sin fallos y regresión exacta frente a
-SPRINT-01. Corridas completas y repeticiones en curso, secuenciales, en segundo plano. Cierre de la suite global
-pendiente hasta el final. Este estado se sustituye por las cifras finales al terminar; no se declara completada
-una corrida mientras siga ejecutándose.
+**COMPLETADA la sub-entrega A.** Corridas FX/Binance y repeticiones terminadas, selftest del banco y suite global en verde. Integracion `f3f8a4d`; validacion de archivos historicos `a98cea8`; driver de errores/CPU `84fe1a9`. [Evidencia del gate](verificacion.md), [metadatos completos](corridas.json), [tablas principal y limpia](tablas/informe.md), [CSV limpio](tablas/metricas_limpia.csv).
+
+La [tabla principal de 798 filas es idéntica a SPRINT-01](principal-identica.json). La tabla limpia contiene
+570 filas de cinco modelos, con el mismo n por activo y horizonte. FinCast: **1391/1400** previsiones válidas
+en FX y **110/130** en Binance; los **29 rechazos nativos** quedan declarados, sin reparar cuantiles.
+Ambas repeticiones tienen diferencia máxima **0**, también en criterios limpios. La suite global da
+**12 OK, 0 FALLO**. Pared FX acumulada: **5055.404 s**; Binance: **194.270 s**.
+La CPU externa de 5 fallos del primer tramo FX no se pudo recuperar; se distingue la CPU registrada de la
+CPU por origen válido y se incluye toda su pared. No quedan corridas en segundo plano.
 
 ## Puerta, revisiones, licencia y carga segura
 
@@ -86,11 +91,15 @@ mata el trabajador, marca ese origen fallido y reinicia en el siguiente. El cont
 llegan al informe. Una respuesta JSON de error o de cuantiles inválidos conserva el trabajador sincronizado
 y la CPU externa devuelta; no requiere recargar los pesos. La CPU de una petición sin respuesta no es
 recuperable y queda fuera de la suma, pero la pared incluye la espera. Toto conserva su comportamiento.
-La corrida FX ya estaba en curso con el primer driver al añadir esta mejora: en ella los errores normales
-reinician el modelo y no conservan su CPU externa. Se declara esa limitación, se muestran los fallos y se
-registra aparte la CPU por origen válido. No cambia ninguna predicción ni se reparan cuantiles. Las corridas
-posteriores y el gate usan el driver corregido. La CPU de carga inicial está separada de la de predicción;
-las recargas del primer driver están incluidas en pared, sin una medición acumulada de CPU de carga.
+El primer tramo FX ya estaba en curso con el primer driver al añadir esta mejora: los errores normales
+reiniciaban el modelo y no conservaban su CPU externa. Se reanuda desde los **14 activos / 700 orígenes**
+persistidos, sin reescribirlos; sus hashes se verifican al cierre. Se declara esa limitación de CPU de esos
+archivos, se muestran los fallos y se registra aparte la CPU por origen válido. No cambia ninguna predicción
+ni se reparan cuantiles. El tramo reanudado, Binance y el gate usan `84fe1a9`. La CPU de carga inicial está
+separada de la de predicción; las recargas del primer driver están incluidas en pared, sin una medición
+acumulada de CPU de carga. Primer tramo: **3198.927541 s** de pared; se suma a la reanudación al cerrar.
+La CPU de la carga inicial del primer tramo tampoco se pudo recuperar al interrumpirlo; la carga separada
+en los metadatos finales FX corresponde al tramo reanudado. El coste CPU por origen válido se conserva.
 
 ## Entorno y reproducción
 
@@ -143,6 +152,11 @@ Controlador secuencial: `E:/quantdesk-lab/tmp/TS-00-BENCH-FINCAST/corridas.py`; 
 controlador real **46048**, primera corrida PID **19044**. Estado y PIDs exactos de cada tanda en
 `E:/quantdesk-lab/runs/TS-00-BENCH-FINCAST/estado_corridas.json`; logs `controlador.log`, `fincast_fx.log`,
 `fincast_binance.log`, `repeticion_fx.log`, `repeticion_binance.log`. Nunca hay dos corridas propias a la vez.
+El primer controlador se detuvo al aplicar el driver v2; log conservado como `fincast_fx_intento1.log`.
+Reanudación con `--reanudar`: lanzador **24916**, controlador real **16108**, FX **39516**;
+`controlador-v2.log`. El registro `reanudacion-fx.json` conserva instantes UTC, pared y SHA-256 de cada uno
+de los 14 archivos reutilizados. El gate automático espera a que terminen todas las corridas antes de
+ejecutar `run_selftests.py` (lanzador del vigilante **41040**, `finalizar.log`).
 
 ## Verificación y casos borde
 
@@ -182,6 +196,13 @@ La implementación abarca proceso, métricas e informe con más de 400 líneas p
 tres capas; se separan el commit funcional verificado y el dossier de corridas/evidencia, sin delegar fuera
 de esta sub-entrega. La revisión independiente corresponde a la raíz que integra A.
 
+[alcance.json](alcance.json) contrasta el AST con `934d9af`: funciones de tests anteriores intactas, solo
+invocaciones añadidas al selftest; fórmulas previas y clases HMM/GARCH/Chronos-2/Toto intactas; presets,
+semilla, horizontes y modelos por defecto intactos. `requirements.lock`, `datos.py` y `toto_trabajador.py`
+sin cambios. Cada commit propio contiene solo rutas autorizadas. El diff global desde la base incluye el
+trabajo concurrente de 1b (y documentación de la raíz), listado aparte como ajeno; no se tocó, revirtió ni
+incluyó en commits de este autor.
+
 ## Sub-entrega B preparada
 
 Esta tabla FX sigue siendo **provisional y proxy** de `lago_cierre_c20261101`; no se mueven umbrales.
@@ -195,3 +216,44 @@ Cuando la fila 1b entregue los presets MT5, la raíz sustituirá `<PRESET_MT5_CA
 
 Medir primero ≤10 orígenes MT5 y ajustar `--cada` según su coste y la cobertura común. El comando con
 placeholders no es ejecutable hasta existir esos presets; pendiente concreto de B, no una corrida omitida de A.
+
+## Resultados finales de las corridas
+
+| corrida | pares | CPU registrada s/origen (valido) | pared sin carga / total s | fallos | SHA-256 canonico de predicciones |
+|---|---:|---:|---|---:|---|
+| piloto_fx_v1 | 2 | 1.718750 (1.718750; n=2) | 3.130 / no registrada | 0 | `4c1442d2feeb31ad5d324f1e449ffa195b9fd95c1c58a6c793c08d35b7ef054f` |
+| piloto_binance | 2 | 2.734375 (2.734375; n=2) | 4.716 / 52.5347591000027 | 0 | `db2bce5f46b482193bdf0e62d19a5b8e68d605417646feb5c2896563d66cde71` |
+| fincast_fx | 1400 | 1.645045 (1.651633; n=1391) | 1732.094 / 1856.4765409000101 | 9 | `1ea978134e8c6949f3bd32de7a6e70fa6db62f5d97db8e0daf60bf139832356e` |
+| fincast_binance | 130 | 1.911298 (1.912500; n=110) | 142.484 / 194.2701355999743 | 20 | `1a7e2f8a4591c05109de841bab09b38cf6294e481958d0afc9792839145e93ce` |
+| repeticion_fx | 2 | 1.781250 (1.781250; n=2) | 2.318 / 38.44738269998925 | 0 | `4c1442d2feeb31ad5d324f1e449ffa195b9fd95c1c58a6c793c08d35b7ef054f` |
+| repeticion_binance | 2 | 2.507812 (2.507812; n=2) | 3.344 / 39.49696829999448 | 0 | `db2bce5f46b482193bdf0e62d19a5b8e68d605417646feb5c2896563d66cde71` |
+
+repeticion_fx: 0 filas sin pareja; predicciones identicas, diferencia maxima 0.0; criterios principales y limpios identicos. No se relaja tolerancia ni se ordenan cuantiles.
+
+repeticion_binance: 0 filas sin pareja; predicciones identicas, diferencia maxima 0.0; criterios principales y limpios identicos. No se relaja tolerancia ni se ordenan cuantiles.
+
+FX reanudada: pared acumulada de los dos segmentos **5055.404 s**, incluidos 3198.928 s del primer driver. Los archivos reutilizados conservan su hash binario exacto (reanudacion-fx.json). Las predicciones no persistidas del activo interrumpido se recalcularon; su CPU previa no es recuperable y no se inventa. Su pared si esta incluida en el primer segmento.
+
+Los controladores y las cuatro corridas han terminado. Los PIDs citados arriba son evidencia historica, no procesos pendientes. `pared_s` excluye la carga; `pared_total_s` la incluye. SHA-256 canonico es el de las claves, objetivos y cuantiles serializados con 17 cifras; el hash binario de cada parquet esta en corridas.json. Los hashes de datasets completos aparecen en las tablas y metadatos.
+
+
+## Cobertura efectiva y rechazos nativos
+
+Solo se puntuan origenes validos comunes de los cinco modelos. Un activo sin origenes comunes queda explicitamente excluido, sin una fila de puntuaciones ni numeros inventados. La tabla siguiente muestra los activos con rechazos FinCast o sin comparacion limpia; el CSV contiene los restantes.
+
+| dataset | activo | intentos | previsiones validas | rechazos nativos | comunes h=1/5/20 |
+|---|---|---:|---:|---:|---|
+| lago_cierre_c20261101 | AUDNZD | 50 | 49 | 1 | 46/46/46 |
+| lago_cierre_c20261101 | CADCHF | 50 | 49 | 1 | 49/49/49 |
+| lago_cierre_c20261101 | EURAUD | 50 | 48 | 2 | 48/48/48 |
+| lago_cierre_c20261101 | EURJPY | 50 | 49 | 1 | 42/42/42 |
+| lago_cierre_c20261101 | EURUSD | 50 | 48 | 2 | 48/48/48 |
+| lago_cierre_c20261101 | NZDCHF | 50 | 49 | 1 | 49/49/49 |
+| lago_cierre_c20261101 | USDCHF | 50 | 49 | 1 | 49/49/49 |
+| binance_c20261101 | ADAUSDT | 13 | 8 | 5 | 5/5/5 |
+| binance_c20261101 | BTCUSDT | 13 | 10 | 3 | 8/8/8 |
+| binance_c20261101 | DOGEUSDT | 13 | 11 | 2 | 10/10/10 |
+| binance_c20261101 | SOLUSDT | 13 | 11 | 2 | 10/10/10 |
+| binance_c20261101 | TRXUSDT | 13 | 5 | 8 | 1/1/1 |
+
+CPU del primer tramo FX: 5 origenes fallidos persistidos sin CPU externa recuperable; su CPU registrada solo incluye el padre. Las previsiones validas conservan su CPU medida. La pared completa de ambos segmentos esta registrada, incluidas recargas y calculos no persistidos.

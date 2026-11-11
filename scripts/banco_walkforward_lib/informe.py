@@ -567,6 +567,10 @@ def seccion_limpia(runs):
          "No es el CRPS continuo ni el de 21 niveles. FinCast solo aporta `crps_deciles` y QLIKE "
          "(varianza = ((q90-q10)/(2 Phi^-1(0.9)))²). CRPS de 21 niveles, pinball 1 %/99 %, excedencias, "
          "Kupiec y Christoffersen de FinCast: **no aplicables**, quedan vacios en CSV y — en la tabla.", "",
+         "Para los demas modelos, un p-valor de Christoffersen vacio significa que el test no esta definido: "
+         "menos de dos observaciones, ninguna excedencia o una fila de transiciones vacia. No equivale a "
+         "aceptar independencia. Una celda sin origenes comunes validos no se puntua. Los tests de colas "
+         "con pocas observaciones tienen poca potencia; las cifras siguen siendo descriptivas.", "",
          "Cuantiles de FinCast: " + ft.METODO + ". Nativos: 0.1..0.9; extrapolados: 0.01/0.05/0.95/0.99; "
          "interpolados: 0.15/0.25/0.35/0.45/0.55/0.65/0.75/0.85. Ninguno de los niveles no nativos "
          "entra en sus criterios.", ""]
