@@ -811,6 +811,51 @@ def prueba_cierre_real_mt5(tmp: str) -> None:
     assert f['close'].tolist() == [1.15] and contador['excluidas'] == {'version_en_curso': 2}
 
 
+def prueba_disponibilidad_recepcion_mt5(tmp: str) -> None:
+    """A12: la disponibilidad respeta el fin nominal sin adelantar recepciones tardias ni cambiar la primera version."""
+    et = {'symbol': 'EURUSD', 'interval': '1d', 'source': 'mt5'}
+    runs = os.path.join(tmp, 'a12_runs')
+    for m, d, hora in ((1, 13, 22), (7, 14, 21)):
+        fin = ms(m, d) + DIA
+        # Recepcion en vivo, exactamente al fin nominal y posterior: max(recepcion, fin nominal).
+        for momento, recv in (('vivo', ms(m, d, hora, 30)), ('nominal', fin), ('tardia', fin + H)):
+            for modo in ('recepcion', 'cierre'):
+                caso = f'a12_{m}_{momento}_{modo}'
+                dump, raiz = [os.path.join(tmp, p + caso) for p in ('dump_', 'out_')]
+                escribir_volcado(dump, {'market.ohlcv.v2': [(et, [{**barra(ns(m, d), recv * 10**6), **et}])]})
+                c, out, err = cli('--lago', dump, '--corte', CORTE, '--nombre', caso, '--salida-raiz', raiz,
+                                  '--disponibilidad-ohlcv', modo, runs=runs)
+                assert c == 0, (out, err)
+                t = leer(raiz, caso)['tablas'][0]
+                assert t['filas'] == 1 and t['limpieza']['excluidas'] == {}
+                f = pq.read_table(os.path.join(raiz, caso, 'lago_ohlcv_1d.parquet')).to_pandas()
+                v = json.load(open(os.path.join(runs, caso + '.json'), encoding='utf-8'))['validacion']
+                assert v['ok'] and v['lookahead']['violaciones_por_fila'] == 0 and not v['lookahead']['violaciones']
+                if modo == 'recepcion':
+                    assert f['available_at_ms'].tolist() == [max(recv, fin)]
+                    assert v['politica']['ok'] and v['default_lag_ms'] is None
+                    assert v['disponibilidad']['lago_ohlcv_1d']['declared'] == 1
+                else:
+                    assert f['available_at_ms'].isna().all() and v['default_lag_ms'] == 0
+                    assert v['politica_con_lag_admitido']['ok']
+
+    # La disponibilidad ajustada no cambia que se elija la primera version completa por recv_ms.
+    from . import fuentes as S
+    versiones = [barra(ns(1, 13), ns(1, 13, 21, 59), c=1.), barra(ns(1, 13), ns(1, 13, 22, 30), c=1.1),
+                 barra(ns(1, 13), ns(1, 14, 1), c=1.15)]
+    dump = os.path.join(tmp, 'a12_primera')
+    escribir_volcado(dump, {'market.ohlcv.v2': [(et, [{**r, **et} for r in versiones])]})
+    t = S.cargar_lago(dump)['tablas'][0]
+    f = L.limpiar_ohlcv(t['frame'], ms(11, 1), 'recepcion', t['contador'])
+    assert f['close'].tolist() == [1.1] and f['available_at_ms'].tolist() == [ms(1, 14)]
+    assert t['contador']['excluidas'] == {'version_en_curso': 1, 'version_posterior_descartada': 1}
+    # Un corte anterior al fin nominal sigue excluyendo la barra aunque haya llegado tras el cierre real.
+    contador = L.nuevo_contador(3)
+    f = L.limpiar_ohlcv(t['frame'], ms(1, 13, 23), 'recepcion', contador)
+    assert f.empty and contador['excluidas'] == {
+        'version_en_curso': 1, 'version_posterior_descartada': 1, 'posterior_al_corte_por_fecha': 1}
+
+
 def prueba_corte_v2_posterior_migracion(tmp: str) -> None:
     """Paso 1 sin --topics y paso 2 real: barras posteriores al corte a v2, RFC3339 y sin look-ahead."""
     import descarga_lago as D
@@ -857,6 +902,7 @@ def correr() -> None:
         prueba_fuentes_v2(tmp)
         prueba_fx_iso_y_tags_v2(tmp)
         prueba_cierre_real_mt5(tmp)
+        prueba_disponibilidad_recepcion_mt5(tmp)
         prueba_corte_v2_posterior_migracion(tmp)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

@@ -14,8 +14,8 @@ disponibilidad y politica de look-ahead sobre el feed).
 Reglas (el detalle y las cifras de cada exportacion quedan en `procedencia.json` del dataset y en el informe):
 - Corte: `--corte AAAA-MM-DD` es el instante AAAA-MM-DDT00:00:00Z. Una fila entra solo si su cierre (inicio + intervalo; el
   propio instante en tablas de eventos) y su `available_at_ms` son <= corte; el resto se cuenta y no entra.
-- Disponibilidad: por fila y nunca inventada. Binance: el cierre de la vela. Lago: `_recv_ts` (ohlcv y performance) o
-  `scraped_at_ms` (rates); si el lago no trae la marca, la tabla queda sin declarar y se dice que no es consumible causalmente.
+- Disponibilidad: por fila. Binance: el cierre de la vela. Lago: max(_recv_ts, _ts + intervalo) en ohlcv (A12),
+  `_recv_ts` en performance o `scraped_at_ms` en rates; sin marca queda sin declarar y no es consumible causalmente.
   Con `--disponibilidad-ohlcv cierre` las barras del lago llevan `available_at_ms` nulo y el manifest `default_lag_ms` = 0
   (disponibles al cierre): es un proxy sin campo que lo respalde, el motor las cuenta como `defaulted` y sus valores son la
   version que qn recibio despues del corte. Ese dataset debe llevar `_cierre` en el nombre. En cualquier otro caso
@@ -321,7 +321,7 @@ def main() -> int:
     ap.add_argument("--ti13", default=TI13, help="raiz de datasets/TI-13-PUB")
     ap.add_argument("--lago", help="directorio del volcado de descarga_lago.py")
     ap.add_argument("--disponibilidad-ohlcv", choices=("recepcion", "cierre"), default="recepcion",
-                    help="disponibilidad de las barras del lago: `recepcion` (_recv_ts, estricta, por defecto) o `cierre` (proxy: "
+                    help="disponibilidad de las barras del lago: `recepcion` (max(_recv_ts, _ts + intervalo), por defecto) o `cierre` (proxy: "
                          "el cierre de la barra; no lo respalda ningun campo del lago)")
     ap.add_argument("--nombre", help="dataset_id y nombre del directorio (por defecto <fuentes>_c<corte>)")
     ap.add_argument("--salida-raiz", default=SALIDA_RAIZ, help="directorio que contiene los datasets (raiz del FileVendor)")

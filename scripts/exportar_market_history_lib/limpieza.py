@@ -121,6 +121,7 @@ def limpiar_ohlcv(df: pd.DataFrame, corte_ms: int, duplicados: str, c: dict, cal
     `duplicados`: 'identicos' (solo se admiten filas repetidas iguales) o 'recepcion' (el lago: primera version ya cerrada
     segun la marca de recepcion de qn; sin marca, la ultima del orden de qn y la disponibilidad queda sin declarar).
     `calendario`: 'fx' separa los huecos del cierre semanal en el informe; None trata todo hueco como anomalo (24x7).
+    En recepcion, disponibilidad = max(recv_ms, ts_ms + interval_ms), nunca antes del fin nominal (A12).
     `disp_cierre`: sustituye la disponibilidad por el cierre de la barra (proxy declarado como tal; solo para el lago).
     """
     df = df.sort_values(CLAVE_OHLCV + ["orden"], kind="mergesort")
@@ -146,7 +147,9 @@ def limpiar_ohlcv(df: pd.DataFrame, corte_ms: int, duplicados: str, c: dict, cal
         df = quitar(df, df["recv_ms"].isna(), "sin_marca_de_recepcion", c)
         df = quitar(df, df["recv_ms"] < cierre.loc[df.index], "version_en_curso", c)
         df = elegir_version(df, CLAVE_OHLCV, ["recv_ms", "orden"], "primera", valores, c, "version_posterior_descartada")
-        df["available_at_ms"] = df["recv_ms"]
+        # A12: una MT5 1d puede estar completa antes del fin nominal. La disponibilidad sigue siendo conservadora
+        # y respeta DPOL-AVL-002 para toda barra; las recepciones posteriores al fin nominal no cambian.
+        df["available_at_ms"] = df["recv_ms"].clip(lower=df["ts_ms"] + df["interval_ms"])
     elif duplicados == "recepcion":
         df = elegir_version(df, CLAVE_OHLCV, ["orden"], "ultima", valores, c, "version_anterior_descartada")
     else:

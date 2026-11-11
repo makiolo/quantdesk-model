@@ -311,7 +311,7 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: b
                           "ejemplos_de_dia_distinto": a["ejemplos_dia"]}},
             "disponibilidad": DISP_OHLCV_PROXY if disp_cierre else {
                 "tipo": "campo del lago" if con_recv else "no declarada",
-                "campo": "_recv_ts (instante en que qn recibio la version elegida de la barra)" if con_recv else None,
+                "campo": "max(_recv_ts, _ts + intervalo) de la version elegida de la barra" if con_recv else None,
                 "declarada": "por fila" if con_recv else "no declarada",
                 "justificacion": (
                     "El topic market.ohlcv.v2 identifica la fuente por el tag source; `_ts` es la marca de la barra. "
@@ -319,8 +319,9 @@ def _cargar_lago_ohlcv(directorio: str, topic: dict, orden0: int, disp_cierre: b
                     "sistema es `_recv_ts` (recepcion en qn). Las barras se republican mientras estan abiertas, asi que se "
                     "conserva la primera version recibida con `_recv_ts` >= cierre real (MT5 1d: 17:00 America/New_York "
                     "de la fecha UTC de `_ts`; resto: inicio + intervalo) y se "
-                    "declara su `_recv_ts` como disponibilidad. Es conservador: un relleno historico queda disponible desde "
-                    "la fecha del relleno, nunca antes." if con_recv else
+                    "declara max(_recv_ts, _ts + intervalo) como disponibilidad (A12, DPOL-AVL-002). Para MT5 1d en vivo "
+                    "es el fin nominal a las 00:00 UTC del dia siguiente, 2-3 h despues del cierre real. Es conservador: "
+                    "un relleno historico queda disponible desde la fecha del relleno, nunca antes." if con_recv else
                     "Las filas no traen `_recv_ts` y el productor no guarda ningun otro instante de publicacion de las barras: "
                     "no hay base para declarar disponibilidad ni para fijar un default_lag_ms, asi que queda sin declarar y la "
                     "tabla NO es consumible causalmente (DPOL-AVL-001 / W-NO-AVAILABILITY).")}})
