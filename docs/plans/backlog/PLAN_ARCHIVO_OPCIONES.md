@@ -120,7 +120,7 @@ y por eso rige la condición de arriba sobre `lake delete`.
 
 | Tarea local | Depende de | Estado | Mientras tanto |
 |---|---|---|---|
-| TI-09-ARCH | backend OC-03-CLOSE (su SPRINT-02, aún en `next/`: S02-D6) | pendiente; dependencia de network servida | última captura de cada día (agrupando `_ts`, §2), **sin spot de respaldo** (D11: sólo `underlying_price` de OC-03; C-ARCHIVO_OPCIONES-01 resuelta) |
+| TI-09-ARCH | backend OC-03-CLOSE (su SPRINT-02, aún en `next/`: S02-D6) | **servida (2026-11-13)**: desplegada en `cc1811d`; corte 2026-11-12, primer cierre completo `capture_id` `2026-11-12-163125-5b2305`; contrato del lector en [current/EXECUTION.md](../current/EXECUTION.md) (fila 2026-11-13) | última captura de cada día (agrupando `_ts`, §2), **sin spot de respaldo** (D11: sólo `underlying_price` de OC-03; C-ARCHIVO_OPCIONES-01 resuelta) |
 | TI-09-ARCH | backend OC-01/OC-02 (alerta en origen); network OCS-02 (S3 sin retención) | **hechas** (2026-11-08/09); la garantía de OCS-02 queda con la excepción del borrado genérico (§4) | — |
 | TI-09-ARCH (universo) | backend: 5–10 ETF/índices en la captura (OC-03 o tarea al lado) | decidido (usuario, 2026-11-09), sin fecha | sólo acciones del S&P 500 |
 | TI-09-SONDA | token de lectura de qn (usuario) | puerta de usuario | — |
