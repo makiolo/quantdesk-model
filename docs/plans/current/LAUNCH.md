@@ -58,7 +58,8 @@ del usuario del 2026-11-10 (SPRINT_PROJECT §6), **anotada en EXECUTION.md como 
   usar `du` sobre árboles grandes; `df -h`.
 - **Credenciales:** ninguna en repo, informes, prompts ni chat (secretos MT5 en `E:/quantdesk-lab/secrets`).
 - **Fichas:** plantilla `ficha.md`, en `.git/sprint-runtime/s02/<ID>/ficha.md`, escritas con Write o script, nunca
-  heredoc. Commit por tarea sólo de las rutas autorizadas; sin push.
+  heredoc. Commit por tarea sólo de las rutas autorizadas; el hijo no empuja. La raíz commitea y empuja en cada
+  checkpoint importante (skill `delegation.md` §7, usuario 2026-11-12).
 - **Evidencia:** cada dataset e informe con SHA-256, semilla, fecha de corte y versión del motor (DoD de SPRINT-01 §8).
 
 ## 5. Cuota y costes
