@@ -31,7 +31,7 @@ Ola 1 de SPRINT-02 (detalle completo en `docs/plans/current/EXECUTION.md`, secci
 | 1b-B | volcado v2 del FX 1d de MT5 desde qn + exportación de `mt5_fx28_cierre_c20261101` y `mt5_fx28_hist_cierre_c20261101` + cuadre | **espera al usuario** (necesita su `QN_TOKEN`; ver Preguntas) | — |
 | 1b-C | dos tablas del banco (cabecera y ampliación, con FinCast) + informe + umbrales TS-00-OBJ | sin empezar (tras 1b-B) | — |
 | 5 | TI-12-MT5 | **en espera**: cuenta MT5 bloqueada (usuario, 2026-11-11). Alcance fijado: h1 de `@continuo`, sin símbolos nuevos | — |
-| 6 | TI-09-ARCH | **en espera** de OC-03 del backend (avisarán) | — |
+| 6 | TI-09-ARCH | **desbloqueada (2026-11-12)**: OC-03 del backend terminada y desplegada (`cc1811d`); primera captura al cierre de NY el 2026-11-12 21:30 UTC. Espera el aviso formal del backend (corte 2026-11-12; `date` = sesión de NY; campos `captured_at`, `capture_id`, `underlying_price`; lectura por `capture_id`) para escribir la ficha | mensaje de `quantdesk-backend-89` |
 | 7 | TI-13-PUB | ola 2 desbloqueada (1b-A aceptada); **pregunta enviada** a `quantdesk-backend-fe` sobre qué hay publicado en qn (topic, `source`, intervalos, rango) | mensaje entre sesiones 2026-11-11 ~13:05 |
 
 BDD de sprints: TS-00-BENCH cerrada; TI-02-DATA-V2 sigue en curso (B y C). Filas viejas LAB-00-ENV, TI-02-DATA,
