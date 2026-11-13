@@ -1,89 +1,144 @@
-# SPRINT-03 — Ciclo sintético-real y procedencia en el manifiesto
+# SPRINT-03 — Exportador diario, operación de MT5 y cobertura de cadenas (sin esperar a quantdesk)
 
 **Estado:** En planificación
-**Inicio de planificación:** 2026-11-07
+**Inicio de planificación:** 2026-11-13
 **Inicio:** pendiente
 **Fin:** pendiente
 
-> Promovido de `future/SPRINT-03/` al activar SPRINT-02 (2026-11-11). Sus premisas se revalidan contra lo que
-> entregue SPRINT-02 y contra los cierres de quantdesk SPRINT-02 (filas S02-*) y SPRINT-03.
-
-## 0. Filas recibidas de SPRINT-02 (usuario, 2026-11-11)
-
-Al partir SPRINT-02 del laboratorio para activarlo sin esperar a quantdesk SPRINT-02, las filas que necesitan sus
-entregas pasan aquí con su texto íntegro y la etiqueta `S02-n` (n = su fila original). Se ejecutan **antes** que las
-de §3. Si alguna entrega queda arrastrada en quantdesk, su fila sale de este sprint y lo demás sigue.
-
-| Entrega de quantdesk SPRINT-02 | Para qué le sirve al laboratorio |
-|---|---|
-| E-RELEASE-WF (-probes): ruedas cp312/cp313/cp314 reparadas e instaladas en venvs limpios por `run_release` | Sustituir la rueda `69fdb39d` construida a mano en SPRINT-01 por una rueda versionada en `requirements.lock` |
-| E15-filter: filtro predictivo de régimen HMM (probabilidad filtrada en `t` con datos ≤ `t`) expuesto a Python | Referencia HMM **causal** en el banco, además del muestreo condicionado de SPRINT-01 |
-| FG-16-hmmcop: corpus HMM/cópula/GBM_P con oráculos independientes | Datos sintéticos con verdad conocida para TS-00-PREC (medida 1: probabilidades de régimen) y para validar la referencia HMM |
-| G-MKT05-RAW-a: manifiesto y hashes del universo59 (59 series diarias, 2016–2026) | Cruce de TI-02-DATA con el histórico local de `quantdesk` |
-
-Estado el 2026-11-11: E-RELEASE-WF-tu hecha; -probes y -perf esperando; E15-filter, FG-16-hmmcop y G-MKT05-RAW-a sin
-entregar. En S02-1, «en lugar del editable» se lee «en lugar de la rueda `69fdb39d`» (C-27, revisión del 2026-11-09).
-
-| Orden | ID | Qué se hace aquí | Aceptación | Depende de |
-|---|---|---|---|---|
-| S02-1 | **LAB-00-ENV** (re-fijado) | Rueda cp312 de la release de SPRINT-02 en el lock en lugar del editable | Venv limpio desde el lock; los informes de SPRINT-01 se reproducen con el mismo hash de dataset y métricas dentro de la tolerancia declarada (o se explica la diferencia) | quantdesk SPRINT-02 cerrado |
-| S02-2 | **TS-00-BENCH** (ampliación) | Referencia HMM filtrada causal (E15-filter); validación de la referencia HMM con el corpus FG-16-hmmcop; más activos y horizontes con los datos nuevos | Tabla ampliada con las mismas métricas; prueba de que perturbar el futuro no cambia la señal pasada del HMM filtrado | LAB-00-ENV (re-fijado), TI-02-DATA, **fila 1b** |
-| S02-3 | **TS-00-PREC** (ampliación) | Medida 1 de §4.5 con regímenes conocidos del corpus FG-16-hmmcop | Recuperación de probabilidades de régimen por tipo, con dispersión entre semillas | LAB-00-ENV (re-fijado) |
-| S02-4 | **TI-02-DATA** (ampliación) | Cruce con el manifiesto del universo59 (G-MKT05-RAW-a); nuevas fuentes de TI-12/TI-13 | Diferencias con el universo59 explicadas; mismas garantías de hash y look-ahead | **fila 1b** (TI-02-DATA-V2) |
-| S02-5 | **TI-12-MT5** (más símbolos y periodos), L6 | Texto íntegro de la fila 5 de SPRINT-02: más símbolos y periodos; la descarga incremental reanudable no es de esta fila (fuera de sprint, [ISSUE-TI12-MT5-INTRADIA-LOCAL](../issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md), D3). Alcance fijado por el usuario el 2026-11-11: **h1 de `@continuo`, sin símbolos nuevos**. Estado al arrastre: sin empezar; el parquet h1 de `D:/dev/deeplearning_dev` sólo trae FX28 y no cubre el alcance (comprobado el 2026-11-13) | Mismo hash para el mismo rango en los símbolos y periodos nuevos, con manifiesto (la reanudación sin duplicados se acepta en la ficha de INTRA-LOCAL) | **Desbloqueo de la cuenta MT5** (usuario); mutex del terminal MT5 con INTRA-LOCAL; descargas prudentes, una serie cada vez |
-| S02-6 | **TI-09-ARCH** (medición de cobertura), L5 | Resto de la fila 6 de SPRINT-02. Ya hecho en SPRINT-02: lector y archivador aceptados (`c6c7b5b`, A4 ACEPTAR) y primer dataset real `oc03_s20261112_c20261113` (`sha256:eb98ac6a…eea1`, cruda 431.681 filas = aviso del backend, limpia 320.125). Queda: medir la cobertura de los 20 días hábiles NYSE desde la sesión 2026-11-12 (último 2026-12-10) con un corte posterior y un token nuevo de lectura | Cobertura ≥ 98 % de días hábiles (aceptación del plan) o causa documentada; dos lecturas del mismo rango y corte dan el mismo SHA-256 | Fecha (tras el 2026-12-10); `QN_TOKEN` nuevo (puerta de usuario) |
-
-Las filas S02-5 y S02-6 llegaron al cerrar SPRINT-02 el 2026-11-13 (decisión del usuario «Cerrar y arrastrar»). **No
-dependen de quantdesk:** pueden hacerse en cuanto se cumpla su condición, aunque S02-1 aún no esté lista. Detalle en el
-[cierre de SPRINT-02](../archive/SPRINT-02_2026-11-11_2026-11-13/SPRINT.md#9-cierre-2026-11-13).
+> **Rehecho por partición** (usuario, 2026-11-13, revisión de planes, R1; precedente: partición de SPRINT-02 del
+> 2026-11-11). Este SPRINT-03 sólo tiene lo que **no depende de `quantdesk`** y por eso **no tiene dependencia de
+> entrada de sprint**: se puede activar ya. El contenido anterior de `next/SPRINT.md` («Ciclo sintético-real y
+> procedencia en el manifiesto»: filas S02-1…S02-4 con su tabla de entregas, objetivo, entregas de quantdesk SPRINT-03,
+> tareas de §3, dependencia, exclusiones, orden, DoD y capacidad) pasó **íntegro** a
+> [future/SPRINT-04](../future/SPRINT-04/SPRINT.md), que espera a quantdesk SPRINT-03 cerrado; el sprint de
+> entrenamiento que era `future/SPRINT-04` es ahora [future/SPRINT-05](../future/SPRINT-05/SPRINT.md). Las filas S02-5 y
+> S02-6, arrastradas de SPRINT-02 el 2026-11-13, se quedan aquí con su etiqueta.
+>
+> Petición del usuario (usuario, 2026-11-13, revisión de planes, R0): meter en el sprint siguiente S02-5, S02-6, todos
+> los planes del backlog y todas las issues pendientes. Se cumple así: lo que no depende de `quantdesk` entra aquí; lo
+> que sí, en SPRINT-04; el intradía de MT5 en qn, con el sprint de entrenamiento (SPRINT-05, R7); el consumo de
+> Yahoo/Stooq y cripto queda en el backlog hasta que alguien planifique su publicación (R6).
+>
+> El `next/SPRINT.md` de `quantdesk-backend` (línea 59) espera TI-02-DIARIO en «sprint del laboratorio por asignar»:
+> ahora es **SPRINT-03** (filas 1 y 2). Se le avisa por mensaje (lo hace la raíz); su repo no se edita desde aquí.
 
 ## 1. Objetivo
 
-Lo que el laboratorio puede hacer **cuando cierre SPRINT-03 de `quantdesk`** (alcance en
-`S:/projects/quantdesk/docs/plans/next/README.md`, tres olas, usuario 2026-11-07). Medir la brecha sintético-real con
-el discriminador, pasar la procedencia de los datasets al manifiesto y usar los simuladores nuevos del motor como
-verdad conocida en los bancos.
+Lo que el laboratorio puede hacer **sin esperar a ningún sprint de `quantdesk`**:
 
-## 2. Qué entrega SPRINT-03 de `quantdesk` que el laboratorio consume
+1. **TI-02-DIARIO** antes de la ola 1 de quantdesk SPRINT-03: primero el contrato con el backend (dónde corre, ruta,
+   formatos, series OAS, credencial), después el código **sin OAS** (R5).
+2. **Cadenas de opciones:** medir la cobertura de los 20 días hábiles NYSE desde la sesión 2026-11-12 (S02-6) y cerrar
+   con esa cifra la sonda de cadenas (R4).
+3. **MT5,** en cuanto el bróker desbloquee la cuenta: una sola ventana de descargas prudentes (incremental m1/m5, h1 de
+   `@continuo`, acciones de `@us_grandes`; R8), reactivar el publicador 1d y hacer la carga nocturna de `@continuo`
+   (R2, R3); el resto del universo ampliado en qn, sólo si se cumplen sus condiciones (GAP-DATOS_VIA_QN-08).
+4. **Lo que publique el backend en su SPRINT-03:** consumir FRED/OAS (R6) y añadir los OAS al exportador diario (R5),
+   como dependencias de tarea que no bloquean la activación.
 
-| Entrega (ola) | Para qué le sirve al laboratorio |
-|---|---|
-| TI-03-FMT (1): campo de procedencia sintética y escritor por fragmentos | Procedencia en el manifiesto en lugar del fichero adjunto de SPRINT-01; corpus sintéticos legibles por el mismo lector |
-| TI-00-ADR (1): frontera de repositorios, almacén de artefactos, topic de publicación | Tabla de licencias de TI-13-PUB en el ADR (aceptación del plan) y ruta definitiva del almacén (D-I2) |
-| TS-01-SIM (1): Heston, Bergomi rugoso, Merton/Bates, GARCH, Hawkes en `engine-core` | Datos sintéticos con parámetros conocidos para TS-00-PREC (medida 1) y para comprobar el banco, si están expuestos en Python |
-| TS-02-GEN (3, **si hay capacidad**): generador de corpus | Imprescindible para TS-02-DISC |
-| DL-02-GATES (2): carriles de GPU | Zero-shot de Chronos-2/Toto en GPU respetando los carriles, si PyTorch con ROCm funciona en Windows |
+## 2. Responsabilidades y gobernanza
+
+Filas de [GOBERNANZA.md](../GOBERNANZA.md) que afectan a este sprint (revisadas el 2026-11-13).
+
+| Cosa | Dueño | Escribe | Decide | Nota para este sprint |
+|---|---|---|---|---|
+| Exportador diario TI-02-DIARIO: código | quantdesk-model | sesiones del laboratorio | usuario | Contrato con el backend **pendiente de acordar** (fila 1; R5) |
+| Programación del exportador en Dagster | quantdesk-backend | sesiones del backend | usuario | Su PUB-05-EXPORT; depende del contrato y del código de las filas 1 y 2 |
+| Publicador MT5 → qn `market.ohlcv.v2` y copia local del intradía | quantdesk-model | sesiones del laboratorio | usuario (visto bueno de network y aviso al backend antes de publicar el universo ampliado) | Filas 4 y 5 |
+| Publicadores públicos en qn (FRED, OAS; Yahoo/Stooq y cripto sin sprint) | quantdesk-backend | sesiones del backend | usuario | Filas 6 y 7 consumen lo que publique |
+| Scraper de cadenas (OC-03) / esquema y retención del lago | backend / network | sus sesiones | usuario | Fila 3 lee del lago; sin copia propia (D7) |
+| Credenciales (MT5, `QN_TOKEN`) | usuario | usuario | usuario | Nunca en repos, informes, prompts ni chat |
 
 ## 3. Tareas
 
-| Orden | ID | Qué se hace aquí | Aceptación | Depende de |
-|---|---|---|---|---|
-| 1 | **TI-02-DATA / TI-12-MT5 / TI-13-PUB** (re-exportación) | Re-exportar los datasets con la procedencia en el manifiesto (TI-03-FMT) | Mismo hash de las filas de datos; el manifiesto nuevo carga en `quant-data`; adjuntos de procedencia retirados | TI-03-FMT |
-| 2 | **TI-13-PUB** (licencias al ADR) | Entregar la tabla de licencias para TI-00-ADR (se pide a `quantdesk`, no se edita desde aquí) y adoptar el almacén decidido | Tabla en el ADR; artefactos movidos al almacén con sus hashes | TI-00-ADR |
-| 3 | **TS-00-PREC** (sintéticos del motor) | Medida 1 de §4.5 con TS-01-SIM: persistencia GARCH, vol de la vol | Recuperación de parámetros por tipo con dispersión entre semillas | TS-01-SIM |
-| 4 | **TS-02-DISC** (parte laboratorio) | Clasificador de ventanas reales frente a sintéticas; informe de rasgos que faltan (colas, huecos de apertura, saltos por resultados, calendario, microestructura) que se traducen en familias o priors para TS-02-GEN; se repite | AUC del discriminador por clase de activo y por iteración, decreciente hasta un umbral fijado; un informe por iteración | TS-02-GEN, TI-02-DATA |
-| 5 | **TS-00-BENCH** (GPU) | Zero-shot en GPU con carriles DL-02-GATES, si procede | Mismas métricas que en CPU dentro de tolerancia | DL-02-GATES |
+Todas las filas tienen nivel L1–L10 y aceptación ejecutable. «Puerta» = acción que sólo puede hacer o aprobar el
+usuario. La **fila 4** es «la fila de MT5» a la que se refieren R2, R3 y R8: comparte puerta (desbloqueo de la cuenta)
+y terminal (mutex), y se ejecuta en una sola ventana.
 
-Si TS-02-GEN no llega en SPRINT-03 de `quantdesk` (ola 3 condicionada a capacidad), TS-02-DISC pasa a SPRINT-04 y
-el resto sigue. Si el discriminador muestra que el dato real es el cuello de botella, recordar **D-13** (pagar datos)
-al usuario.
+> **Entrada de la fila 1. Respuesta del backend del 2026-11-14 (~00:10), raíz `quantdesk-backend-d4`; contrato aún no acordado.**
+> Restricciones que el backend ya tiene fijadas en su `next/SPRINT.md` (líneas 28 y 51-52):
+> - el código es del laboratorio y el backend no lo escribe ni lo modifica (S03-D2); el backend crea el job, el schedule y la alerta `DagsterJobStale`;
+> - corre cada día hábil tras el cierre de Nueva York, cuando MT5 publica el 1d;
+> - no exporta la vela 1d del día en curso ni una vela incompleta;
+> - un día sin datos en qn da un aviso, nunca un fichero vacío;
+> - el FX diario va con `source=mt5`;
+> - `quantdesk` no importa un cliente de qn ni lee tokens: la credencial de lectura la pone el lado Dagster;
+> - los OAS son de uso interno (S03-D4): no salen del equipo del usuario y no hay fixtures con valores de ICE.
+>
+> Su SPRINT-03 publica FRED (PUB-01) y OAS (PUB-02) y programa el exportador (PUB-05-EXPORT). Confirman que Yahoo/Stooq
+> (PUB-03) y cripto (PUB-04) no están en él.
+>
+> Queda por acordar en una propuesta conjunta para el usuario:
+> 1. Dónde corre. Dagster vive en mini (Linux, contenedores) y no ve el `E:/` del PC; si el destino es `E:/`, hace falta copiar a una ruta compartida o un job en el PC.
+> 2. Ruta y formato `desktop.daily-ohlcv/v1`: los propone el laboratorio y los revisa el backend.
+> 3. La credencial de qn del job: la emite network y la pone el usuario en el `.env`.
+> 4. Qué hace el exportador sin 1d de `source=mt5` mientras el publicador esté desactivado: avisar y parar, o esperar.
+
+| Fila | ID | Qué se hace | Aceptación (ejecutable) | Depende de | Nivel | Puerta de usuario |
+|---|---|---|---|---|---|---|
+| 1 | **TI-02-DIARIO** (contrato) — primera fila | Acordar por mensaje con `quantdesk-backend` (y con `quantdesk` para formatos y ruta) el contrato del exportador diario: **dónde corre** (Windows del laboratorio, Linux/Dagster o en dos fases: opciones de GAP-DATOS_VIA_QN-06), **ruta** de salida que abre `quantdesk`, **formatos** (`engine.market-history/v1` y `desktop.daily-ohlcv/v1`, y quién escribe el segundo), **series OAS** (PUB-00), **credencial** (`sub:` de lectura de qn, fuera del repo) y **hora** (después del cierre de Nueva York y de la pasada del publicador MT5). Registrarlo en GOBERNANZA (filas del exportador), DEPENDENCIAS (dependencia de tarea) y PLAN_DATOS_VIA_QN §4 | (1) Mensajes enviados y respuestas registradas con fecha en el EXECUTION del sprint; (2) GOBERNANZA y DEPENDENCIAS con el contrato marcado «decidido (usuario, fecha)» tras el visto bueno del usuario; (3) PLAN_DATOS_VIA_QN §4 sin el bloque «Sin fijar y bloqueante»: ruta, formatos, lugar de ejecución, series y credencial escritos; (4) patrón `qn_` = 0 en repo e informes | Respuesta del backend y de `quantdesk` (sin dependencia de sprint) | L3 | Aprobar el contrato y la credencial del job |
+| 2 | **TI-02-DIARIO** (código, sin OAS) | Exportador diario desde qn sobre `scripts/descarga_lago.py` y `exportar_market_history_lib` (TI-02-DATA-V2), en el lugar y con la ruta y los formatos del contrato; FX diario sólo `source=mt5`; día sin datos = aviso. **Plazo: antes de la ola 1 de quantdesk SPRINT-03** (R5) | Criterios (1)–(6), (8) y (9) de [PLAN_DATOS_VIA_QN](../backlog/PLAN_DATOS_VIA_QN.md) §4 con `--selftest` sobre qn falso: día sin barras → aviso registrado y ningún fichero vacío; ni la vela 1d del día en curso ni una incompleta; mismo corte y entradas → mismo SHA-256 y 0 violaciones de look-ahead; FX diario sólo `source=mt5` y día sin vela de MT5 = aviso (no se rellena con yfinance); `grep` en `quantdesk` sin cliente de qn ni lectura de tokens. El criterio (7) (OAS) va en la fila 7. Mientras la cuenta MT5 siga bloqueada el FX sale como aviso (esperado, no fallo) | Fila 1 | L6 | Credencial `sub:` para el job, si el contrato la pide |
+| 3 | **S02-6 TI-09-ARCH** (medición de cobertura) + cierre de [ISSUE-TI09-SONDA-CADENAS](../issues/ISSUE-TI09-SONDA-CADENAS.md) | Resto de la fila 6 de SPRINT-02 (ya hecho: lector y archivador aceptados `c6c7b5b`, A4 ACEPTAR, y primer dataset real `oc03_s20261112_c20261113`, `sha256:eb98ac6a…eea1`, cruda 431.681 filas, limpia 320.125). Volcado en mini de las **20 sesiones NYSE 2026-11-12…2026-12-10** (Thanksgiving 2026-11-26 fuera) con `scripts/descarga_opciones.py`, copia a `E:/quantdesk-lab/tmp/TI-09-ARCH/` y archivado con `scripts/archivo_opciones.py` con corte posterior al 2026-12-10. Con el mismo volcado, la **cifra por sesión desde el 2026-11-12** cierra la sonda; los días 2026-11-09…11 (régimen sin `capture_id`) se documentan como **no medibles** (R4). **Métrica por defecto** (GAP-ARCHIVO_OPCIONES-03, diferido: se confirma al hacer la ficha): días con captura completa (≥ 95 % del universo esperado del backend y los 7 obligatorios) sobre 20, y por separado pares subyacente-día frente a los 510 esperados por el backend. Ventana: la de esta fila, desde la sesión 2026-11-12 hasta el 2026-12-10 (C-ARCHIVO_OPCIONES-06, decidida en el arrastre del 2026-11-13) | (1) Cobertura ≥ 98 % según la métrica (con 20 días, 20/20) o causa documentada por cada día o subyacente que falte; (2) dos lecturas del mismo rango y corte sobre el lago real dan el mismo SHA-256; (3) informe de exclusiones por motivo y de huecos por subyacente y `asset_type` de las 20 sesiones; (4) pico de memoria ≤ 3 GB por sesión, medido; (5) cifra por sesión (filas, subyacentes, vencimientos, `capture_id`) guardada con su consulta, nota «2026-11-09…11 no medibles» en la ficha de la sonda, que se cierra y se archiva; (6) token revocado y patrón `qn_` = 0 en volcado, repo, informes y chat | Fecha ≥ 2026-12-11; OC-03 del backend en producción (OC-04 para la duración de los runs) | L5 | Emitir y revocar un `QN_TOKEN` de lectura (`sub:market.options.chain` y `sub:market.options.fx`) |
+| 4a | **S02-5 TI-12-MT5** (h1 de `@continuo`) | Texto íntegro de la fila 5 de SPRINT-02: más símbolos y periodos; la descarga incremental reanudable no es de esta fila (va en 4b, [ISSUE-TI12-MT5-INTRADIA-LOCAL](../issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md), D3). Alcance fijado por el usuario el 2026-11-11: **h1 de `@continuo`, sin símbolos nuevos**. Estado al arrastre: sin empezar; el parquet h1 de `D:/dev/deeplearning_dev` sólo trae FX28 y no cubre el alcance (comprobado el 2026-11-13). Con `scripts/extractor_mt5.py` (sólo lectura), una serie cada vez y pausa fija entre series, a `E:/quantdesk-lab/data/mt5/continuo_h1_<fecha>` | Mismo hash para el mismo rango en los símbolos y periodos nuevos, con manifiesto (la reanudación sin duplicados se acepta en 4b); la repetición con `--refrescar` se hace **sobre un subconjunto declarado** (p. ej. fx28) para no doblar la carga al bróker; manifiesto con símbolo, periodo, primera y última barra, filas y hash; ritmo y número de series por sesión escritos en la ficha antes de empezar; 0 órdenes; nada se publica en qn | **Desbloqueo de la cuenta MT5**; mutex del terminal con 4b y 4c; descargas prudentes | L6 | Desbloqueo de la cuenta; aprobar el ritmo |
+| 4b | **TI-12-MT5-INTRA-LOCAL** ([ficha](../issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md)) | Alcance (R8): **fx28 y `@continuo` primero** (incremental m1/m5 con `--hasta` nuevo sobre la caché `E:/quantdesk-lab/data/mt5/_trozos`), **después las 484 acciones de `@us_grandes`** (cota ≈ 3,1 GiB; medir con `extractor_mt5.py --inventario --grupo @us_grandes` y descargar), una serie cada vez. Pasadas **manuales cada ≤ 6 semanas**, la primera **antes del 2027-01-17**; **sin tarea programada**. Fusionada operativamente con 4a (mutex del terminal MT5) | Criterios 1, 2, 4 y 6 de la ficha: mismo `hash_conjunto` en dos descargas del mismo rango (subconjunto declarado); `trozos_reutilizados` > 0 en el registro y manifiesto sin huecos salvo fines de semana y festivos del bróker; periodicidad manual ≤ 6 semanas escrita en la ficha con la fecha de la siguiente pasada; cifra de las acciones anotada y, si se descargan, manifiesto con hash cuya suma de filas cuadra con el inventario; primera pasada antes del 2027-01-17; nada en qn y 0 órdenes | Desbloqueo de la cuenta MT5; mutex con 4a y 4c | L5 | Desbloqueo de la cuenta |
+| 4c | **TI-12-MT5-OPS** (publicador 1d y carga nocturna de `@continuo`; residuo de ISSUE-TI12-MT5-SYNC, R2 y R3) | Tras el desbloqueo: reactivar la tarea `quantdesk\publicador_mt5` (**desactivada** por la raíz de guardia el 2026-11-13, R2); primera pasada con relleno de huecos del 1d de fx28 (parado desde el 2026-11-10) y aviso al backend; después, **carga nocturna del 1d de `@continuo`** (≈ 369 000 objetos) con aviso a backend y network, ≤ 40 000 objetos por 5 min, 02:00–05:00 CET, parada si el cursor del Bento se retrasa; revisar el token `ti12mt5-publicacion-20261109` (id 36) | `ultimo.json` de la primera pasada con `codigo` 0, 28 series y 0 `revisiones_detectadas`; 28/28 series sin hueco en qn (lectura de sólo lectura); registro de la noche de `@continuo` (series, objetos, errores) con objetos publicados = filas locales por serie y sin `revisiones_detectadas` sin explicar; `publicador_mt5.py --selftest` ok; revisión del token anotada | Desbloqueo de la cuenta MT5; terminal libre de 4a y 4b; visto bueno de network y aviso al backend vigentes para la noche | L3 | Desbloqueo; reactivar la tarea programada; aprobar la noche; revisión del token id 36 |
+| 5 | **TI-12-MT5-PUB-AMP** (resto del universo ampliado en qn: acciones de `@us_grandes`, noches 2–3) — **condicionada** | Publicar el 1d de las 484 acciones de sesión normal y las 13 `-24` en `market.ohlcv.v2` (≈ 690 000 objetos por noche) con el mismo ritmo y avisos que 4c | Registro de cada noche sin `revisiones_detectadas` sin explicar; cuadre `cuadre_mt5.py` de un subconjunto 1d contra qn; Bento y ClickHouse sin retraso (aviso del backend) | **Condición de entrada (GAP-DATOS_VIA_QN-08):** desbloqueo de la cuenta + visto bueno **nuevo** de network + aprobación del usuario; 4c cerrada. GAP-DATOS_VIA_QN-09 (dos publicadores) sigue abierto: se pregunta al planificar la fila si para entonces el backend publica acciones | L5 | Aprobación del usuario (fila y cada noche) |
+| 6 | **TI-13-PUB-FRED** (consumo de FRED/OAS; R6) | Exportar con TI-02-DATA lo que el backend publique en qn de FRED (H.15) y de OAS; filtro de fugas D-11 sobre esas series; licencias en la tabla (FRED: atribución; ICE: uso interno) | Informe del filtro actualizado; datasets con hash exportados desde qn y reproducibles; licencias anotadas; el dataset con OAS no sale del equipo del usuario | **Dependencia de tarea:** quantdesk-backend SPRINT-03 (PUB-00…PUB-02, topic de GAP-PUB-01); no bloquea la activación | L4 | Token de lectura de qn, si el volcado lo pide |
+| 7 | **TI-02-DIARIO-OAS** | Añadir al exportador de la fila 2 los OAS que publique PUB-02 | Dataset con OAS con la fecha de publicación de la fuente (sin look-ahead); huecos como aviso; criterio (7) de PLAN_DATOS_VIA_QN §4: el dataset con OAS no sale del equipo del usuario ni va a repos | Fila 2; **dependencia de tarea:** quantdesk-backend SPRINT-03 PUB-01/PUB-02 | L4 | Ninguna |
+
+**Fichas de issue seleccionadas para este sprint** (destino «Sprint siguiente seleccionado: SPRINT-03 (next)»; siguen
+en [issues/](../issues/index.md) hasta activar y entonces pasan a `current/issues/`):
+[ISSUE-TI09-SONDA-CADENAS](../issues/ISSUE-TI09-SONDA-CADENAS.md) (fila 3) e
+[ISSUE-TI12-MT5-INTRADIA-LOCAL](../issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md) (fila 4b). ISSUE-TI12-MT5-SYNC y
+ISSUE-TI12-MT5-VELA-A-MEDIAS están **resueltas** (R3) y archivadas en
+[archive/FUERA-SPRINT_2026-11-09_2026-11-13/](../archive/FUERA-SPRINT_2026-11-09_2026-11-13/ARCHIVE_MANIFEST.md); su
+residuo es la fila 4c.
+
+**Planes del backlog que alimentan el sprint:** [PLAN_DATOS_VIA_QN](../backlog/PLAN_DATOS_VIA_QN.md) (filas 1, 2,
+4a–4c, 5, 6 y 7) y [PLAN_ARCHIVO_OPCIONES](../backlog/PLAN_ARCHIVO_OPCIONES.md) (fila 3; se archiva al cerrar S02-6, no
+antes del 2026-12-11). Los planes no se reducen: sus IDs son más amplios que las filas y anotan el sprint que las ejecuta.
 
 ## 4. Dependencias externas
 
-| Sprint local | Depende de | Condición | Estado |
+**Sin dependencia de entrada de sprint** (usuario, 2026-11-13, revisión de planes, R1): ninguna fila necesita que
+cierre un sprint de otro proyecto para empezar. Las dependencias que hay son **de tarea**: no bloquean la activación,
+sólo el inicio de la fila indicada.
+
+| Fila (tarea local) | Depende de (proyecto, sprint, tarea) | Condición | Estado |
 |---|---|---|---|
-| SPRINT-03 | quantdesk SPRINT-03 | cerrado | decidido (usuario, 2026-11-07); cubre también las filas S02-* (quantdesk cierra sus sprints en orden) |
+| 1 TI-02-DIARIO (contrato) | quantdesk-backend, `next/SPRINT.md` (SPRINT-03), PUB-05-EXPORT; quantdesk, formatos de D-I4 (`PLAN_TSFM_INTEGRACION` §6) | respuesta por mensaje | decidido (usuario, 2026-11-13, revisión de planes, R5); contrato **pendiente de acordar** |
+| 2 TI-02-DIARIO (código) | (salida) quantdesk SPRINT-03, ola 1, XVA-03-DATA lo espera; backend PUB-05-EXPORT lo programa | entregar antes de la ola 1 | decidido (usuario, 2026-11-09/10; calendario R5) |
+| 3 S02-6 + sonda | quantdesk-backend OC-03 en producción (servida, `cc1811d`) | fecha ≥ 2026-12-11 | servida |
+| 4a, 4b, 4c, 5 | bróker MT5: desbloqueo de la cuenta (lo gestiona el usuario) | cuenta desbloqueada | bloqueada desde el 2026-11-10 |
+| 4c (noche de `@continuo`) y 5 | quantdesk-network: visto bueno de carga (ritmo, memoria de mini); quantdesk-backend: aviso (Bento) | visto bueno vigente / nuevo | el del 2026-11-09 era para la noche del 2026-11-10, que no salió |
+| 6 TI-13-PUB-FRED | quantdesk-backend SPRINT-03, PUB-00…PUB-02 | tarea entregada | decidido (usuario, 2026-11-13, revisión de planes, R6) |
+| 7 TI-02-DIARIO-OAS | quantdesk-backend SPRINT-03, PUB-01/PUB-02 | tarea entregada | decidido (usuario, 2026-11-13, revisión de planes, R5) |
+
+Contrato para `sprint deps` en [DEPENDENCIAS.md](../DEPENDENCIAS.md).
 
 ## 5. Exclusiones
 
 | Qué | Motivo | Destino |
 |---|---|---|
-| Ejecuciones de entrenamiento | Necesitan TI-06-CLI, DL-07-TRAIN y TS-05-PREC (SPRINT-04 de `quantdesk`) | [future/SPRINT-04](../future/SPRINT-04/SPRINT.md) |
+| TI-12-MT5 intradía publicado en qn | Se planifica con el sprint de entrenamiento; consumidor TS-05-FREQ; visto bueno de network (usuario, 2026-11-13, revisión de planes, R7; mantiene la decisión del 2026-11-09; GAP-DATOS_VIA_QN-10 resuelto) | [future/SPRINT-05](../future/SPRINT-05/SPRINT.md) |
+| TI-13-PUB consumo de Yahoo/Stooq y cripto | El backend no los publica (PUB-03/PUB-04 sin sprint); falta la política de dos publicadores (GAP-DATOS_VIA_QN-09 = GAP-BACKLOG_README-03) (usuario, 2026-11-13, revisión de planes, R6) | Backlog: [PLAN_DATOS_VIA_QN](../backlog/PLAN_DATOS_VIA_QN.md) §3 |
+| Filas S02-1…S02-4; re-exportación con TI-03-FMT; licencias al ADR; TS-00-PREC con sintéticos del motor; TS-02-DISC; TS-00-BENCH en GPU | Dependen de entregas de quantdesk SPRINT-02 y SPRINT-03 (R1) | [future/SPRINT-04](../future/SPRINT-04/SPRINT.md) |
+| Ejecuciones de entrenamiento, ajuste fino, adaptadores | Necesitan TI-06-CLI, DL-07-TRAIN y TS-05-PREC (SPRINT-04 de `quantdesk`) | [future/SPRINT-05](../future/SPRINT-05/SPRINT.md) |
+| Cortes periódicos de cadenas después de S02-6 | GAP-ARCHIVO_OPCIONES-05 diferido (bajo demanda por defecto) | Se decide al cerrar S02-6 |
+| Copia del lago | Es la común de network (D7); el laboratorio sólo guarda lo leído al cortar | — |
 | XVA (XVA-03-DATA/CDS/CURVE…) | Se ejecuta en `quantdesk` | — |
 
 ## 6. Orden
 
-Las filas S02-* primero, empezando por S02-1 (rueda re-fijada: barrera de las demás). Re-exportación primero (los bancos citan hashes de dataset); TS-00-PREC y TS-02-DISC en paralelo después.
+1. **Fila 1 al activar** (contrato por mensaje) y **fila 2** en cuanto haya contrato: es la única con plazo duro
+   (antes de la ola 1 de quantdesk SPRINT-03).
+2. **Fila 4 en cuanto se desbloquee la cuenta**, en una sola ventana y nunca dos tareas a la vez en el terminal:
+   4b incremental m1/m5 de fx28 y `@continuo` (lo que caduca) → 4a h1 de `@continuo` → 4b acciones de `@us_grandes` →
+   4c reactivación del publicador y primera pasada → noche de `@continuo` → fila 5 sólo si se cumplen sus condiciones.
+   Una serie cada vez, con pausas; el publicador, una pasada al día. Si la cuenta sigue bloqueada al acercarse el
+   2027-01-17, avisar al usuario (fecha límite de 4b).
+3. **Fila 3 desde el 2026-12-11**, en una sola sesión de token.
+4. **Filas 6 y 7** cuando el backend avise de que publica FRED/OAS (aviso de salida de su SPRINT-03).
 
 ## 7. Definition of Done
 
@@ -91,4 +146,4 @@ La de [SPRINT-01](../archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md#8-definit
 
 ## 8. Capacidad y presupuesto
 
-«rellenar al planificar».
+«rellenar al planificar». (Cuota compartida con los demás proyectos: leerla antes de la ola 1, como en SPRINT-02 §8.)

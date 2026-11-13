@@ -83,7 +83,7 @@ SPRINT-02). El cierre de SPRINT-01 no espera a los OC: lo que falte queda como a
 |---|---|---|
 | TI-09-ARCH (parte laboratorio) | Sin datos de origen: `market.options.chain` y `market.options.fx` vacíos en `main` de 2024 a hoy (TI-01-INV). Retirada por el usuario el 2026-11-08 «hasta que tengamos más datos» | [backlog](../../backlog/README.md), cuando el backend publique la cadena en qn |
 | TS-02-DISC (parte laboratorio) | Necesita TS-02-GEN (SPRINT-03 de `quantdesk`, ola 3) | [future/SPRINT-03](../../future/SPRINT-03/SPRINT.md) |
-| Ejecuciones de entrenamiento, TS-05-*, TS-06-FT, TS-18-WF, TS-15-FINAL | Necesitan TI-06-CLI y DL-07-TRAIN (SPRINT-04 de `quantdesk`) | [future/SPRINT-04](../../future/SPRINT-04/SPRINT.md) |
+| Ejecuciones de entrenamiento, TS-05-*, TS-06-FT, TS-18-WF, TS-15-FINAL | Necesitan TI-06-CLI y DL-07-TRAIN (SPRINT-04 de `quantdesk`) | [future/SPRINT-04](../../future/SPRINT-05/SPRINT.md) (renumerado a SPRINT-05 el 2026-11-13) |
 | Cualquier cambio en código o sprints de `quantdesk` o en el scraper del backend | Gobernanza (GOBERNANZA.md, SPRINT_PROJECT §5) | backlog de cada repo |
 | GPU para Chronos-2/Toto | PyTorch con ROCm en Windows no se da por supuesto; carriles DL-02-GATES aún no existen | CPU ahora; GPU en SPRINT-03 si procede |
 

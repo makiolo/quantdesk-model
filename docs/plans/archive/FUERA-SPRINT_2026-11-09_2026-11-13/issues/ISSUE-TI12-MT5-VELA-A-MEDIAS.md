@@ -1,7 +1,10 @@
 # [ISSUE-TI12-MT5-VELA-A-MEDIAS] El publicador MT5 publicó la vela 1d del 2026-11-09 a medias en 23 de 28 pares
 
 > **Tipo:** Incidencia\
-> **Estado:** En resolución (guarda hecha, 23 velas republicadas y verificadas en qn, ClickHouse y API; falta reactivar la tarea)\
+> **Estado:** **Resuelta por fusión** en [ISSUE-TI12-MT5-SYNC](ISSUE-TI12-MT5-SYNC.md) el 2026-11-13 (usuario, 2026-11-13,
+> revisión de planes, R3); el criterio 3 (= SYNC 7) pasa a SPRINT-03 fila 4c (TI-12-MT5-OPS). La tarea programada sí
+> estaba activa y fallando hasta que la raíz de guardia la desactivó el 2026-11-13 (R2). *Estado anterior:* En resolución
+> (guarda hecha, 23 velas republicadas y verificadas en qn, ClickHouse y API; falta reactivar la tarea)\
 > **Fecha de detección:** 2026-11-10\
 > **Origen:** publicador MT5 → qn (TI-12-MT5, fase B), ejecución de las 23:01 UTC del 2026-11-09\
 > **Componente afectado:** `scripts/publicador_mt5_lib/nucleo.py` (`barras_cerradas`); objetos 1d del 2026-11-09 en
@@ -64,3 +67,23 @@ después. El publicador daba la vela por cerrada solo por la hora (cierre de las
 - **Verificación:** `.venv/Scripts/python -X utf8 scripts/publicador_mt5.py --selftest` y
   `scripts/extractor_mt5.py --selftest`, ambos «selftest ok» (2026-11-10).
 - **Pendientes:** criterio 3 (el usuario reactiva la tarea y la primera pasada nocturna no deja revisiones nuevas).
+  **Resolución (2026-11-13, R3):** fusionada en ISSUE-TI12-MT5-SYNC y archivada con ella en
+  `archive/FUERA-SPRINT_2026-11-09_2026-11-13/`; el criterio 3 pasa a SPRINT-03 fila 4c.
+
+## Revisión de planes (2026-11-13)
+
+Veredicto: **FUSIONAR en [ISSUE-TI12-MT5-SYNC](ISSUE-TI12-MT5-SYNC.md) y BORRAR esta ficha cuando SYNC se cierre** (sólo
+recomendación) · Motivo: es el mismo defecto con la misma resolución; los criterios 1 y 2 están HECHOS con commit y
+registro, y el criterio 3 es idéntico al 7 de SYNC. SYNC ya incluye los commits `2ac3f8f`, `9e2a9eb`, `b9cbbbe`,
+`f660654` y `d6d7a55`, así que al borrar no se pierde nada.
+
+| Criterio | Clasificación | Evidencia |
+|---|---|---|
+| 1. Selftests con la guarda | HECHO | `2ac3f8f`; suite del DoD de SPRINT-02 (`fb5d21f`, 14 OK, incluye `publicador_mt5.py` y `extractor_mt5.py`, `E:/quantdesk-lab/tmp/verif_cierre_s02_fb5d21f.log`) |
+| 2. Republicar las 23 velas | HECHO | `9e2a9eb`, `b9cbbbe`; 23 publicadas en `publicador_2026-11-10.jsonl` l. 9; ClickHouse y API por el backend (`9d63c68`) |
+| 3. Reactivar la tarea y primera pasada limpia | DUPLICADO de SYNC 7; bloqueado por la cuenta MT5 | Ver C-ISSUES-01: el §3 dice «desactivada», pero los registros muestran pasadas automáticas el 11-11, 11-12 y 11-13 (todas «Authorization failed») |
+
+Corrección de premisa (SIN VERIFICAR en el Programador de tareas, que no se consulta en esta revisión): la frase «Queda
+**desactivada** hasta que acabe el bloqueo» (§3) no concuerda con `publicador_2026-11-11.jsonl` (inicio 22:30:04Z =
+23:30 local), `publicador_2026-11-12.jsonl` y `publicador_2026-11-13.jsonl` (21:52 local, al iniciar sesión), con los
+`argv` de la tarea. Si la tarea está activa, el criterio 3 no es «reactivar» sino esperar el desbloqueo.

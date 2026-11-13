@@ -2,38 +2,59 @@
 
 Notas de la raíz de guardia (skill global `sprint`, `references/guardia.md`). Como mucho 80 líneas.
 
-## Estado (2026-11-13 22:55 local)
-- **Sin sprint activo; fase: planificación** (sin release, SPRINT_PROJECT §10).
-- **SPRINT-02 cerrado con arrastres** el 2026-11-13 por la raíz del relevo 2 (sesión 3c744740), por decisión del usuario
-  («Cerrar y arrastrar»; fila 7 «Backlog»). Archivo: `archive/SPRINT-02_2026-11-11_2026-11-13/` (SPRINT.md §9,
-  ARCHIVE_MANIFEST, tag `sprint-02`). Suite del DoD 14 OK / 0 FALLO. BDD: SPRINT-02 «Cerrado con arrastres».
-- Cerradas: 2b (FinCast) y 1b (TI-02-DATA-V2 + tabla FX sobre MT5; umbrales TS-00-OBJ confirmados por el usuario).
-- Arrastradas a SPRINT-03 §0 (`next/SPRINT.md`): **S02-5** TI-12-MT5 (espera al desbloqueo de la cuenta MT5) y
-  **S02-6** medición de cobertura de TI-09-ARCH (20 días hábiles NYSE hasta el 2026-12-10; token nuevo, puerta de usuario).
-- Fila 7 (TI-13-PUB) al backlog, `backlog/PLAN_DATOS_VIA_QN.md`: espera a que el backend publique (su SPRINT-03).
-- Push hecho; árbol limpio salvo `bash.exe.stackdump` (ajeno, no tocar).
+## Estado (2026-11-14 ~00:30 local). Cierre de la guardia `quantdesk-model-c4` a petición del usuario
+- **Sin sprint activo; fase: planificación.** SPRINT-02 cerrado con arrastres el 2026-11-13 (`archive/SPRINT-02_2026-11-11_2026-11-13/`).
+- **Revisión de planes del 2026-11-13 hecha y aplicada en el árbol, pero SIN COMMIT.** La shell de esta sesión murió (el usuario
+  mata los bash.exe, norma «sin bash.exe») y no se pudo comprobar `git status`, hacer commit ni push. **Primera tarea de
+  la guardia siguiente:**
+  1. revisar `git status` y `git diff --stat -- docs/plans`;
+  2. hacer `git add` selectivo de `docs/plans` (los ficheros nuevos `future/SPRINT-04/SPRINT.md` y
+     `archive/FUERA-SPRINT_2026-11-09_2026-11-13/ARCHIVE_MANIFEST.md` no tienen seguimiento; nunca `bash.exe.stackdump`);
+  3. hacer commit `docs(plans): revisión de planes 2026-11-13 (3 actualizados, 1 issue cerrada, partición de SPRINT-03)`,
+     con las líneas de atribución, push y poner el hash en `backlog/REVISIONES.md` («Commits: pendiente»);
+  4. regenerar el kanban de `index.md` con `sprint_db.py kanban --write`, que aún apunta a las rutas viejas.
+- Decisiones del usuario R0–R8 (detalle en `backlog/REVISIONES.md`, entrada 2026-11-13):
+  - **R1 partición:** SPRINT-03 nuevo en `next/`, activable ya y sin depender de quantdesk. SPRINT-04 nuevo en `future/`
+    (S02-1…S02-4 y §3; espera a quantdesk SPRINT-03). El antiguo SPRINT-04 de entrenamiento pasa a SPRINT-05 (espera a quantdesk SPRINT-04).
+  - **R2:** tarea `quantdesk\publicador_mt5` **DESACTIVADA** el 2026-11-13 ~23:55 (verificado «Disabled»). Se reactiva en
+    la fila 4c cuando el bróker desbloquee la cuenta.
+  - **R3:** ISSUE-TI12-MT5-SYNC cerrada y VELA-A-MEDIAS fusionada en ella, en `archive/FUERA-SPRINT_2026-11-09_2026-11-13/`.
+  - **R4:** la SONDA se cierra con la cifra de S02-6.
+  - **R5:** TI-02-DIARIO es la fila 1 (contrato) y la fila 2 (código sin OAS) de SPRINT-03.
+  - **R6:** se consumen FRED/OAS; Yahoo/Stooq y cripto quedan en el backlog.
+  - **R7:** el intradía en qn va en SPRINT-05.
+  - **R8:** INTRA-LOCAL incluye las acciones, con pasadas manuales cada ≤ 6 semanas; la primera, antes del 2027-01-17.
+- Filas de SPRINT-03: 1 contrato TI-02-DIARIO (L3) · 2 código TI-02-DIARIO (L6) · 3 S02-6 + sonda (L5, desde el 2026-12-11,
+  token nuevo) · 4a S02-5 h1 (L6) · 4b INTRA-LOCAL (L5) · 4c MT5-OPS (L3) · 5 PUB-AMP condicionada (L5) · 6 FRED (L4) · 7 OAS (L4).
+- Avisos del revisor sin verificar: con este diff cambian los SHA-256 de `archive/SPRINT-01…/SPRINT.md` y
+  `archive/SPRINT-02…/SPRINT.md`, porque se reapuntaron enlaces; está anotado en el manifiesto nuevo. Sus hashes «posteriores» se
+  calcularon antes de la última edición de `next/SPRINT.md`, que no está archivado.
 
 ## Dependencias
-- Entrada: SPRINT-03 y SPRINT-04 esperan a quantdesk SPRINT-03 y SPRINT-04 cerrados (`deps.py`: quantdesk sigue en su
-  SPRINT-02). Ningún proyecto depende de quantdesk-model SPRINT-02 (salidas vacías).
-- Backend: OC-03 servida (cadenas en qn desde la sesión 2026-11-12); publicadores públicos en su SPRINT-03.
+- SPRINT-03 sin dependencia de entrada. SPRINT-04 ← quantdesk SPRINT-03 cerrado. SPRINT-05 ← quantdesk SPRINT-04 cerrado.
+- Backend: OC-03 servida (una captura por sesión NY a las 16:30, corte ≥ 2026-11-12). Su SPRINT-03 publica FRED y OAS y
+  programa nuestro exportador (PUB-05-EXPORT).
 
-## Compromisos con otras raíces
-- Guardia actual: sesión `quantdesk-model-c4` (2026-11-13). Raíces vivas: `quantdesk-c3` (relevo 55, SPRINT-02 activo),
-  `quantdesk-backend-d4`, `quantdesk-network-f0` (guardia).
-- quantdesk avisará al cerrar su SPRINT-02 y si cambia algo de la rueda, de TI-03-FMT o de DL-02-GATES. Al backend se le pidió aviso
-  cuando publique el mercado público (su SPRINT-03) o si cambia OC-03.
-- Network recordó que hay que tener «copia propia antes de `lake delete`». Respuesta: no, por D7 (usuario, 2026-11-10): la copia es la común
-  (PLAN_COPIA_PERIODICA_LAGO), y `lake delete` no se usa sobre `market.*` hasta que esa copia exista. En su PLAN_RETIRADA_TOPICS_EVENTOS,
-  Fase 3, las líneas 99-100 contradecían a D7; network las concilió en su commit `85c4708`, anotó nuestras 4 dependencias de qn y
-  avisará de los cambios. Se le pasó la lista de lo que depende aquí de qn.
+## Compromisos con otras raíces (las tres guardias o raíces se cerraron a petición del usuario a la vez que esta)
+- **quantdesk** (era `quantdesk-c3`, relevo 55): avisará al cerrar su SPRINT-02 y si cambian la rueda, TI-03-FMT o
+  DL-02-GATES. Ha apuntado dos tareas: revisar su DEPENDENCIAS por nuestra renumeración y corregir PLAN_TSFM_FINANZAS §3,
+  TS-16-QCONO y TS-08-DYN («cadenas vacías»).
+- **backend** (era `quantdesk-backend-d4`; sucesora «quantdesk-backend raiz relevo 6», ver `~/.claude/relevos.json`):
+  avisará cuando publique el mercado público y antes de cambiar OC-03. Contrato de TI-02-DIARIO abierto: sus
+  restricciones y los 4 puntos por acordar están en `next/SPRINT.md` §3 («Entrada de la fila 1»). **Nosotros** les
+  avisamos cuando MT5 vuelva a publicar.
+- **network** (era `quantdesk-network-f0`; la guardia nueva entra por su GUARDIA.md): avisará de cambios en retención o
+  esquema de `market.*`, en el borrado o en el horizonte de revisión. D7 conciliado en su `85c4708`.
+- Norma nueva (usuario, 2026-11-13 23:40, ya en la skill): no se usa bash.exe para nada que dure. Los hijos se lanzan con
+  `tools/lanza/hijo.py`, el vigía con `wsvigia.py` por WebSocket en un puerto propio (quantdesk usa el 8765).
 
 ## Preguntas abiertas al usuario
-1. **S02-6 frente al bloqueo de SPRINT-03.** La medición de TI-09-ARCH puede hacerse tras el 2026-12-10, pero SPRINT-03
-   no puede activarse hasta que cierre quantdesk SPRINT-03. ¿Se hace como encargo fuera de sprint cuando llegue la fecha
-   (registrado igual que en un sprint), o espera a SPRINT-03? Lo mismo vale para S02-5 si se desbloquea la cuenta MT5.
-2. ISSUE-TI09-SONDA-CADENAS (fuera de sprint) sigue abierta: su criterio 1 pide la cifra por día hábil desde el
-   2026-11-09; podría cerrarse con la medición de S02-6.
+- Diferidas a la ficha de cada fila: GAP-ARCHIVO_OPCIONES-03 (métrica del 98 %) y -05 (cortes bajo demanda); GAP-BACKLOG_README-03
+  (dos publicadores); -05 (GPU); GAP-DATOS_VIA_QN-08 (universo ampliado en qn).
+- ¿Activar SPRINT-03 ya (`sprint iniciar`)? Hoy casi todas sus filas esperan algo: el contrato, el 2026-12-11, el
+  desbloqueo de MT5 o el backend. La fila 1 (contrato de TI-02-DIARIO) sí puede empezar ya.
 
 ## Siguiente paso
-Presentarse a las raíces vivas (ListAgents) y proponer al usuario la pregunta 1. Sin vigías periódicos.
+1. Hacer el commit pendiente (arriba).
+2. Presentarse a las raíces nuevas.
+3. Proponer al usuario `sprint planificar`/`iniciar` de SPRINT-03, empezando por el contrato de TI-02-DIARIO.

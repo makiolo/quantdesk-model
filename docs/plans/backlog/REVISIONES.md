@@ -2,13 +2,77 @@
 
 Una entrada por revisión, la más reciente arriba (skill `sprint`, `references/review.md` §7).
 
+## 2026-11-13 — revisión del backlog (quantdesk-model; alcance acotado a este repo, los demás sólo como contexto)
+
+- Documentos: 4 (3 planes + la cola de issues): `backlog/README.md`, `backlog/PLAN_DATOS_VIA_QN.md`,
+  `backlog/PLAN_ARCHIVO_OPCIONES.md` e `issues/` (4 fichas); 4 revisores Sonnet 5.5, uno por documento.
+- Veredictos: `backlog/README.md` ACTUALIZAR (sigue siendo índice); `PLAN_DATOS_VIA_QN` ACTUALIZAR + DIVIDIR interno
+  (consumo de TI-13-PUB en FRED/OAS y Yahoo/Stooq/cripto, dentro del mismo plan; TI-02-DATA-V2 sale del pendiente,
+  hecha); `PLAN_ARCHIVO_OPCIONES` ACTUALIZAR, backlog residual, se archiva tras S02-6 (no antes del 2026-12-11); issues:
+  ISSUE-TI12-MT5-SYNC cerrar y absorber VELA-A-MEDIAS, ISSUE-TI09-SONDA-CADENAS cerrar con S02-6,
+  ISSUE-TI12-MT5-INTRADIA-LOCAL a sprint. Recuento: 3 actualizar · 0 borrar · 1 fusionar (VELA-A-MEDIAS en SYNC) ·
+  1 dividir (interno) · 0 mover; 0 planes borrados.
+- Decisiones del usuario (usuario, 2026-11-13, revisión de planes):
+  - **R0** petición: meter en el sprint siguiente S02-5, S02-6, todos los planes del backlog y todas las issues pendientes.
+  - **R1** partir en dos sprints: SPRINT-03 rehecho en `next/` sin dependencia de entrada (lo que no depende de
+    `quantdesk`); las filas S02-1…S02-4 y las tareas de §3 con sus §1/§2/§4/§5 a `future/SPRINT-04` (← quantdesk SPRINT-03
+    cerrado); el antiguo `future/SPRINT-04` renumerado a `future/SPRINT-05` (← quantdesk SPRINT-04 cerrado). Regla «sprint
+    N = sprint N de `quantdesk`» enmendada: desde SPRINT-03, N+1 del laboratorio = N de `quantdesk`. Al backend se le avisa
+    de que TI-02-DIARIO va en SPRINT-03 (su `next/SPRINT.md`, línea 59).
+  - **R2** tarea `quantdesk\publicador_mt5` desactivada por la raíz de guardia el 2026-11-13 (~23:55 local, verificado
+    «Disabled») hasta el desbloqueo de la cuenta MT5; se reactiva en la fila de MT5 de SPRINT-03 (4c); backend avisado del
+    FX 1d de MT5 parado desde el 2026-11-10.
+  - **R3** cerrar ISSUE-TI12-MT5-SYNC fusionando VELA-A-MEDIAS; la verificación 28/28 en qn y ClickHouse sustituye al
+    cuadre de 0 puntos (GAP-ISSUES-02 aceptado); lo que queda (reactivar la tarea, carga nocturna de `@continuo`) a la
+    fila 4c. Fichas archivadas en `archive/FUERA-SPRINT_2026-11-09_2026-11-13/`.
+  - **R4** ISSUE-TI09-SONDA-CADENAS se cierra con la cifra por sesión de S02-6 desde el 2026-11-12; 2026-11-09…11 no
+    medibles; su fila se une a S02-6 (fila 3); STATUS corregido; aviso a `quantdesk` por su `PLAN_TSFM_FINANZAS` §3.
+  - **R5** TI-02-DIARIO primera fila de SPRINT-03 (contrato por mensaje con el backend, registrado en GOBERNANZA y
+    DEPENDENCIAS); código sin OAS en el mismo sprint; OAS cuando el backend los publique (dependencia de tarea); antes de
+    la ola 1 de quantdesk SPRINT-03.
+  - **R6** TI-13-PUB: consumo de FRED/OAS en SPRINT-03 (fila 6, dependencia de tarea del backend SPRINT-03); Yahoo/Stooq y
+    cripto en el backlog; avisar al backend de la discrepancia entre nuestro EXECUTION de SPRINT-02 y su `next/SPRINT.md`.
+  - **R7** intradía de MT5 en qn: con el sprint de entrenamiento (SPRINT-05), consumidor TS-05-FREQ.
+  - **R8** INTRA-LOCAL: fx28 y `@continuo` primero, después las 484 acciones (≈ 3,1 GiB), una serie cada vez; pasadas
+    manuales cada ≤ 6 semanas, la primera antes del 2027-01-17; sin tarea programada; fila 4b, fusionada con S02-5.
+- GAPs resueltos: GAP-BACKLOG_README-09 (R1), -10 (R5); GAP-DATOS_VIA_QN-05 (R2), -06 (R5), -07 (R1, R5), -10 (R7);
+  GAP-ARCHIVO_OPCIONES-04 (R4), -06 (R1); GAP-ISSUES-01 (R4), -02 (R3), -03 (R2), -04 (R8).
+- GAPs abiertos o diferidos (se preguntan al planificar la fila): GAP-ARCHIVO_OPCIONES-03 (métrica del 98 %: por defecto,
+  días con captura completa y pares subyacente-día frente a los 510 del backend; se confirma en la ficha de S02-6) y -05
+  (cortes bajo demanda); GAP-BACKLOG_README-03 = GAP-DATOS_VIA_QN-09 (dos publicadores, sin sprint);
+  GAP-BACKLOG_README-05 (GPU, diferido; nota «FinCast 7 veces Toto» corregida: 1,72 s frente a 6,70 s);
+  GAP-DATOS_VIA_QN-08 (universo ampliado en qn: SPRINT-03 fila 5, condicionada a desbloqueo + visto bueno nuevo de
+  network + aprobación del usuario).
+- Contradicciones y su resolución:
+  - C-BACKLOG_README-09 (qué publica el SPRINT-03 del backend) → R6. C-BACKLOG_README-10, C-DATOS_VIA_QN-06 y -07 (plazo
+    y contrato de TI-02-DIARIO) → R1 + R5. C-ARCHIVO_OPCIONES-04 y C-ISSUES-05 (S02-6, INTRA-LOCAL y la sonda frente a la
+    puerta de SPRINT-03) → R1.
+  - Por regla, sin pregunta: C-ISSUES-01, C-DATOS_VIA_QN-05 y C-BACKLOG_README-11 (estado de la tarea: estaba activa y
+    fallando; ahora desactivada, R2); C-DATOS_VIA_QN-08 (marcas de criterios de SYNC); C-DATOS_VIA_QN-09 y C-ISSUES-03
+    (INTRA-LOCAL ya tiene incremental; `--simular` es del publicador); C-ISSUES-02 (textos atrasados del plan);
+    C-BACKLOG_README-12, C-ARCHIVO_OPCIONES-05 y C-ISSUES-04 (STATUS, `index.md` y DEPENDENCIAS atrasados; cadenas
+    «vacías»); C-ARCHIVO_OPCIONES-07 (modo «mientras tanto» obsoleto por OC-03).
+  - Diferida sin pregunta: C-ARCHIVO_OPCIONES-06 (ventana de 20 días): la de la fila S02-6, desde la sesión 2026-11-12
+    hasta el 2026-12-10, decidida en el arrastre del 2026-11-13.
+- Movimientos: `git mv future/SPRINT-04 → future/SPRINT-05`; `future/SPRINT-04/SPRINT.md` nuevo (contenido íntegro del
+  `next/SPRINT.md` anterior salvo S02-5/S02-6); `next/SPRINT.md` reescrito como SPRINT-03 nuevo (7 filas más 4a–4c);
+  `git mv issues/ISSUE-TI12-MT5-{SYNC,VELA-A-MEDIAS}.md → archive/FUERA-SPRINT_2026-11-09_2026-11-13/issues/` con
+  `ARCHIVE_MANIFEST.md`.
+- Derivados tocados: `next/SPRINT.md`, `future/SPRINT-04/SPRINT.md`, `future/SPRINT-05/SPRINT.md`, `future/README.md`,
+  `DEPENDENCIAS.md` (entrada, enmienda de la regla, dependencias de tarea), `GOBERNANZA.md` (filas del exportador diario:
+  contrato pendiente de acordar, R5), `STATUS.md`, `index.md` (tablas de estado y backlog; el bloque kanban generado no se
+  edita a mano), `issues/index.md`, `archive/index.md`; enlaces editoriales en `archive/SPRINT-01_…/SPRINT.md` y
+  `archive/SPRINT-02_…/SPRINT.md`. Avisos por mensaje a cargo de la raíz: backend (TI-02-DIARIO en SPRINT-03; discrepancia
+  de C-BACKLOG_README-09) y `quantdesk` (`PLAN_TSFM_FINANZAS` §3, cadenas presentes).
+- Commits: pendiente.
+
 ## 2026-11-10 — revisión parcial (quantdesk, quantdesk-backend, quantdesk-model)
 
 - Documentos: 7 en total (7 revisores Sonnet 5.5, uno por documento); 3 de este repo: `backlog/README.md`,
   `backlog/PLAN_DATOS_VIA_QN.md` y `backlog/PLAN_ARCHIVO_OPCIONES.md`.
 - Veredictos: este repo, 3 ACTUALIZAR (0 mantener, 0 borrar, 0 fusionar, 0 dividir, 0 mover); global, 7 ACTUALIZAR.
 - Decisiones del usuario que tocan este repo (usuario, 2026-11-10, revisión de planes):
-  - **D1** republicar y aplazar: ficha urgente fuera de sprint [ISSUE-TI12-MT5-SYNC](../issues/ISSUE-TI12-MT5-SYNC.md)
+  - **D1** republicar y aplazar: ficha urgente fuera de sprint [ISSUE-TI12-MT5-SYNC](../archive/FUERA-SPRINT_2026-11-09_2026-11-13/issues/ISSUE-TI12-MT5-SYNC.md)
     (publicar el 1d sólo con la historia D1 sincronizada, modo de reenvío, se aprueban las 23 republicaciones de las velas
     1d de FX del 2026-11-09, carga nocturna de `@continuo` aplazada hasta cerrarla, verificar el horizonte de revisión de
     qn (H2, ~6 h) y pedir excepción a network si venció). Relacionada con ISSUE-TI12-MT5-VELA-A-MEDIAS (guarda ya escrita),
