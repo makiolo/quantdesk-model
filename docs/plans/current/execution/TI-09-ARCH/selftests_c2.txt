@@ -1,0 +1,6 @@
+evidencia E:\quantdesk-lab\tmp\TI-09-ARCH\selftest_0yknbyb8\evidencia.json
+dataset SHA-256 sha256:4341ec598ace5cd1b865c14f16859bff21fcc8611551ee57b2798ca8ceac8412
+selftest ok
+selftest ok
+{"base": "fba4279", "fixture": "E:\\quantdesk-lab\\tmp\\TI-09-ARCH\\equivalencia_c2_rw893wef\\volcado", "dataset_sha256_base": "sha256:4341ec598ace5cd1b865c14f16859bff21fcc8611551ee57b2798ca8ceac8412", "dataset_sha256_nuevo": "sha256:4341ec598ace5cd1b865c14f16859bff21fcc8611551ee57b2798ca8ceac8412", "tablas": {"opciones_cruda": {"filas": 204, "identicas_fila_a_fila": true}, "opciones_limpia": {"filas": 201, "identicas_fila_a_fila": true}}, "sha256_identico": true, "motivos_identicos": true, "capturas_y_huecos_identicos": true}
+equivalencia ok; evidencia E:\quantdesk-lab\tmp\TI-09-ARCH\equivalencia_c2_rw893wef\resultado.json

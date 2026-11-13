@@ -31,27 +31,12 @@ DATASETS = Path("E:/quantdesk-lab/datasets/TI-09-ARCH")
 TMP = Path("E:/quantdesk-lab/tmp/TI-09-ARCH")
 
 
-def frame_custom(filas, tipo):
-    import pandas as pd
-    from exportar_market_history_lib import formato as F
-    registros = []
-    for original, payload in filas:
-        registros.append({"instrument": L.instrumento(original), "custom_type": tipo,
-                          "schema_version": 1, "ts_ms": (L.fecha(original["date"]) - L.fecha("1970-01-01")).days * L.MS_DIA,
-                          "data_json": json_texto(payload),
-                          "available_at_ms": (original["captured_at"] + 999999) // 1000000, "revision": 0})
-    if not registros:
-        return F.vacia("custom/v1")
-    df = pd.DataFrame(registros).sort_values(["ts_ms", "instrument"], kind="mergesort").reset_index(drop=True)
-    for c in F.columnas_de("custom/v1"):
-        df[c["name"]] = df[c["name"]].astype({"Utf8": object, "Int64": "Int64", "Int32": "int32"}[c["type"]])
-    return df
-
-
 def codigo_sha256():
     scripts = Path(__file__).resolve().parent
     rutas = [scripts / "archivo_opciones.py", scripts / "descarga_opciones.py",
-             scripts / "archivo_opciones_lib/lector.py", scripts / "exportar_market_history_lib/formato.py",
+             scripts / "archivo_opciones_lib/lector.py", scripts / "archivo_opciones_lib/flujo.py",
+             scripts / "archivo_opciones_lib/validacion.py",
+             scripts / "exportar_market_history_lib/formato.py",
              scripts / "exportar_market_history_lib/validacion.py"]
     return {p.relative_to(scripts).as_posix(): hashlib.sha256(p.read_bytes().replace(b"\r\n", b"\n")).hexdigest() for p in rutas}
 
@@ -85,9 +70,9 @@ def informe_markdown(rep):
     return "\n".join(lineas) + "\n"
 
 
-def archivar(volcado, corte, nombre, desde=None, hasta=None, calendario=None, raiz=DATASETS):
+def archivar(volcado, corte, nombre, desde=None, hasta=None, calendario=None, raiz=DATASETS, *, observador=None):
     from exportar_market_history_lib import formato as F
-    from exportar_market_history_lib import validacion as V
+    from archivo_opciones_lib import validacion as V
     import pyarrow
     import pandas
 
@@ -97,7 +82,9 @@ def archivar(volcado, corte, nombre, desde=None, hasta=None, calendario=None, ra
     # Tambien en llamadas internas: nunca sobrescribir un dataset existente.
     if destino.exists():
         raise FileExistsError("dataset ya existe; elegir nombre nuevo")
-    m, rows, manifest_sha = L.cargar_volcado(volcado)
+    from archivo_opciones_lib import flujo
+    m = cargar_json((Path(volcado) / "manifest.json").read_text(encoding="utf-8"))
+    manifest_sha = sha256(Path(volcado) / "manifest.json")
     desde = L.fecha(desde or m["desde"])
     hasta = L.fecha(hasta or m["hasta"])
     if desde < L.INICIO or desde > hasta or desde < L.fecha(m["desde"]) or hasta > L.fecha(m["hasta"]):
@@ -107,26 +94,24 @@ def archivar(volcado, corte, nombre, desde=None, hasta=None, calendario=None, ra
         raise ValueError("consulta_desde incompatible")
     corte_ns = L.ns_corte(corte)
     cal, sessions = L.calendario_validado(calendario or L.CALENDARIO, consulta_desde, hasta)
-    raw, rep = L.seleccionar(rows, desde, hasta, corte_ns, consulta_desde, sessions, copiar=False)
-    del rows  # El volcado ya no es necesario; evitar otra copia de 1.2 M filas.
-    limpia, ledger = L.limpiar(raw)
-    n_raw, n_clean = len(raw), len(limpia)
-    cruda = ((r, {k: v for k, v in r.items() if k != "_tipo"}) for r in raw)
-    tablas = [{"table_id": tipo, "schema": "custom/v1", "frame": frame_custom(filas, "market.options.chain." + tipo)}
-              for tipo, filas in (("opciones_cruda", cruda), ("opciones_limpia", limpia))]
-    del cruda, raw, limpia
     TMP.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="construccion_", dir=TMP) as temporal:
         staging = Path(temporal) / nombre
-        manifest = F.escribir_dataset(str(staging), nombre, f"OC-03; corte {corte}; {L.VERSION}; {L.MOTOR}; semilla 0",
-                                      "America/New_York", tablas)
-        del tablas  # Validacion relee parquet; no retener los frames a la vez.
+        staging.mkdir()
+        rutas, cuentas, total = flujo.preparar(volcado, temporal, desde, hasta, corte_ns, consulta_desde, sessions)
+        entradas, rep, ledger, memoria = flujo.procesar(rutas, cuentas, total, desde, hasta, consulta_desde, sessions,
+                                                     staging, observador)
+        n_raw, n_clean = (t["rows"] for t in entradas)
+        manifest = F.manifest(nombre, f"OC-03; corte {corte}; {L.VERSION}; {L.MOTOR}; semilla 0",
+                              "America/New_York", entradas)
+        guardar_json(staging / "manifest.json", manifest)
         dataset_sha = L.hash_dataset(manifest["tables"])
         val = V.validar(str(staging), temporal, nombre, manifest["tables"], corte_ns // 1000000, dataset_sha)
         if not val["ok"] or not val["politica"]["ok"]:
             raise ValueError("data_py no valida el dataset: " + json_texto(val["problemas"]))
         # No conservar rutas temporales aleatorias en el informe congelado.
         val.pop("llamadas", None)
+        motivos = Counter(e["motivo"] for e in ledger)
         rep.update({"schema": "ti-09-arch.informe/v1", "dataset_sha256": dataset_sha, "corte": corte,
                     "corte_ns": corte_ns, "desde": str(desde), "hasta": str(hasta), "semilla": 0,
                     "version_lector": L.VERSION, "motor": L.MOTOR,
@@ -135,15 +120,18 @@ def archivar(volcado, corte, nombre, desde=None, hasta=None, calendario=None, ra
                     "calendario": cal, "filtro": L.FILTRO, "motivos_cerrados": list(L.MOTIVOS),
                     "descartes_descarga": m.get("descartadas", {}), "avisos_descarga": m.get("avisos", []),
                     "filas_cruda": n_raw, "filas_limpia": n_clean, "tablas": manifest["tables"],
-                    "exclusiones_limpieza": {m: Counter(e["motivo"] for e in ledger)[m] for m in L.MOTIVOS},
+                    "exclusiones_limpieza": {m: motivos[m] for m in L.MOTIVOS},
                     "exclusiones_contratos": ledger, "validacion": val,
+                    "memoria_flujo": memoria,
                     "semantica_corte": "captured_at y ceil ms <= corte; no se filtra por recepcion en qn"})
-        guardar_json(staging / "informe.json", rep)
+        flujo.guardar_informe(staging / "informe.json", rep)
         (staging / "informe.md").write_text(informe_markdown(rep), encoding="utf-8", newline="\n")
         guardar_json(staging / "checksums.json", {"dataset_sha256": dataset_sha,
                      "ficheros_sha256": {p.name: sha256(p) for p in sorted(staging.iterdir())}})
         Path(raiz).mkdir(parents=True, exist_ok=True)
         staging.rename(destino)
+        if isinstance(ledger, flujo.ExclusionesDisco):
+            ledger.ruta = destino / ledger.ruta.name
     return destino, rep
 
 

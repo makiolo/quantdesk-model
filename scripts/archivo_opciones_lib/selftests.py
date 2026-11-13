@@ -430,6 +430,115 @@ def test_dataset_doble_offline(base):
     print("dataset SHA-256 " + r["dataset_sha256"])
 
 
+def test_memoria_sesion_y_contexto(base):
+    """El camino de produccion no llama a los lectores de rango en memoria.
+
+    Weakrefs a las tablas realmente cargadas: no basta un contador declarado.
+    Siete sesiones fuerzan tambien la eviction de la sexta previa.
+    """
+    import weakref
+    import archivo_opciones as A
+    from . import flujo
+    from . import validacion as validacion_flujo
+    dias = ["2026-11-12", "2026-11-13", "2026-11-16", "2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20"]
+    rows = [r for d in dias for r in captura(d, universo100())]
+    qn = QnFalso(rows)
+    dump = base / "memoria_volcado"
+    descargar(Cliente("http://fixture.invalid/qn", qn.token, abrir=qn.abrir, espera=0),
+              INICIO, date(2026, 11, 20), dump)
+    refs, cargas, eventos, validaciones = [], [], [], []
+    original = flujo.pq.read_table
+    validar_motor = validacion_flujo.V.validar
+
+    def leer(*args, **kwargs):
+        tabla = original(*args, **kwargs)
+        refs.append(weakref.ref(tabla))
+        vivas = [r() for r in refs if r() is not None]
+        assert len(vivas) == 1, "mas de una sesion materializada"
+        assert sum(len(t) for t in vivas) <= 100
+        cargas.append(len(tabla))
+        return tabla
+
+    def observar(d, filas, contexto):
+        assert filas == 100 and len(contexto) <= 5
+        assert all(isinstance(s, frozenset) and all(isinstance(x, tuple) and len(x) == 2 for x in s)
+                   for _, s in contexto)
+        eventos.append((d, contexto))
+
+    def validar_limitado(d, v, nombre, tablas, *args):
+        n = sum(t["rows"] for t in tablas)
+        assert n <= 100, "el motor materializa varias sesiones"
+        validaciones.append(n)
+        return validar_motor(d, v, nombre, tablas, *args)
+
+    with patch.object(L, "cargar_volcado", side_effect=AssertionError("lector de rango prohibido")), \
+            patch.object(L, "seleccionar", side_effect=AssertionError("seleccion de rango prohibida")), \
+            patch.object(validacion_flujo.V, "validar", side_effect=validar_limitado), \
+            patch.object(flujo.pq, "read_table", side_effect=leer):
+        _, rep = A.archivar(dump, "2026-11-21T06:00:00Z", "fixture_memoria", raiz=base / "memoria", observador=observar)
+    assert cargas == [100] * 7
+    assert validaciones == [100] * 14
+    assert len(eventos) == 7 and [d for d, _ in eventos[-1][1]] == dias[1:6]
+    assert rep["filas_cruda"] == rep["filas_limpia"] == 700
+    assert rep["memoria_flujo"]["max_filas_sesion"] == 100
+
+
+def test_validacion_incremental_y_fronteras(base):
+    """Hash final y orden entre bloques no se deducen de checks locales."""
+    import pandas as pd
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    from exportar_market_history_lib import formato as F
+    from . import validacion as V
+    n = V.FILAS_BLOQUE + 3
+    frame = pd.DataFrame({"instrument": [f"EQ{i:06d}" for i in range(n)], "custom_type": "test",
+                          "schema_version": 1, "ts_ms": 1794441600000, "data_json": "{}",
+                          "available_at_ms": 1794519085000, "revision": 0})
+    root = base / "validador"
+    destino = root / "dataset"
+    m = F.escribir_dataset(str(destino), "dataset", "test bloques", "America/New_York",
+                           [{"table_id": "opciones_cruda", "schema": "custom/v1", "frame": frame}])
+    llamadas = []
+    original = V.V.validar
+
+    def limitado(d, v, nombre, tablas, *args):
+        filas = sum(t["rows"] for t in tablas)
+        assert filas <= V.FILAS_BLOQUE
+        llamadas.append(filas)
+        return original(d, v, nombre, tablas, *args)
+
+    args = (str(destino), str(root), "dataset", m["tables"], 1794693600000, L.hash_dataset(m["tables"]))
+    with patch.object(V.V, "validar", side_effect=limitado):
+        val = V.validar(*args)
+    assert val["ok"] and val["politica"]["ok"] and llamadas == [V.FILAS_BLOQUE, 3]
+    integral = original(*args)
+    assert integral["ok"] and integral["politica"]["ok"]
+    assert integral["describe"]["tablas"][0]["logical_hash"] == m["tables"][0]["logical_hash"]
+    assert val["tablas"]["opciones_cruda"]["hash_verified"]
+    malas = [{**m["tables"][0], "logical_hash": "sha256:" + "0" * 64}]
+    guardar_json(destino / "manifest.json", {**m, "tables": malas})
+    assert not V.validar(str(destino), str(root), "dataset", malas, args[-2], L.hash_dataset(malas))["ok"]
+    guardar_json(destino / "manifest.json", {**m, "time": {"zone": ""}})
+    espera_error(lambda: V.validar(*args), "manifest final")
+    guardar_json(destino / "manifest.json", m)
+    ruta = destino / "opciones_cruda.parquet"
+    tabla = pq.read_table(ruta)
+    inst = tabla["instrument"].to_pylist()
+    inst[V.FILAS_BLOQUE] = "EQ000000"  # Cada bloque aislado sigue ordenado.
+    tabla = tabla.set_column(0, tabla.schema.field(0), pa.array(inst))
+    pq.write_table(tabla, ruta, compression="snappy", use_dictionary=False)
+    espera_error(lambda: V.validar(*args), "orden global")
+    from . import flujo
+    ledger = flujo.ExclusionesDisco(root)
+    ledger.agregar({"sesion": "2026-11-12", "instrument": f"EQ{i:06d}", "motivo": "sin_cotizacion"}
+                   for i in range(flujo.BLOQUE + 1))
+    ledger.cerrar()
+    assert ledger.pequeno is None and ledger.resultado() is ledger
+    flujo.guardar_informe(root / "informe.json", {"exclusiones_contratos": ledger})
+    escrito = L.cargar_json((root / "informe.json").read_text(encoding="utf-8"))
+    assert len(escrito["exclusiones_contratos"]) == flujo.BLOQUE + 1
+
+
 TESTS = (test_oraculo_call_put, test_calendario_tolerancias_prioridad, test_punto_fijo_oraculo_independiente, test_capturas_universo_huecos,
          test_empates_95_y_cinco_previas, test_ceros_vix_expirado_duplicados, test_corte_ns_calendario,
          test_outlier_y_desempates, test_filas_raras_y_duplicados_lago)
@@ -444,4 +553,6 @@ def selftest():
         for test in TESTS:
             test()
         test_dataset_doble_offline(base)
+        test_memoria_sesion_y_contexto(base)
+        test_validacion_incremental_y_fronteras(base)
     print("selftest ok")
