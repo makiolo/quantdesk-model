@@ -28,7 +28,7 @@ Ola 1 de SPRINT-02 (detalle completo en `docs/plans/current/EXECUTION.md`, secci
 |---|---|---|---|
 | 2b | TS-00-BENCH (FinCast) | **CERRADA** (A4 ronda 2 ACEPTAR) | código `f3f8a4d`…`05c27cf`, cierre `09befb8`; informe `current/execution/TS-00-BENCH-FINCAST/informe.md` |
 | 1b-A | TI-02-DATA-V2, código + regeneración de los 4 datasets con `0e67465` (4/4 idénticos) | **ACEPTADA** (A4 ronda 4 ACEPTAR) | código `3e35ed5`, informe `565f9a0`, registro `8bbc057`; informe `current/execution/TI-02-DATA-V2/informe.md` (órdenes del paso 1 en `:89-97` y del paso 2 en `:104-110`) |
-| 1b-B | volcado v2 del FX 1d de MT5 desde qn + exportación de `mt5_fx28_cierre_c20261101` y `mt5_fx28_hist_cierre_c20261101` + cuadre | **espera al usuario** (necesita su `QN_TOKEN`; ver Preguntas) | — |
+| 1b-B | volcado v2 del FX 1d de MT5 desde qn + exportación de `mt5_fx28_cierre_c20261101` y `mt5_fx28_hist_cierre_c20261101` + cuadre | **HECHA (2026-11-13, raíz)**: volcado en mini (token `ti02datav2-lectura-20261113` id 38, revocado 04:45:29Z), 28 series, 178.573 filas, en `E:/quantdesk-lab/data/lago/mt5_fx28_20000101_20261110/` (manifest sha256 `3c6f2d95…34ad`). Datasets en `E:/quantdesk-lab/datasets/TI-02-DATA-V2/`: cabecera `sha256:a5015bc9…893da` (14.476 filas, 2024-11-01..2026-10-30) y ampliación `sha256:47d79b39…67d32` (178.382 filas, 2000-01-03..2026-10-30). Cuadre MT5: D1 1507/1507 completos y lago 1459/1459 al cierre de sesión a 0,0 pb (criterio 6 cumplido) | BDD intento 262; EXECUTION 2026-11-13 |
 | 1b-C | dos tablas del banco (cabecera y ampliación, con FinCast) + informe + umbrales TS-00-OBJ | sin empezar (tras 1b-B) | — |
 | 5 | TI-12-MT5 | **en espera (a), decisión del usuario 2026-11-13**: cuenta MT5 bloqueada; el parquet de `D:/dev/deeplearning_dev` sólo trae FX28 h1 (28 de las 194 series de `@continuo`) y no sirve. Alcance: h1 de `@continuo`, sin símbolos nuevos | EXECUTION 2026-11-13 |
 | 6 | TI-09-ARCH | **desbloqueada; aviso formal recibido (2026-11-13)**: OC-03 desplegada (`cc1811d`), primer cierre completo sesión NY 2026-11-12 (`capture_id` `2026-11-12-163125-5b2305`, 509/510). Contrato del lector en EXECUTION (fila 2026-11-13). Siguiente: ficha de la parte de laboratorio; contrastar sus ejemplos contra el lago necesita `QN_TOKEN` en el entorno (puerta de usuario) | mensaje de `quantdesk-backend-89` |
@@ -58,14 +58,7 @@ Ninguno. (El vigía de caché de la saliente se apaga con ella; la sucesora lanz
   revisores Sonnet 5.5 xhigh (Agent); revisión A2 de fichas con Codex `gpt-6-luna` high (`-s read-only`).
 
 ## Preguntas abiertas al usuario
-1. **Fila 1b-B, volcado de qn (bloquea 1b-B y 1b-C).** El volcado no usa el terminal MT5 (el 1d ya está en qn), sólo
-   `QN_URLS`/`QN_TOKEN`/`QN_ENV=main` en el entorno del usuario. Orden (informe de TI-02-DATA-V2 `:92`), con el
-   `descarga_lago.py` **nuevo** (`git -C S:/Projects/quantdesk-model show 3e35ed5:scripts/descarga_lago.py`, sólo
-   biblioteca estándar): `python3 descarga_lago.py --topics market.ohlcv.v2 --source mt5 --interval 1d --symbols
-   <los 28 de fx28, ver informe :92> --desde 2000-01-01 --hasta 2026-11-10 --trozo-dias 10000 --salida <dir>`, y
-   copiar el volcado con su `manifest.json` a `E:/quantdesk-lab/data/lago/mt5_fx28_20000101_20261110/` (preferible a la
-   ruta `tmp/` del informe; ajustar `--lago` del paso 2). Opciones: (a) en mini como en SPRINT-01 (recomendado);
-   (b) aquí, en su terminal, con `! <orden>`. Tras el volcado, la raíz exporta, cuadra y lanza 1b-C.
+1. ~~Fila 1b-B, volcado de qn~~ **resuelta (2026-11-13)**: la raíz emitió el token con confirmación del usuario e hizo el volcado en mini.
 2. **Propuesta de mejora del arnés (raíz, delegation §8):** en esta sub-entrega hubo 4 rondas de corrección, 2 por
    errores de la ficha de la raíz (horas de cierre; regla de disponibilidad incompatible con DPOL-AVL-002) y 2 por
    efectos de un cambio de semántica de datos que sólo vio un diferencial. Propuesta: en toda ficha que cambie la

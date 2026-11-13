@@ -5,7 +5,7 @@ actualiza en el mismo commit que cierra cada tarea; el detalle vive en los plane
 
 **Sprint:** SPRINT-02 activo desde el 2026-11-11 ([current/SPRINT.md](current/SPRINT.md)), partido por el usuario
 para no esperar a quantdesk SPRINT-02; raíz en marcha desde el 2026-11-11 ([EXECUTION](current/EXECUTION.md)): fila 2b
-(FinCast) cerrada; 1b en curso (sub-entrega A aceptada; B: la raíz emite el token de lectura en mini y hace el volcado, decisión del usuario 2026-11-13); 5 en espera
+(FinCast) cerrada; 1b en curso (sub-entrega A aceptada; B hecha el 2026-11-13: volcado, dos datasets y cuadre 1459/1459; C, tablas del banco, por lanzar); 5 en espera
 de que el bróker desbloquee la cuenta MT5 (usuario 2026-11-13; el parquet h1 local sólo trae FX28); 6 desbloqueada (OC-03 desplegada; aviso formal del backend recibido el 2026-11-13; ficha en preparación, contraste con el lago a la espera de `QN_TOKEN`); 7 sale con causa (el backend no publica mercado público hasta su SPRINT-03). Último cerrado:
 SPRINT-01 (2026-11-09, [archivo](archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md)). Próximo: SPRINT-03 en
 [next/SPRINT.md](next/SPRINT.md), con las filas S02-1…S02-4.
