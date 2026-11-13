@@ -7,6 +7,7 @@
 - HEAD al escribir: a80ad40585606c087faf94b872adccc2102836c6
 - LAUNCH: docs/plans/current/LAUNCH.md · bloque del coordinador: «8. Prompt de la raíz»
 - Relevos anteriores: `git log --follow -- docs/plans/current/HANDOFF.md`
+- Aceptado: sesión 3c744740-6c50-4c0b-bc41-b5af62b9490d, 2026-11-13T22:20:27+01:00, contexto inicial 29.8 %
 - Origen: **recuperación en frío** tras la interrupción de la sesión 138afa9a (última actividad 2026-11-13T13:44:55,
   último commit `a80ad40` a las 13:49, empujado: `main` = `origin/main`). Informe:
   `.git/sprint-runtime/handoff/RECOVERY-20261113-221003.md`. Hijos interrumpidos: ninguno (22 terminados en la sesión);
