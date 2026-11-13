@@ -10,6 +10,12 @@ resuelto el 2026-11-10 con su opción (c): esperar a OC-03 y a unos 20 días há
 2026-11-09; revisado el 2026-11-10 (final del plan), con las decisiones D7 y D11 del usuario aplicadas (usuario,
 2026-11-10, revisión de planes): **sin copia propia** (la copia es la común de network) y **sin spot de respaldo**.
 
+> **Al cierre de SPRINT-02 (2026-11-13):** la parte de laboratorio de TI-09-ARCH está **entregada** en SPRINT-02 (fila
+> 6): lector y archivador aceptados (`c6c7b5b`) y primer dataset real `oc03_s20261112_c20261113` (`sha256:eb98ac6a…eea1`).
+> La **medición de cobertura** (20 días hábiles NYSE hasta el 2026-12-10, con token nuevo) pasa a SPRINT-03 como S02-6
+> (decisión del usuario «Cerrar y arrastrar»). Cierre en
+> [archive/SPRINT-02_2026-11-11_2026-11-13/SPRINT.md](../archive/SPRINT-02_2026-11-11_2026-11-13/SPRINT.md#9-cierre-2026-11-13).
+
 **Especificación de referencia:** [PLAN_TSFM_INTEGRACION] TI-09-ARCH y fila 3 de SPRINT-01 (conservada en
 [archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md](../archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md)). Scraper: `quantdesk-backend/docs/plans/backlog/PLAN_OPTIONS_CHAIN_ARCHIVO.md`.
 Esquema y retención del topic: `quantdesk-network/docs/lake/RETENCION.md` (el plan de network

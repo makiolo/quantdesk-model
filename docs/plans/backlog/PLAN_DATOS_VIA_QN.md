@@ -14,6 +14,13 @@ parcial, sección final): TI-12-MT5 está CERRADA y SPRINT-01 archivado
 TI-02-DATA-V2 en SPRINT-02 (fila 1b de [current/SPRINT.md](../current/SPRINT.md)); incremental de MT5 en INTRA-LOCAL; dueño
 de TI-02-DIARIO. Sección final «Decisiones del usuario (2026-11-10)».
 
+> **Al cierre de SPRINT-02 (2026-11-13, decisiones del usuario):** TI-02-DATA-V2 **CERRADA** (fila 1b; código
+> `3e35ed5`, tabla FX sobre MT5 en `f0995d0`+`d6bc45d`). TI-12-MT5 (más símbolos y periodos, alcance h1 de `@continuo`)
+> **arrastrada a SPRINT-03** como S02-5, a la espera del desbloqueo de la cuenta MT5. **TI-13-PUB (consumir lo que
+> publique el backend) vuelve aquí, al backlog:** salió sin hacer porque el backend no publica nada propio en qn hasta
+> su SPRINT-03 (`PLAN_PUBLICADORES_MERCADO_PUBLICO`); se mete en un sprint cuando publique. Cierre en
+> [archive/SPRINT-02_2026-11-11_2026-11-13/SPRINT.md](../archive/SPRINT-02_2026-11-11_2026-11-13/SPRINT.md#9-cierre-2026-11-13).
+
 ## 1. Regla (A16 y A16 bis, usuario, 2026-11-09)
 
 Los datos de mercado entran al lago de `quantdesk-network` (qn) **solo por publicadores**, uno por restricción

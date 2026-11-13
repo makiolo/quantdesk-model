@@ -5,4 +5,4 @@ Una ficha viva por ID ([plantilla](../../issues/TEMPLATE_ISSUE.md)). Las de fuer
 
 | ID | Estado | Severidad | Tarea | Ficha |
 |---|---|---|---|---|
-| ISSUE-LAGO-FX-1D-CLOSE | Abierto | Media | Fila 1b (TI-02-DATA-V2 y tabla FX sobre MT5); entró al iniciar el 2026-11-11 | [ficha](ISSUE-LAGO-FX-1D-CLOSE.md) |
+| ISSUE-LAGO-FX-1D-CLOSE | Resuelto (2026-11-13) | Media | Fila 1b (TI-02-DATA-V2 y tabla FX sobre MT5); entró al iniciar el 2026-11-11 | [ficha](ISSUE-LAGO-FX-1D-CLOSE.md) |

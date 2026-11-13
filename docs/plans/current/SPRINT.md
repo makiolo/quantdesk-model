@@ -1,9 +1,9 @@
 # SPRINT-02 — Datos MT5 vía qn, FinCast y ampliación de datos
 
-**Estado:** Activo
+**Estado:** Cerrado con arrastres (filas 5 y medición de la 6 a SPRINT-03; fila 7 al backlog). Cierre en §9.
 **Inicio de planificación:** 2026-11-07
 **Inicio:** 2026-11-11
-**Fin:** pendiente
+**Fin:** 2026-11-13
 **Orígenes:** etiqueta `archive/2026-11-11/sprint-02-sources` (commit `bb809e4`); planes de backlog del laboratorio
 (`PLAN_DATOS_VIA_QN`, `PLAN_ARCHIVO_OPCIONES`) y planes TSFM de `quantdesk` (sólo lectura). Los planes de backlog no
 se reducen: sus IDs son más amplios que las filas del sprint y anotan el sprint que los ejecuta.
@@ -105,3 +105,56 @@ Autor y revisor siguen siendo de proveedores distintos.
 Modelos: el LAUNCH aplica la decisión del usuario del 2026-11-10 (Haiku 5.5 ni autor ni revisor; L3–L6 con Sonnet 5.5
 high o gpt-6.1-sol high hasta L5; tabla «caso borde → test» y revisión obligatoria en L3–L4 hasta el 2026-11-24),
 recogida en [SPRINT_PROJECT §6](../SPRINT_PROJECT.md#6-delegación).
+
+## 9. Cierre (2026-11-13)
+
+**Estado:** Cerrado con arrastres. Fin real: 2026-11-13. Decisión del usuario del 2026-11-13 (AskUserQuestion, raíz
+del relevo 2): «Cerrar y arrastrar» y fila 7 «Backlog» ([EXECUTION](EXECUTION.md), «Registro»). No hay release
+(SPRINT_PROJECT §10): se pasa de cerrado a planificación.
+
+**Freeze:** no aplica (sin release); el proyecto pasa a planificación el 2026-11-13.
+
+| Fila | ID | Commits (rama `main`, empujados) | Veredicto | Destino / evidencia |
+|---|---|---|---|---|
+| 2b | TS-00-BENCH (FinCast) | `f3f8a4d`, `a98cea8`, `84fe1a9`, `d422e48`, `c0c7633`, corrección `ce1150d`+`05c27cf`; cierre `09befb8` | CERRADA 2026-11-11 (A4 ronda 2 ACEPTAR) | `execution/TS-00-BENCH-FINCAST/` |
+| 1b | TI-02-DATA-V2 y tabla FX sobre MT5 | A: `27cfb2b`…`3e35ed5` (4 correcciones), informe `565f9a0`; B: volcado en mini por la raíz `fb11457` (BDD 262); C: `f0995d0`+`d6bc45d`; cierre `778d0e3` | CERRADA 2026-11-13 (A4 ACEPTAR en A y C); ningún modelo cambia de conclusión en TS-00-OBJ | `execution/TI-02-DATA-V2/`, `execution/TS-00-BENCH-MT5/`; datasets `sha256:a5015bc9…893da` y `sha256:47d79b39…67d32` |
+| — | TS-00-OBJ (puerta 2) | quantdesk `3077fddd` | Umbrales confirmados por el usuario el 2026-11-13 | `PLAN_TSFM_FINANZAS` «Fase 0» |
+| 5 | TI-12-MT5 (más símbolos y periodos) | `f333e4d` (espera) | ARRASTRADA: cuenta MT5 bloqueada; sin empezar | SPRINT-03 §0, fila S02-5 |
+| 6 | TI-09-ARCH (cobertura) | `1b92162`, `fba4279`, `722effa`, `c6c7b5b` (código), `a62d78f` (aceptación), `a80ad40` (primer dataset) | PARCIAL: parte de laboratorio aceptada (A4 ACEPTAR tras 2 correcciones) y dataset `oc03_s20261112_c20261113` (`sha256:eb98ac6a…eea1`); la medición de cobertura, ARRASTRADA | `execution/TI-09-ARCH/`; SPRINT-03 §0, fila S02-6 |
+| 7 | TI-13-PUB (ampliación) | `96ed9c0` | SALE con causa documentada: el backend no publica nada propio en qn hasta su SPRINT-03 | Backlog, [PLAN_DATOS_VIA_QN](../backlog/PLAN_DATOS_VIA_QN.md) |
+
+- **Suite del DoD.** `run_selftests.py` sobre el HEAD `fb5d21f` (scripts idénticos a `a80ad40`; sólo cambian
+  documentos): 14 OK y 0 FALLO, `smoke_env` con 21 comprobaciones y 0 saltadas. Salida en
+  `E:/quantdesk-lab/tmp/verif_cierre_s02_fb5d21f.log`.
+- **Datasets e informes:** cada uno con hash, corte y procedencia en sus informes. Tokens de qn emitidos por la raíz con
+  confirmación del usuario (ids 38, 39 y 40), los tres revocados el mismo día; ningún secreto en el repo ni en los
+  volcados (búsqueda de patrón `qn_` = 0).
+- **Incidencias:**
+  - [ISSUE-LAGO-FX-1D-CLOSE](issues/ISSUE-LAGO-FX-1D-CLOSE.md): **resuelta** el 2026-11-13 (fila 1b), criterios 1–3
+    marcados con evidencia.
+  - Fuera de sprint, siguen vivas en [issues/](../issues/index.md): ISSUE-TI09-SONDA-CADENAS (criterio 1 pide la cifra
+    por día hábil desde el 2026-11-09; la sonda del 2026-11-13 y el primer dataset no la cubren), ISSUE-TI12-MT5-INTRADIA-LOCAL,
+    ISSUE-TI12-MT5-SYNC e ISSUE-TI12-MT5-VELA-A-MEDIAS. No son del sprint y no se archivan.
+- **Interrupción:** la raíz del relevo 1 murió el 2026-11-13 tras su último commit (`a80ad40`, ya empujado); la
+  recuperación en frío no encontró hijos interrumpidos ni WIP.
+- **Costes:** no hay `USAGE.md` del sprint. Cuota semanal al cierre (2026-11-13 22:25 local, fuente api): Claude 73 %
+  con el 55,7 % de la ventana (al inicio 28 % con el 18,7 %); Codex 57 % con el 36,6 % (al inicio 0 %). Es cuota de
+  cuenta compartida con `quantdesk`, `quantdesk-backend`, `quantdesk-network` y `reinforcement_learning`, no
+  atribuible a este sprint. Intentos en la BDD de sprints (`sprint_db`, SPRINT-02): autores Codex `gpt-6.1-sol` 13
+  intentos (≈ 9,2 h de pared: TI-02-DATA-V2 7, TS-00-BENCH 2, TI-09-ARCH 4), revisores Sonnet 5.5 10 intentos
+  (≈ 3,0 h), raíz Opus 5.5. Sin pp aislados por tarea: no entran en la media de calibración (hueco, no cero).
+- **Calibración frente a lo previsto (§8):** se previó «como SPRINT-01, 9 tareas en 3 días, confianza baja». Se
+  cerraron 2 de 5 en 3 días; lo que alargó no fueron los tokens sino las rondas de corrección (TI-02-DATA-V2: 4; TI-09-ARCH: 2
+  más una interrupción por memoria) y las esperas externas (cuenta MT5, OC-03 del backend, publicadores del backend).
+
+### Retrospectiva y trinquete
+
+| Fallo repetido o grave | Causa | Control añadido | Prueba de que lo detecta | ¿Bloquea o avisa? |
+|---|---|---|---|---|
+| 4 rondas de corrección en TI-02-DATA-V2 (A) | 2 por errores de la ficha de la raíz (horas de cierre; regla de disponibilidad contra DPOL-AVL-002) y 2 por efectos de un cambio de semántica de datos que sólo vio un diferencial | Skill global `references/ficha.md` (usuario, 2026-11-11): test diferencial contra `Base` sobre fixture realista y contraste de cada ejemplo numérico de la ficha con su fuente antes de lanzar | Aplicado en 1b-C (diferencial frente a la tabla antigua detectó el desfase de una barra) | Bloquea (A4) |
+| El autor de TI-09-ARCH murió por falta de memoria (`exit 127`) y luego quedó bloqueado (8,8 GB residentes) | Archivador que cargaba todas las sesiones en memoria, con otras corridas en la máquina | Corrección 2: archivador sesión a sesión y columnar, presupuesto ≤ 3 GB por sesión medido en la entrega | `medidas_c2.json`: pico 1,15 GB con 1 sesión y 1,24 GB con 5 | Bloquea (aceptación) |
+| 9 de 40 mutantes sobrevivieron en la primera entrega de TI-09-ARCH | Aserciones vacuas y casos borde sin probar | Revisión A4 con mutantes obligatoria; corrección 1 los mata | A4 de `c6c7b5b` | Bloquea (A4) |
+| Vigías y bucles de espera de varias raíces dejaron el PC inusable (~460 procesos) | `until ssh … pgrep` que no terminaba y vigías con subprocesos | Regla global de la skill (usuario, 2026-11-13): un vigía por raíz, pasadas ≥ 120 s, sin subprocesos por pasada | Sin control automático | Avisa (regla escrita) |
+| Un push ajeno sin autorización comprobada (2026-11-12) | Otra sesión empujó este repo diciendo que el usuario lo autorizó | El usuario confirmó y fijó la regla «la raíz commitea y empuja en cada checkpoint» (`859697e`) | Sin control automático | Avisa (regla escrita) |
+
+Reglas que se retiran: ninguna.
