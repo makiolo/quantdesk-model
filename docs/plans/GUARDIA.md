@@ -19,8 +19,13 @@ Notas de la raíz de guardia (skill global `sprint`, `references/guardia.md`). C
 - Backend: OC-03 servida (cadenas en qn desde la sesión 2026-11-12); publicadores públicos en su SPRINT-03.
 
 ## Compromisos con otras raíces
-- Ninguno abierto. Última petición atendida: la raíz de quantdesk (`quantdesk-75`) retransmitió la orden del usuario de
-  cerrar esta sesión y reabrir con `run_claude_handoff_launch.cmd`.
+- Guardia actual: sesión `quantdesk-model-c4` (2026-11-13). Raíces vivas: `quantdesk-c3` (relevo 55, SPRINT-02 activo),
+  `quantdesk-backend-d4`, `quantdesk-network-f0` (guardia).
+- quantdesk avisará al cerrar su SPRINT-02 y si cambia algo de la rueda, de TI-03-FMT o de DL-02-GATES. Al backend se le pidió aviso
+  cuando publique el mercado público (su SPRINT-03) o si cambia OC-03.
+- Network recordó que hay que tener «copia propia antes de `lake delete`». Respuesta: no, por D7 (usuario, 2026-11-10): la copia es la común
+  (PLAN_COPIA_PERIODICA_LAGO), y `lake delete` no se usa sobre `market.*` hasta que esa copia exista. En su PLAN_RETIRADA_TOPICS_EVENTOS,
+  Fase 3, las líneas 99-100 contradicen a D7; las concilia network. Se le pasó la lista de lo que depende aquí de qn.
 
 ## Preguntas abiertas al usuario
 1. **S02-6 frente al bloqueo de SPRINT-03.** La medición de TI-09-ARCH puede hacerse tras el 2026-12-10, pero SPRINT-03
