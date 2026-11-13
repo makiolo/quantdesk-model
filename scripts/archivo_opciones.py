@@ -107,16 +107,20 @@ def archivar(volcado, corte, nombre, desde=None, hasta=None, calendario=None, ra
         raise ValueError("consulta_desde incompatible")
     corte_ns = L.ns_corte(corte)
     cal, sessions = L.calendario_validado(calendario or L.CALENDARIO, consulta_desde, hasta)
-    raw, rep = L.seleccionar(rows, desde, hasta, corte_ns, consulta_desde, sessions)
+    raw, rep = L.seleccionar(rows, desde, hasta, corte_ns, consulta_desde, sessions, copiar=False)
+    del rows  # El volcado ya no es necesario; evitar otra copia de 1.2 M filas.
     limpia, ledger = L.limpiar(raw)
-    cruda = [(r, {k: v for k, v in r.items() if k != "_tipo"}) for r in raw]
+    n_raw, n_clean = len(raw), len(limpia)
+    cruda = ((r, {k: v for k, v in r.items() if k != "_tipo"}) for r in raw)
     tablas = [{"table_id": tipo, "schema": "custom/v1", "frame": frame_custom(filas, "market.options.chain." + tipo)}
               for tipo, filas in (("opciones_cruda", cruda), ("opciones_limpia", limpia))]
+    del cruda, raw, limpia
     TMP.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="construccion_", dir=TMP) as temporal:
         staging = Path(temporal) / nombre
         manifest = F.escribir_dataset(str(staging), nombre, f"OC-03; corte {corte}; {L.VERSION}; {L.MOTOR}; semilla 0",
                                       "America/New_York", tablas)
+        del tablas  # Validacion relee parquet; no retener los frames a la vez.
         dataset_sha = L.hash_dataset(manifest["tables"])
         val = V.validar(str(staging), temporal, nombre, manifest["tables"], corte_ns // 1000000, dataset_sha)
         if not val["ok"] or not val["politica"]["ok"]:
@@ -130,7 +134,7 @@ def archivar(volcado, corte, nombre, desde=None, hasta=None, calendario=None, ra
                     "volcado_manifest_sha256": manifest_sha, "codigo_sha256": codigo_sha256(),
                     "calendario": cal, "filtro": L.FILTRO, "motivos_cerrados": list(L.MOTIVOS),
                     "descartes_descarga": m.get("descartadas", {}), "avisos_descarga": m.get("avisos", []),
-                    "filas_cruda": len(raw), "filas_limpia": len(limpia), "tablas": manifest["tables"],
+                    "filas_cruda": n_raw, "filas_limpia": n_clean, "tablas": manifest["tables"],
                     "exclusiones_limpieza": {m: Counter(e["motivo"] for e in ledger)[m] for m in L.MOTIVOS},
                     "exclusiones_contratos": ledger, "validacion": val,
                     "semantica_corte": "captured_at y ceil ms <= corte; no se filtra por recepcion en qn"})

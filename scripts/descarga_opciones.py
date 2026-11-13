@@ -12,6 +12,8 @@ SHA-256 por fichero. --selftest sustituye el transporte, sin abrir sockets.
 
 En mini: python3 descarga_opciones.py --desde 2026-11-12 --hasta AAAA-MM-DD
   --salida /ruta/volcado_nuevo
+Mini no monta E:. Copiar despues con scp el directorio del volcado a
+E:/quantdesk-lab/tmp/TI-09-ARCH/<nombre>/ en el laboratorio.
 """
 from __future__ import annotations
 
@@ -36,7 +38,7 @@ ESQUEMA = "ti-09-arch.volcado/v1"
 TOPIC = "market.options.chain"
 INICIO = date(2026, 11, 12)
 TAGS = ("symbol", "asset_type", "opt_type")
-TMP = Path(os.environ.get("TI09_TMP", "E:/quantdesk-lab/tmp/TI-09-ARCH"))
+TMP = Path(os.environ.get("TI09_TMP", "E:/quantdesk-lab/tmp/TI-09-ARCH" if os.name == "nt" else "./tmp-ti09"))
 
 
 def json_texto(doc):
@@ -322,8 +324,6 @@ class QnFalso:
 def selftest():
     from unittest.mock import patch
     # Estas pruebas usan unicamente transporte inyectado; cualquier socket es un fallo.
-    if not TMP.is_absolute():
-        raise ValueError("en mini, definir TI09_TMP con la ruta absoluta del montaje de E:/quantdesk-lab/tmp/TI-09-ARCH")
     TMP.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="descarga_", dir=TMP) as tmp, patch(
         "socket.socket", side_effect=AssertionError("red prohibida")):

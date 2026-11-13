@@ -3,26 +3,32 @@
 Filtro por sesion, con Decimal para comparar precios y strikes sin epsilon
 oculto. Semianchura=(ask-bid)/2; en CADA comparacion
 tol=max(0.01, semianchuras de los 2 o 3 participantes). Solo se excluye si
-la diferencia EXCEDE tol (igualdad admitida). Orden de motivos:
+la diferencia EXCEDE tol (igualdad admitida). Motivos de limpieza:
 vencimiento_pasado, sin_cotizacion, monotonia, convexidad, calendario.
 Una cotizacion exige bid finito >=0, ask finito >0 y ask>=bid. El volumen
 no interviene. IV y last=0 son ausentes, bid=0 es valido.
 
-Monotonia por (symbol, maturity, C/P): strikes consecutivos, call no
-creciente / put no decreciente; se retira el extremo derecho infractor.
-Convexidad: por el mismo grupo, tres strikes consecutivos a<b<c; se
-retira b si mid_b supera la cuerda ((c-b)*mid_a+(b-a)*mid_c)/(c-a)+tol.
+Monotonia por (symbol, maturity, C/P): TODOS los pares de strikes, call no
+creciente / put no decreciente. Convexidad: tres strikes consecutivos a<b<c;
+hay violacion si mid_b supera la cuerda ((c-b)*mid_a+(b-a)*mid_c)/(c-a)+tol.
 Esta definicion mide la mariposa en unidades de precio, incluso con strikes
-no equiespaciados. Calendario por (symbol,C/P,strike): se retira el
-vencimiento posterior si su mid cae mas de tol respecto al anterior.
+no equiespaciados. En cada grupo se cuentan las violaciones de monotonia
+y convexidad en que participa CADA contrato (los tres en una mariposa).
+Se retira el de mayor cuenta; empate: mayor (ask-bid)/mid; empate: mayor
+strike. Motivo: la regla con mas participaciones; empate: monotonia.
+Se recalcula tras cada retirada hasta no tener violaciones. Despues se
+aplica calendario por (symbol,C/P,strike), contando TODOS los pares de
+vencimientos cuyo mid disminuye mas de tol. Misma regla de retirada;
+empate final (strikes iguales): vencimiento mayor.
 
-Cada fase evalua los vecinos vigentes y vuelve a empezar al retirar una
-fila. Tras las tres fases se repite desde monotonia hasta punto fijo:
+Tras strike y calendario se repite desde strike hasta punto fijo:
 quitar un vecino de horquilla ancha puede revelar otra infraccion.
 La primera regla que retira una fila fija su UNICO motivo; nunca se
 reclasifica. Orden de grupos/strikes/vencimientos estable. No se alteran
 precios ni se ajusta una superficie. Es una politica de descarte
 conservadora, no una prueba de arbitraje economico con dividendos/tipos.
+Maturity <= date se excluye como vencimiento_pasado: la captura OC-03 es
+posterior al cierre de esa sesion, incluido el dia de vencimiento.
 """
 from __future__ import annotations
 
@@ -41,7 +47,10 @@ MOTOR = "quantdesk 69fdb39d"
 OBLIGATORIOS = {(s, "ETF") for s in ("SPY", "QQQ", "IWM", "DIA")} | {(s, "INDEX") for s in ("^SPX", "^NDX", "^VIX")}
 MOTIVOS = ("vencimiento_pasado", "sin_cotizacion", "monotonia", "convexidad", "calendario")
 DESCARTES = ("sin_capture_id", "anterior_oc03", "fuera_rango_leido", "posterior_corte", "sesion_no_habil",
-             "sin_captura_valida", "captura_no_elegida", "duplicado_exacto", "solo_contexto")
+             "sin_captura_valida", "captura_no_elegida", "duplicado_exacto", "solo_contexto",
+             "underlying_price_invalido", "strike_invalido", "capture_id_invalido", "fila_invalida")
+CONTENIDO = TAGS + ("strike", "maturity", "last_price", "bid", "ask", "implied_vol", "in_the_money",
+                    "volume", "open_interest", "date", "source", "captured_at", "capture_id", "underlying_price")
 FILTRO = __doc__
 CALENDARIO = {"version": "NYSE-ficha-2026-11-13/v1", "desde": "2026-11-12", "hasta": "2027-02-28",
               "holidays": ["2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18", "2027-02-15"],
@@ -129,7 +138,7 @@ def identidad(r):
 
 
 def validar_fila(r):
-    """Los defectos estructurales paran: no inventar contrato, spot ni captura."""
+    """Valida una fila; seleccionar convierte defectos de fila en descartes."""
     if not isinstance(r.get("symbol"), str) or not r["symbol"] or "|" in r["symbol"]:
         raise ValueError("symbol invalido")
     if r.get("asset_type") not in ("EQUITY", "ETF", "INDEX"):
@@ -152,6 +161,24 @@ def validar_fila(r):
     r["_tipo"] = "C" if r["opt_type"].lower() == "call" else "P"
 
 
+def motivo_fila(r):
+    """Lista cerrada, prioridad spot, strike, captura, resto de contenido."""
+    for campo, motivo in (("underlying_price", "underlying_price_invalido"), ("strike", "strike_invalido")):
+        try:
+            if decimal(r.get(campo)) <= 0:
+                return motivo
+        except ValueError:
+            return motivo
+    if not isinstance(r.get("date"), str) or not isinstance(r.get("capture_id"), str) or not re.fullmatch(
+            re.escape(r["date"]) + r"-\d{6}-[0-9a-f]{6}", r["capture_id"]):
+        return "capture_id_invalido"
+    try:
+        validar_fila(r)
+    except (ValueError, KeyError, TypeError):
+        return "fila_invalida"
+    return None
+
+
 def cargar_volcado(raiz):
     raiz = Path(raiz).resolve()
     m = cargar_json((raiz / "manifest.json").read_text(encoding="utf-8"))
@@ -163,6 +190,10 @@ def cargar_volcado(raiz):
     if not isinstance(lista, list):
         raise ValueError("manifest sin ficheros")
     rows, vistos, combos = [], set(), set()
+    # JSON-lines crea las mismas claves y cadenas de etiquetas por cada fila.
+    # Compartirlas reduce memoria sin cambiar contenido ni tipos del volcado.
+    campos, textos = {}, {}
+    repetidos = set(TAGS) | {"maturity", "date", "source", "capture_id", "_batch_id"}
     for f in lista:
         ruta = (raiz / f["ruta"]).resolve()
         if not ruta.is_relative_to(raiz) or ruta in vistos:
@@ -180,6 +211,11 @@ def cargar_volcado(raiz):
                 r = cargar_json(linea)
                 if not isinstance(r, dict) or any(r.get(k) != f["etiquetas"][k] for k in TAGS):
                     raise ValueError("fila con tags distintos del manifiesto")
+                if r.get("capture_id") and ("date" not in r or isinstance(r["date"], str) and r["date"] >= str(INICIO)) and any(
+                        c not in r for c in CONTENIDO + ("_offset",)):
+                    raise ValueError("esquema ausente: faltan campos OC-03")
+                r = {campos.setdefault(k, k): textos.setdefault(v, v) if k in repetidos and isinstance(v, str) else v
+                     for k, v in r.items()}
                 rows.append(r)
                 n += 1
         if n != f["filas"]:
@@ -190,7 +226,7 @@ def cargar_volcado(raiz):
     return m, rows, sha256(raiz / "manifest.json")
 
 
-def seleccionar(rows, desde, hasta, corte, consulta_desde, sessions):
+def seleccionar(rows, desde, hasta, corte, consulta_desde, sessions, *, copiar=True):
     """95% con enteros; cinco sesiones CON datos anteriores, sin mirar al futuro.
 
     Universo: union actual + cinco previas + los siete obligatorios. Distintos
@@ -201,18 +237,25 @@ def seleccionar(rows, desde, hasta, corte, consulta_desde, sessions):
     grupos = defaultdict(lambda: defaultdict(list))
     tipos = {}
     for original in rows:
-        r = dict(original)
+        r = dict(original) if copiar else original
         if not r.get("capture_id"):
             cuentas["sin_capture_id"] += 1
             continue
-        d = fecha(r["date"])
+        try:
+            d = fecha(r["date"])
+        except (ValueError, KeyError, TypeError):
+            cuentas["fila_invalida"] += 1
+            continue
         if d < INICIO:
             cuentas["anterior_oc03"] += 1
             continue
         if not consulta_desde <= d <= hasta:
             cuentas["fuera_rango_leido"] += 1
             continue
-        validar_fila(r)
+        motivo = motivo_fila(r)
+        if motivo:
+            cuentas[motivo] += 1
+            continue
         if r["captured_at"] > corte or (r["captured_at"] + 999999) // 1000000 > corte // 1000000:
             cuentas["posterior_corte"] += 1
             continue
@@ -262,9 +305,11 @@ def seleccionar(rows, desde, hasta, corte, consulta_desde, sessions):
     for r in raw:
         clave = identidad(r)
         if clave in unicas:
-            if json_texto(r) != json_texto(unicas[clave]):
+            if any(r.get(c) != unicas[clave].get(c) for c in CONTENIDO):
                 raise ValueError("duplicado con distinto contenido: " + " | ".join(clave))
             cuentas["duplicado_exacto"] += 1
+            if r["_offset"] < unicas[clave]["_offset"]:
+                unicas[clave] = r
         else:
             unicas[clave] = r
     raw = [unicas[k] for k in sorted(unicas)]
@@ -275,7 +320,7 @@ def seleccionar(rows, desde, hasta, corte, consulta_desde, sessions):
                if desde <= d <= hasta and (s, t) not in presentes[str(d)]]} for s, t in sorted(universo)]
     assert len(rows) == len(raw) + sum(cuentas.values())
     return raw, {"capturas": decisiones, "sesiones_sin_captura_valida": sin_valida,
-                 "descartes_lector": dict(cuentas), "huecos_por_subyacente": huecos,
+                 "descartes_lector": dict(cuentas), "motivos_cerrados_lector": list(DESCARTES), "huecos_por_subyacente": huecos,
                  "universo_huecos": "union de subyacentes OC-03 leidos hasta corte + siete obligatorios; datos de captura elegida",
                  "regla_universo_captura": "union de sesion y 5 sesiones anteriores CON datos + siete obligatorios; umbral inclusivo 95%"}
 
@@ -284,7 +329,7 @@ def limpiar(raw):
     activos, motivos = {}, {}
     for r in raw:
         k = identidad(r)
-        if r["maturity"] < r["date"]:
+        if r["maturity"] <= r["date"]:
             motivos[k] = "vencimiento_pasado"
             continue
         try:
@@ -294,7 +339,9 @@ def limpiar(raw):
         except ValueError:
             motivos[k] = "sin_cotizacion"
             continue
-        activos[k] = {"row": r, "k": decimal(r["strike"]), "mid": (bid + ask) / 2, "hw": (ask - bid) / 2}
+        mid = (bid + ask) / 2
+        activos[k] = {"row": r, "k": decimal(r["strike"]), "mid": mid, "hw": (ask - bid) / 2,
+                      "rel": (ask - bid) / mid}
 
     def grupos(regla):
         gs = defaultdict(list)
@@ -307,18 +354,26 @@ def limpiar(raw):
 
     def fase(regla):
         for keys in grupos(regla):
-            pila = []
-            longitud = 3 if regla == "convexidad" else 2
-            for key in keys:
-                pila.append(key)
-                while len(pila) >= longitud:
-                    ks = pila[-longitud:]
-                    if not viola(ks, regla):
-                        break
-                    k = ks[1]
-                    motivos[k] = regla
-                    del activos[k]
-                    pila.pop(-2 if regla == "convexidad" else -1)
+            while True:
+                counts = defaultdict(Counter)
+                pareja = "calendario" if regla == "calendario" else "monotonia"
+                for i, a in enumerate(keys):
+                    for b in keys[i + 1:]:
+                        if viola((a, b), pareja):
+                            counts[a][pareja] += 1
+                            counts[b][pareja] += 1
+                if regla != "calendario":
+                    for ks in zip(keys, keys[1:], keys[2:]):
+                        if viola(ks, "convexidad"):
+                            for k in ks:
+                                counts[k]["convexidad"] += 1
+                if not counts:
+                    break
+                k = max(counts, key=lambda k: (sum(counts[k].values()), activos[k]["rel"], activos[k]["k"],
+                                               activos[k]["row"]["maturity"]))
+                motivos[k] = max(counts[k], key=lambda m: (counts[k][m], m == "monotonia"))
+                del activos[k]
+                keys.remove(k)
 
     def viola(ks, regla):
         vs = [activos[k] for k in ks]
@@ -337,13 +392,13 @@ def limpiar(raw):
         ctx.prec = 50
         while True:
             n = len(activos)
-            for regla in ("monotonia", "convexidad", "calendario"):
+            for regla in ("strike", "calendario"):
                 fase(regla)
             if len(activos) == n:
                 break
     clean = []
     for k in sorted(activos):
-        v = activos[k]
+        v = activos.pop(k)
         r = {a: b for a, b in v["row"].items() if a != "_tipo"}
         r.update(mid=float(v["mid"]), implied_vol=numero_opcional(r.get("implied_vol")),
                  last_price=numero_opcional(r.get("last_price")))
