@@ -37,7 +37,9 @@ Notas de la raíz de guardia (skill global `sprint`, `references/guardia.md`). C
 - **backend** (era `quantdesk-backend-d4`; sucesora «quantdesk-backend raiz relevo 6», ver `~/.claude/relevos.json`):
   avisará cuando publique el mercado público y antes de cambiar OC-03. Contrato de TI-02-DIARIO abierto: sus
   restricciones y los 4 puntos por acordar están en `next/SPRINT.md` §3 («Entrada de la fila 1»). **Nosotros** les
-  avisamos cuando MT5 vuelva a publicar.
+  avisamos cuando MT5 vuelva a publicar. Confirmado por `quantdesk-backend-24` el 2026-11-14: `fred_oas_capture_schedule`
+  aún sin activar (antes verifican unidad y hora); esperan nuestra propuesta conjunta del contrato en la §3; sus
+  restricciones de PUB-05-EXPORT no cambian.
 - **network** (era `quantdesk-network-f0`; la guardia nueva entra por su GUARDIA.md): avisará de cambios en retención o
   esquema de `market.*`, en el borrado o en el horizonte de revisión. D7 conciliado en su `85c4708`. Confirmado por
   `quantdesk-network-21` el 2026-11-14: `market.*` sin cambios; la Fase 3 (borrado) irá en el sprint que siga a COP y
