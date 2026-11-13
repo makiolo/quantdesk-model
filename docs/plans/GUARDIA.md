@@ -2,8 +2,12 @@
 
 Notas de la raíz de guardia (skill global `sprint`, `references/guardia.md`). Como mucho 80 líneas.
 
+> **2026-11-14: SPRINT-03 activo.** La guardia `quantdesk-model-4d` pasó a ser la raíz inicial del sprint (`guardia.md`
+> «Paso a sprint»). Mientras dure el sprint mandan `current/SPRINT.md`, `current/LAUNCH.md`, `current/EXECUTION.md` y,
+> en los relevos, `current/HANDOFF.md`; este fichero queda como notas de la última guardia y se actualiza al cerrar.
+
 ## Estado (2026-11-14). Guardia `quantdesk-model-4d`
-- **Sin sprint activo; fase: planificación.** SPRINT-02 cerrado con arrastres el 2026-11-13 (`archive/SPRINT-02_2026-11-11_2026-11-13/`).
+- **Sin sprint activo hasta el 2026-11-14.** SPRINT-02 cerrado con arrastres el 2026-11-13 (`archive/SPRINT-02_2026-11-11_2026-11-13/`).
 - Revisión de planes del 2026-11-13 commiteada y empujada en `41efbbf` (la guardia `c4` murió antes del commit); hash
   anotado en `backlog/REVISIONES.md` y kanban de `index.md` regenerado (`scripts/sprint_db.py kanban --write`).
 - Raíces vivas a la entrada: `quantdesk-f1`, `quantdesk-backend-24`, `quantdesk-network-21` (presentación enviada a las tres).
@@ -32,11 +36,11 @@ Notas de la raíz de guardia (skill global `sprint`, `references/guardia.md`). C
 
 ## Compromisos con otras raíces (las tres guardias o raíces se cerraron a petición del usuario a la vez que esta)
 - **quantdesk** (era `quantdesk-c3`, relevo 55): avisará al cerrar su SPRINT-02 y si cambian la rueda, TI-03-FMT o
-  DL-02-GATES. Ha apuntado dos tareas: revisar su DEPENDENCIAS por nuestra renumeración y corregir PLAN_TSFM_FINANZAS §3,
-  TS-16-QCONO y TS-08-DYN («cadenas vacías»).
+  DL-02-GATES. Las dos tareas que apuntó (su DEPENDENCIAS por nuestra renumeración y PLAN_TSFM_FINANZAS §3, TS-16-QCONO
+  y TS-08-DYN, «cadenas vacías») están hechas en su `3eb4c799` (sin push a 2026-11-14), confirmado por `quantdesk-f1`.
 - **backend** (era `quantdesk-backend-d4`; sucesora «quantdesk-backend raiz relevo 6», ver `~/.claude/relevos.json`):
   avisará cuando publique el mercado público y antes de cambiar OC-03. Contrato de TI-02-DIARIO abierto: sus
-  restricciones y los 4 puntos por acordar están en `next/SPRINT.md` §3 («Entrada de la fila 1»). **Nosotros** les
+  restricciones y los 4 puntos por acordar están en `current/SPRINT.md` §3 («Entrada de la fila 1»). **Nosotros** les
   avisamos cuando MT5 vuelva a publicar. Confirmado por `quantdesk-backend-24` el 2026-11-14: `fred_oas_capture_schedule`
   aún sin activar (antes verifican unidad y hora); esperan nuestra propuesta conjunta del contrato en la §3; sus
   restricciones de PUB-05-EXPORT no cambian.

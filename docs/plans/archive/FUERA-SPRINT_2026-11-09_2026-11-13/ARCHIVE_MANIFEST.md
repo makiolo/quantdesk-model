@@ -7,7 +7,7 @@ verificar»). Clave: detección más antigua de las dos fichas (ISSUE-TI12-MT5-S
 - **Motivo:** decisión del usuario «(usuario, 2026-11-13, revisión de planes, R3)»: cerrar ISSUE-TI12-MT5-SYNC fusionando
   ISSUE-TI12-MT5-VELA-A-MEDIAS. La verificación 28/28 en qn y ClickHouse sustituye al cuadre de 0 puntos del 2026-11-09
   (GAP-ISSUES-02 aceptado). Lo que queda (reactivar la tarea programada, primera pasada limpia, carga nocturna de
-  `@continuo`) pasa a la fila 4c (TI-12-MT5-OPS) de [SPRINT-03](../../next/SPRINT.md).
+  `@continuo`) pasa a la fila 4c (TI-12-MT5-OPS) de [SPRINT-03](../../current/SPRINT.md).
 - **Movido con `git mv`** en la aplicación de la revisión (2026-11-13); commit: pendiente (lo pone la raíz de guardia).
 - **Hashes:** SHA-256 del contenido. «Previo» = el fichero en `issues/` en `7f5a5d0` (HEAD antes de la revisión);
   «posterior» = el archivado al terminar la aplicación (incluye la sección «Revisión de planes (2026-11-13)» de los

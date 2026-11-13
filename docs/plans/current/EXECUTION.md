@@ -1,0 +1,31 @@
+# EXECUTION — SPRINT-03 de quantdesk-model
+
+Registro de ejecución del sprint: arranques, lecturas de cuota, mensajes entre raíces, intentos, aceptaciones y
+decisiones del usuario, con fecha y hora local (CET).
+
+## 2026-11-14 — activación
+
+- **00:3x.** Raíz de guardia `quantdesk-model-4d` arranca (`guardia.md`). Commit pendiente de la guardia `c4` hecho y
+  empujado: `41efbbf` (revisión de planes del 2026-11-13), `8ad2a86` (arranque de guardia y kanban), `2e81fb6`.
+- Presentación a las raíces vivas: `quantdesk-f1`, `quantdesk-backend-24`, `quantdesk-network-21`.
+  - network: `market.*` sin cambios de retención, esquema ni borrado; la Fase 3 (borrado) irá en el sprint que siga a
+    COP y rechazará `market.*` en `main`; visto bueno de 4c/5, tras el desbloqueo de MT5.
+  - backend: `fred_oas_capture_schedule` aún sin activar; esperan nuestra propuesta conjunta del contrato de
+    TI-02-DIARIO en SPRINT.md §3; sus restricciones de PUB-05-EXPORT no cambian.
+  - quantdesk: aplicados nuestros dos avisos en su commit `3eb4c799` (sin push): PLAN_TSFM_FINANZAS sin las premisas de
+    «cero cadenas» (`market.options.chain` con datos desde OC-03; `market.options.fx` vacío; cifra de la sonda C-07
+    pendiente) y su DEPENDENCIAS ajustado a nuestra renumeración. Su SPRINT-02 sigue abierto; sin cambios en la rueda,
+    TI-03-FMT ni DL-02-GATES.
+- **Decisión del usuario (2026-11-14):** «vale» a planificar e iniciar SPRINT-03 empezando por la fila 1.
+- `deps.py --repo . --sprint SPRINT-03`: **LISTO**, 0 dependencias de entrada.
+- Cuota (00:39): Claude 78 % (ventana 56,9 %, reinicio 2026-11-16 23:59 UTC); Codex 61 % (ventana 37,8 %, reinicio
+  2026-11-18 08:07 UTC). Orden temporal del usuario: Codex implementa y revisa hasta el 2026-11-17 00:59.
+- Revisión de alertas (`alertas.md`): no existía `ultima.json`; lanzada a las 00:45 con `gpt-6.1-sol` high
+  (supervisor PID 29448; informe `.git/sprint-runtime/alertas/alertas-20261114-0045-salida.md`).
+- Revisión de planes: la última es del 2026-11-13 (dentro del umbral); no se repite.
+- Planificación completada: §8 de capacidad, LAUNCH.md y este registro. Los planes del backlog no se reducen (sus IDs
+  son más amplios que las filas). Tag de fuentes `archive/2026-11-14/sprint-03-sources`.
+- Activación: dossier movido de `next/` a `current/`, `future/SPRINT-04` promovido a `next/` (En planificación, premisas
+  por revalidar), fichas ISSUE-TI09-SONDA-CADENAS e ISSUE-TI12-MT5-INTRADIA-LOCAL a `current/issues/`. Enlaces
+  recalculados con un script que resuelve cada enlace relativo contra su ubicación anterior, también en el archivo
+  (cambio editorial de enlaces: cambian los SHA-256 de los ficheros de `archive/` tocados).

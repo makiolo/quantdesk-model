@@ -25,9 +25,9 @@ Ciclo: planificación → inicio → ejecución → cierre y archivo → freeze 
 
 | Fase | Sprint | Enlace |
 |---|---|---|
-| Activo | Ninguno: planificación (sin release) desde el 2026-11-13 | [current/](current/README.md) |
-| Próximo | SPRINT-03 — Exportador diario, operación de MT5 y cobertura de cadenas, **sin dependencia de entrada** (rehecho por partición, usuario, 2026-11-13, R1): TI-02-DIARIO (contrato primero, código sin OAS, OAS después), S02-6 con el cierre de la sonda, fila de MT5 (S02-5, INTRA-LOCAL, reactivación del publicador y carga de `@continuo`), universo ampliado condicionado, consumo FRED/OAS | [next/SPRINT.md](next/SPRINT.md) |
-| Fichas seleccionadas para SPRINT-03 | ISSUE-TI09-SONDA-CADENAS (fila 3), ISSUE-TI12-MT5-INTRADIA-LOCAL (fila 4b). Resueltas el 2026-11-13: ISSUE-TI12-MT5-SYNC y VELA-A-MEDIAS (R3) | [issues/](issues/index.md) · [FUERA-SPRINT_2026-11-09_2026-11-13](archive/FUERA-SPRINT_2026-11-09_2026-11-13/ARCHIVE_MANIFEST.md) |
+| Activo | **SPRINT-03** desde el 2026-11-14 — Exportador diario, operación de MT5 y cobertura de cadenas, **sin dependencia de entrada** (rehecho por partición, usuario, 2026-11-13, R1): TI-02-DIARIO (contrato primero, código sin OAS, OAS después), S02-6 con el cierre de la sonda, fila de MT5 (S02-5, INTRA-LOCAL, reactivación del publicador y carga de `@continuo`), universo ampliado condicionado, consumo FRED/OAS | [current/SPRINT.md](current/SPRINT.md) |
+| Próximo | SPRINT-04 — Ciclo sintético-real y procedencia en el manifiesto (en planificación; espera a quantdesk SPRINT-03 cerrado) | [next/SPRINT.md](next/SPRINT.md) |
+| Issues del sprint activo | ISSUE-TI09-SONDA-CADENAS (fila 3), ISSUE-TI12-MT5-INTRADIA-LOCAL (fila 4b). Resueltas el 2026-11-13: ISSUE-TI12-MT5-SYNC y VELA-A-MEDIAS (R3) | [current/issues/](current/issues/index.md) · [FUERA-SPRINT_2026-11-09_2026-11-13](archive/FUERA-SPRINT_2026-11-09_2026-11-13/ARCHIVE_MANIFEST.md) |
 | Futuros | SPRINT-04 — Ciclo sintético-real y procedencia en el manifiesto, con las filas S02-1…S02-4 (tras quantdesk SPRINT-03); SPRINT-05 — Escalera de entrenamiento (antes SPRINT-04; tras quantdesk SPRINT-04) | [future/](future/README.md) · [DEPENDENCIAS](DEPENDENCIAS.md) |
 | Último cerrado | SPRINT-02 — Datos MT5 vía qn, FinCast y ampliación de datos (2026-11-11 a 2026-11-13), cerrado con arrastres y archivado | [archive/SPRINT-02_2026-11-11_2026-11-13/SPRINT.md](archive/SPRINT-02_2026-11-11_2026-11-13/SPRINT.md) · [archive/](archive/index.md) |
 
@@ -60,40 +60,44 @@ graph LR
     end
 
     subgraph N["⏳ 2. Próximos (next y future)"]
-        N1["SPRINT-03<br/>Exportador diario, operación de MT5 y cobertura de cadenas… · En planificación"]:::next
-        N2["PLAN_DATOS_VIA_QN<br/>Datos de mercado vía qn (MT5, publicadores públicos, export…"]:::next
-        N3["PLAN_ARCHIVO_OPCIONES<br/>Archivo de cadenas de opciones del laboratorio (TI-09-ARCH)"]:::next
-        N4["SPRINT-04<br/>Ciclo sintético-real y procedencia en el manifiesto · En planificación"]:::next
-        N5["SPRINT-05<br/>Escalera de entrenamiento, ajuste fino y adaptadores · En planificación"]:::next
-        N1 --> N2
-        N1 --> N3
+        N1["SPRINT-04<br/>Ciclo sintético-real y procedencia en el manifiesto · En planificación"]:::next
+        N2["SPRINT-05<br/>Escalera de entrenamiento, ajuste fino y adaptadores · En planificación"]:::next
     end
 
-    subgraph D["✅ 3. Sprints cerrados"]
+    subgraph C["📦 3. SPRINT-03 activo"]
+        C1["SPRINT-03<br/>Exportador diario, operación de MT5 y cobertura de cadenas… · 0/8 cerradas"]:::current
+        C2["PLAN_DATOS_VIA_QN<br/>Datos de mercado vía qn (MT5, publicadores públicos, export…"]:::current
+        C3["PLAN_ARCHIVO_OPCIONES<br/>Archivo de cadenas de opciones del laboratorio (TI-09-ARCH)"]:::current
+        C1 --> C2
+        C1 --> C3
+    end
+
+    subgraph D["✅ 4. Sprints cerrados"]
         D1["SPRINT-01<br/>Entorno, datos reales y banco de referencia · Cerrado"]:::completed
         D2["SPRINT-02<br/>Datos MT5 vía qn, FinCast y ampliación de datos · Cerrado con arrastres"]:::completed
     end
 
-    subgraph P["⚠️ 4. Issues abiertas"]
+    subgraph P["⚠️ 5. Issues abiertas"]
         P1["ISSUE-TI09-SONDA-CADENAS<br/>¿Hay cadenas de opciones en qn? Sonda de sólo lectura · Abierto"]:::issues
         P2["ISSUE-TI12-MT5-INTRADIA-LOCAL<br/>Guardar en local el 1m y 5m de MT5 antes de que el bróker l… · Abierto"]:::issues
     end
 
     B --> N
-    N --> D
+    N --> C
+    C --> D
     D --> P
 
     click B1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/backlog/PLAN_ARCHIVO_OPCIONES.md" _blank
     click B2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/backlog/PLAN_DATOS_VIA_QN.md" _blank
     click N1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/next/SPRINT.md" _blank
-    click N2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/backlog/PLAN_DATOS_VIA_QN.md" _blank
-    click N3 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/backlog/PLAN_ARCHIVO_OPCIONES.md" _blank
-    click N4 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/future/SPRINT-04/SPRINT.md" _blank
-    click N5 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/future/SPRINT-05/SPRINT.md" _blank
+    click N2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/future/SPRINT-05/SPRINT.md" _blank
+    click C1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/current/SPRINT.md" _blank
+    click C2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/backlog/PLAN_DATOS_VIA_QN.md" _blank
+    click C3 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/backlog/PLAN_ARCHIVO_OPCIONES.md" _blank
     click D1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md" _blank
     click D2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/archive/SPRINT-02_2026-11-11_2026-11-13/SPRINT.md" _blank
-    click P1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/issues/ISSUE-TI09-SONDA-CADENAS.md" _blank
-    click P2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md" _blank
+    click P1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/current/issues/ISSUE-TI09-SONDA-CADENAS.md" _blank
+    click P2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/current/issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md" _blank
 ```
 
 <details><summary>Enlaces de los planes e issues</summary>
@@ -105,11 +109,14 @@ graph LR
 
 **⏳ Próximos (next y future)**
 
-- [SPRINT-03](next/SPRINT.md) — Exportador diario, operación de MT5 y cobertura de cadenas…
+- [SPRINT-04](next/SPRINT.md) — Ciclo sintético-real y procedencia en el manifiesto
+- [SPRINT-05](future/SPRINT-05/SPRINT.md) — Escalera de entrenamiento, ajuste fino y adaptadores
+
+**📦 SPRINT-03 activo**
+
+- [SPRINT-03](current/SPRINT.md) — Exportador diario, operación de MT5 y cobertura de cadenas…
   - [PLAN_DATOS_VIA_QN](backlog/PLAN_DATOS_VIA_QN.md) — Datos de mercado vía qn (MT5, publicadores públicos, export…
   - [PLAN_ARCHIVO_OPCIONES](backlog/PLAN_ARCHIVO_OPCIONES.md) — Archivo de cadenas de opciones del laboratorio (TI-09-ARCH)
-- [SPRINT-04](future/SPRINT-04/SPRINT.md) — Ciclo sintético-real y procedencia en el manifiesto
-- [SPRINT-05](future/SPRINT-05/SPRINT.md) — Escalera de entrenamiento, ajuste fino y adaptadores
 
 **✅ Sprints cerrados**
 
@@ -118,8 +125,8 @@ graph LR
 
 **⚠️ Issues abiertas**
 
-- [ISSUE-TI09-SONDA-CADENAS](issues/ISSUE-TI09-SONDA-CADENAS.md) — ¿Hay cadenas de opciones en qn? Sonda de sólo lectura
-- [ISSUE-TI12-MT5-INTRADIA-LOCAL](issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md) — Guardar en local el 1m y 5m de MT5 antes de que el bróker l…
+- [ISSUE-TI09-SONDA-CADENAS](current/issues/ISSUE-TI09-SONDA-CADENAS.md) — ¿Hay cadenas de opciones en qn? Sonda de sólo lectura
+- [ISSUE-TI12-MT5-INTRADIA-LOCAL](current/issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md) — Guardar en local el 1m y 5m de MT5 antes de que el bróker l…
 
 </details>
 <!-- kanban:fin -->

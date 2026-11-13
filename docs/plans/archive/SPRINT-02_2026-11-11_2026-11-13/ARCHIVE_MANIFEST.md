@@ -110,8 +110,8 @@ Fuera de sprint siguen vivas en [issues/](../../issues/index.md), sin snapshot a
 
 | Pendiente | Destino vivo |
 |---|---|
-| Fila 5, TI-12-MT5 (h1 de `@continuo`) | [next/SPRINT.md](../../next/SPRINT.md) §0, S02-5 |
-| Fila 6, TI-09-ARCH (medición de cobertura hasta 2026-12-10) | [next/SPRINT.md](../../next/SPRINT.md) §0, S02-6; [PLAN_ARCHIVO_OPCIONES](../../backlog/PLAN_ARCHIVO_OPCIONES.md) |
+| Fila 5, TI-12-MT5 (h1 de `@continuo`) | [next/SPRINT.md](../../current/SPRINT.md) §0, S02-5 |
+| Fila 6, TI-09-ARCH (medición de cobertura hasta 2026-12-10) | [next/SPRINT.md](../../current/SPRINT.md) §0, S02-6; [PLAN_ARCHIVO_OPCIONES](../../backlog/PLAN_ARCHIVO_OPCIONES.md) |
 | Fila 7, TI-13-PUB | [PLAN_DATOS_VIA_QN](../../backlog/PLAN_DATOS_VIA_QN.md) (backlog) |
 
 ## 4. Enlaces entrantes corregidos fuera del dossier

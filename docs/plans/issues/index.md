@@ -5,10 +5,8 @@ Una ficha viva por ID ([plantilla](TEMPLATE_ISSUE.md)). Las del sprint activo es
 el archivo; archivado no significa resuelto. Las seleccionadas para el sprint siguiente siguen aquí hasta que se active
 y entonces pasan a `current/issues/`.
 
-| ID | Estado | Severidad | Destino | Ficha |
-|---|---|---|---|---|
-| ISSUE-TI09-SONDA-CADENAS | Abierto; se cierra con la cifra por sesión de S02-6 desde el 2026-11-12, y los días 2026-11-09…11 quedan como no medibles (R4). STATUS ya corregido (2026-11-13) | Media | Sprint siguiente seleccionado: SPRINT-03 (next), fila 3 (con S02-6; puerta: token de lectura tras el 2026-12-10) | [ficha](ISSUE-TI09-SONDA-CADENAS.md) |
-| ISSUE-TI12-MT5-INTRADIA-LOCAL | Abierto (primera descarga m1/m5 de `@continuo` el 2026-11-09; alcance y periodicidad decididos el 2026-11-13: fx28 y `@continuo`, después 484 acciones; manual cada ≤ 6 semanas, primera antes del 2027-01-17; R8). Espera al desbloqueo de la cuenta MT5 | Media | Sprint siguiente seleccionado: SPRINT-03 (next), fila 4b (con S02-5; mutex del terminal) | [ficha](ISSUE-TI12-MT5-INTRADIA-LOCAL.md) |
+Ninguna viva fuera de sprint a 2026-11-14. ISSUE-TI09-SONDA-CADENAS e ISSUE-TI12-MT5-INTRADIA-LOCAL pasaron al sprint
+activo al iniciar SPRINT-03 (2026-11-14): [current/issues/](../current/issues/index.md).
 
 Resueltas y archivadas fuera de sprint:
 

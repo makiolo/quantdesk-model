@@ -7,8 +7,8 @@
 
 > **Renumerado de SPRINT-04 a SPRINT-05** (usuario, 2026-11-13, revisión de planes, R1; `git mv` de
 > `future/SPRINT-04/` a `future/SPRINT-05/`). Al partir el antiguo SPRINT-03, lo que no depende de `quantdesk` queda en
-> SPRINT-03 ([next/SPRINT.md](../../next/SPRINT.md)) y lo que espera a quantdesk SPRINT-03 en
-> [SPRINT-04](../SPRINT-04/SPRINT.md). Este sprint sigue dependiendo de **quantdesk SPRINT-04 cerrado** (sin cambio de
+> SPRINT-03 ([next/SPRINT.md](../../current/SPRINT.md)) y lo que espera a quantdesk SPRINT-03 en
+> [SPRINT-04](../../next/SPRINT.md). Este sprint sigue dependiendo de **quantdesk SPRINT-04 cerrado** (sin cambio de
 > contenido); desde SPRINT-03 rige la regla enmendada «sprint N+1 del laboratorio = sprint N de `quantdesk`»
 > ([DEPENDENCIAS.md](../../DEPENDENCIAS.md)). El intradía de MT5 en qn, que consume TS-05-FREQ, se planifica con este
 > sprint (usuario, 2026-11-13, revisión de planes, R7).

@@ -1,4 +1,4 @@
-**NO RESUELTA** (pendiente al cierre de SPRINT-01, 2026-11-09). Snapshot congelado; la ficha viva es [issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md](../../../issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md).
+**NO RESUELTA** (pendiente al cierre de SPRINT-01, 2026-11-09). Snapshot congelado; la ficha viva es [issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md](../../../current/issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md).
 
 # [ISSUE-TI12-MT5-INTRADIA-LOCAL] Guardar en local el 1m y 5m de MT5 antes de que el bróker lo pierda
 

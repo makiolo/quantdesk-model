@@ -5,14 +5,14 @@
 > **Fecha de detección:** 2026-11-09\
 > **Origen:** Fuera de sprint (revisión de planes 2026-11-09, GAP-BACKLOG_README-04 = GAP-TSFM-04; decisión del usuario «Guardar local ya», 2026-11-09)\
 > **Componente afectado:** `scripts/extractor_mt5.py` y almacén `E:/quantdesk-lab/data/mt5/`\
-> **Especificación de referencia:** [PLAN_DATOS_VIA_QN.md](../backlog/PLAN_DATOS_VIA_QN.md) §2, tarea TI-12-MT5-INTRA-LOCAL\
+> **Especificación de referencia:** [PLAN_DATOS_VIA_QN.md](../../backlog/PLAN_DATOS_VIA_QN.md) §2, tarea TI-12-MT5-INTRA-LOCAL\
 > **Severidad:** Media\
-> **Destino:** Sprint siguiente seleccionado: SPRINT-03 (next), fila 4b, fusionada operativamente con S02-5 (fila 4a; mutex del terminal MT5) ([next/SPRINT.md](../next/SPRINT.md); usuario, 2026-11-13, revisión de planes, R8). Antes: «Fuera de sprint — urgente»\
+> **Destino:** Sprint actual: SPRINT-03 (activo desde el 2026-11-14), fila 4b, fusionada operativamente con S02-5 (fila 4a; mutex del terminal MT5) ([SPRINT.md](../SPRINT.md); usuario, 2026-11-13, revisión de planes, R8). Antes: «Fuera de sprint — urgente»\
 > **Prioridad y motivo:** historia irrecuperable: el bróker sólo sirve ~100 000 barras por símbolo y periodo, así que el 1m (hoy desde 2025-11) pierde profundidad cada mes\
 > **Responsable:** raíz del laboratorio\
-> **Seguimiento:** TI-12-MT5-INTRA-LOCAL en [PLAN_DATOS_VIA_QN.md](../backlog/PLAN_DATOS_VIA_QN.md)
+> **Seguimiento:** TI-12-MT5-INTRA-LOCAL en [PLAN_DATOS_VIA_QN.md](../../backlog/PLAN_DATOS_VIA_QN.md)
 
-**Snapshot al cierre de SPRINT-01 (2026-11-09, NO RESUELTA):** [archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md](../archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md)
+**Snapshot al cierre de SPRINT-01 (2026-11-09, NO RESUELTA):** [archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md](../../archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md)
 
 ---
 
@@ -40,7 +40,7 @@ Límite del bróker (`maxbars`), no del código: el extractor ya soporta `--inte
 - [ ] 1. Dos descargas del mismo rango dan el mismo SHA-256.
 - [ ] 2. Reanudable: la siguiente descarga sólo añade barras nuevas, sin huecos salvo fines de semana y festivos del bróker.
       **El incremental es fuera de sprint, ya, en esta ficha** (usuario, 2026-11-10, revisión de planes, D3): la fila 5 de
-      [current/SPRINT.md](../archive/SPRINT-02_2026-11-11_2026-11-13/SPRINT.md) se reduce a «más símbolos y periodos» y ya no lo recoge.
+      [current/SPRINT.md](../../archive/SPRINT-02_2026-11-11_2026-11-13/SPRINT.md) se reduce a «más símbolos y periodos» y ya no lo recoge.
 - [x] 3. Manifiesto con símbolo, periodo, primera y última barra, filas y hash. *(Revisión 2026-11-13: HECHO,
       `E:/quantdesk-lab/data/mt5/continuo_m1m5_20261109/manifest.json`.)*
 - [ ] 4. Periodicidad que no pierda barras de 1m por `maxbars` (documentada; si es una tarea programada, la registra el usuario).

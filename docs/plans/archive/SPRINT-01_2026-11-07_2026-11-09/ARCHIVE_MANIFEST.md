@@ -45,15 +45,15 @@ para la nueva profundidad. La ficha viva sigue en `docs/plans/issues/` y enlaza 
 | Ficha viva (origen) | Snapshot | Estado al cierre | SHA-256 ficha viva al cierre | SHA-256 snapshot |
 |---|---|---|---|---|
 | [docs/plans/issues/ISSUE-LAGO-FX-1D-CLOSE.md](../../issues/ISSUE-LAGO-FX-1D-CLOSE.md) | [issues/ISSUE-LAGO-FX-1D-CLOSE.md](issues/ISSUE-LAGO-FX-1D-CLOSE.md) | Abierta, destino SPRINT-02 | `d0ad4c7be045e87a6dc9f2bfd2b5cd3901b5e6ddf6645a0b995b16b51472d1a7` | `6dbdaeef2000c98fa396f4f5ab0884e4245e5c9cf98af54c4dd9c7169aba2117` |
-| [docs/plans/issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md](../../issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md) | [issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md](issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md) | En investigación, fuera de sprint (urgente) | `c87f179a9cba3f5a6ae0a451fe09f6e18dff924869f5b48b7c8072fad7865751` | `d4c7926e156cc3f0ab871d31f670a79574d1c7599d3176fcadb7e1779e5bf3e2` |
-| [docs/plans/issues/ISSUE-TI09-SONDA-CADENAS.md](../../issues/ISSUE-TI09-SONDA-CADENAS.md) | [issues/ISSUE-TI09-SONDA-CADENAS.md](issues/ISSUE-TI09-SONDA-CADENAS.md) | Abierta, fuera de sprint (urgente; puerta de usuario) | `7121fed993ac5990167f98c48b7580c5faf74a2dc588009c632e763257fb2629` | `d344523acde3cc934cffd080257d0f49ed15389a1f1092b7f8724c97f12cb014` |
+| [docs/plans/issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md](../../current/issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md) | [issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md](issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md) | En investigación, fuera de sprint (urgente) | `c87f179a9cba3f5a6ae0a451fe09f6e18dff924869f5b48b7c8072fad7865751` | `d4c7926e156cc3f0ab871d31f670a79574d1c7599d3176fcadb7e1779e5bf3e2` |
+| [docs/plans/issues/ISSUE-TI09-SONDA-CADENAS.md](../../current/issues/ISSUE-TI09-SONDA-CADENAS.md) | [issues/ISSUE-TI09-SONDA-CADENAS.md](issues/ISSUE-TI09-SONDA-CADENAS.md) | Abierta, fuera de sprint (urgente; puerta de usuario) | `7121fed993ac5990167f98c48b7580c5faf74a2dc588009c632e763257fb2629` | `d344523acde3cc934cffd080257d0f49ed15389a1f1092b7f8724c97f12cb014` |
 
 ## 3. Destinos vivos
 
 | Qué | Dónde |
 |---|---|
 | Incidencias abiertas | [issues/index.md](../../issues/index.md): ISSUE-LAGO-FX-1D-CLOSE, ISSUE-TI12-MT5-INTRADIA-LOCAL, ISSUE-TI09-SONDA-CADENAS |
-| Siguiente sprint (SPRINT-02, en preparación) | [next/SPRINT.md](../../next/SPRINT.md) |
+| Siguiente sprint (SPRINT-02, en preparación) | [next/SPRINT.md](../SPRINT-02_2026-11-11_2026-11-13/SPRINT.md) (hoy archivado; enlace reapuntado el 2026-11-14) |
 | TI-09-ARCH (retirada) y TI-09-SONDA | [backlog/PLAN_ARCHIVO_OPCIONES.md](../../backlog/PLAN_ARCHIVO_OPCIONES.md) |
 | TI-12-MT5-INTRA-LOCAL, TI-02-DATA-V2, publicación del universo ampliado | [backlog/PLAN_DATOS_VIA_QN.md](../../backlog/PLAN_DATOS_VIA_QN.md) |
 | Backlog del laboratorio | [backlog/README.md](../../backlog/README.md) |

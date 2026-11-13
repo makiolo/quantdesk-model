@@ -140,9 +140,9 @@ zero-shot en CPU, no los tokens.
   - [ISSUE-LAGO-FX-1D-CLOSE](../../issues/ISSUE-LAGO-FX-1D-CLOSE.md): abierta, destino SPRINT-02. La tabla de cabecera
     del banco usa un close de yfinance que en realidad es el precio de las 00:00 UTC; hay que repetirla sobre el 1d de
     MT5.
-  - [ISSUE-TI12-MT5-INTRADIA-LOCAL](../../issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md): en investigación; descarga local de
+  - [ISSUE-TI12-MT5-INTRADIA-LOCAL](../../current/issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md): en investigación; descarga local de
     m1 y m5 de `@continuo` en curso.
-  - [ISSUE-TI09-SONDA-CADENAS](../../issues/ISSUE-TI09-SONDA-CADENAS.md): abierta, fuera de sprint.
+  - [ISSUE-TI09-SONDA-CADENAS](../../current/issues/ISSUE-TI09-SONDA-CADENAS.md): abierta, fuera de sprint.
   - Ninguna se resolvió dentro del sprint. Las tres siguen vivas en `issues/`.
 - **Operación que sigue fuera del sprint:**
   - publicador 1d de fx28 con la tarea programada `quantdesk\publicador_mt5`, que registró el usuario;

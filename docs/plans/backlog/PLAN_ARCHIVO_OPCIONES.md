@@ -6,7 +6,7 @@
 > íntegro; lo nuevo va marcado «(usuario, 2026-11-09)».
 
 **Estado (revisado el 2026-11-13): backlog RESIDUAL.** La parte de laboratorio está entregada; lo único pendiente es la
-medición de cobertura (fila S02-6 de [next/SPRINT.md](../next/SPRINT.md), ya planificada: no se duplica aquí) y cerrar
+medición de cobertura (fila S02-6 de [next/SPRINT.md](../current/SPRINT.md), ya planificada: no se duplica aquí) y cerrar
 TI-09-SONDA. Cuando S02-6 cierre (no antes del 2026-12-11) este plan se archiva (veredicto de la revisión, al final).
 **Decisiones del usuario del 2026-11-13 aplicadas** (usuario, 2026-11-13, revisión de planes, R1 y R4; sección final):
 S02-6 es la **fila 3 del SPRINT-03 nuevo**, que no tiene dependencia de entrada (R1), y la sonda se une a ella y se
@@ -107,7 +107,7 @@ repetir el «Published N sin enviar nada» del diagnóstico del 2026-11-07).
 
 | ID | Qué se hace | Aceptación | Depende de |
 |---|---|---|---|
-| **TI-09-SONDA** | Ejecutar `scripts/inventario_options_chain.py` (sólo lectura) sobre `market.options.chain` y `market.options.fx` en `main` desde el 2026-11-09 | (1) Cifra por día hábil: filas, subyacentes distintos, vencimientos y hora de captura (`captured_at` si existe; si no, número de capturas distintas del día agrupando `_ts`, §2), con la consulta reproducible y su salida guardada; (2) con esa cifra se corrigen la fila «Lago de qn» de [STATUS.md](../STATUS.md) (antes «Datos») y, por su aplicador, `quantdesk/docs/plans/backlog/PLAN_TSFM_FINANZAS.md` §3. **SPRINT-01 ya cerró (2026-11-09, archivado con SHA-256 en su `ARCHIVE_MANIFEST.md`):** la fila 3 y §6 de [archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md](../archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md) dicen «vacío» y eso era cierto el 2026-11-08; no se reescriben (C-ARCHIVO_OPCIONES-03 resuelta por regla, usuario, 2026-11-10, revisión de planes: el archivo es inmutable con su manifiesto): la corrección va como nota fechada en la ficha de la incidencia y en STATUS; (3) ningún token en el repo, informes ni chat | Token `sub:` de lectura de qn del usuario (**puerta de usuario**, como TI-01-INV). Ficha viva: [ISSUE-TI09-SONDA-CADENAS](../issues/ISSUE-TI09-SONDA-CADENAS.md) |
+| **TI-09-SONDA** | Ejecutar `scripts/inventario_options_chain.py` (sólo lectura) sobre `market.options.chain` y `market.options.fx` en `main` desde el 2026-11-09 | (1) Cifra por día hábil: filas, subyacentes distintos, vencimientos y hora de captura (`captured_at` si existe; si no, número de capturas distintas del día agrupando `_ts`, §2), con la consulta reproducible y su salida guardada; (2) con esa cifra se corrigen la fila «Lago de qn» de [STATUS.md](../STATUS.md) (antes «Datos») y, por su aplicador, `quantdesk/docs/plans/backlog/PLAN_TSFM_FINANZAS.md` §3. **SPRINT-01 ya cerró (2026-11-09, archivado con SHA-256 en su `ARCHIVE_MANIFEST.md`):** la fila 3 y §6 de [archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md](../archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md) dicen «vacío» y eso era cierto el 2026-11-08; no se reescriben (C-ARCHIVO_OPCIONES-03 resuelta por regla, usuario, 2026-11-10, revisión de planes: el archivo es inmutable con su manifiesto): la corrección va como nota fechada en la ficha de la incidencia y en STATUS; (3) ningún token en el repo, informes ni chat | Token `sub:` de lectura de qn del usuario (**puerta de usuario**, como TI-01-INV). Ficha viva: [ISSUE-TI09-SONDA-CADENAS](../current/issues/ISSUE-TI09-SONDA-CADENAS.md) |
 
 Repetición: la recomendación de GAP-BACKLOG_README-01 (c) es repetir la sonda cada semana mientras TI-09-ARCH espera a
 OC-03; se decide con ese GAP. **Obsoleta el 2026-11-13:** OC-03 ya está servida y el lector se prueba con el lago real
@@ -254,7 +254,7 @@ Fuente de todas: usuario, 2026-11-10, revisión de planes.
 Veredicto: **ACTUALIZAR** (aplicado) y **BORRAR/ARCHIVAR tras S02-6** (recomendado; no se hace hasta que cierre la
 medición, no antes del 2026-12-11) · Motivo: la parte de laboratorio de TI-09-ARCH está entregada y aceptada (SPRINT-02
 fila 6, `c6c7b5b`/`a62d78f`/`a80ad40`), OC-03 del backend y los siete ETF/índices están servidos, y la única tarea que
-queda con fecha y aceptación (la medición de cobertura) ya vive como S02-6 en [next/SPRINT.md](../next/SPRINT.md): este
+queda con fecha y aceptación (la medición de cobertura) ya vive como S02-6 en [next/SPRINT.md](../current/SPRINT.md): este
 plan no aporta tareas propias. TI-09-SONDA está casi cubierta por la sonda del 2026-11-13. No se absorbe en SPRINT-03
 como plan, porque se duplicaría S02-6; sólo entra la fila S02-6 (refinada) y una fila corta para cerrar la sonda. La
 retención (§4) es de network: aquí sólo queda como dependencia vigilada.

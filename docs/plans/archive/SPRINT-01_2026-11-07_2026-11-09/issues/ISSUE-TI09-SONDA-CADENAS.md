@@ -1,4 +1,4 @@
-**NO RESUELTA** (pendiente al cierre de SPRINT-01, 2026-11-09). Snapshot congelado; la ficha viva es [issues/ISSUE-TI09-SONDA-CADENAS.md](../../../issues/ISSUE-TI09-SONDA-CADENAS.md).
+**NO RESUELTA** (pendiente al cierre de SPRINT-01, 2026-11-09). Snapshot congelado; la ficha viva es [issues/ISSUE-TI09-SONDA-CADENAS.md](../../../current/issues/ISSUE-TI09-SONDA-CADENAS.md).
 
 # [ISSUE-TI09-SONDA-CADENAS] ¿Hay cadenas de opciones en qn? Sonda de sólo lectura
 

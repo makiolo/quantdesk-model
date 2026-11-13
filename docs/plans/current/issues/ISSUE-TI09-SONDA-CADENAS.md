@@ -5,20 +5,20 @@
 > **Fecha de detección:** 2026-11-09\
 > **Origen:** Fuera de sprint (revisión de planes 2026-11-09, contradicción C-07; decisión del usuario «Sonda de sólo lectura», 2026-11-09)\
 > **Componente afectado:** documentación de estado del laboratorio (STATUS, SPRINT-01) y lectura de `market.options.chain` en qn\
-> **Especificación de referencia:** [PLAN_ARCHIVO_OPCIONES.md](../backlog/PLAN_ARCHIVO_OPCIONES.md) §3, tarea TI-09-SONDA\
+> **Especificación de referencia:** [PLAN_ARCHIVO_OPCIONES.md](../../backlog/PLAN_ARCHIVO_OPCIONES.md) §3, tarea TI-09-SONDA\
 > **Severidad:** Media\
-> **Destino:** Sprint siguiente seleccionado: SPRINT-03 (next), fila 3, unida a S02-6 ([next/SPRINT.md](../next/SPRINT.md); usuario, 2026-11-13, revisión de planes, R4). Antes: «Fuera de sprint — urgente»\
+> **Destino:** Sprint actual: SPRINT-03 (activo desde el 2026-11-14), fila 3, unida a S02-6 ([SPRINT.md](../SPRINT.md); usuario, 2026-11-13, revisión de planes, R4). Antes: «Fuera de sprint — urgente»\
 > **Prioridad y motivo:** la pregunta de fondo ya está contestada (hay cadenas en qn desde la sesión 2026-11-12; `market.options.fx` sin filas) y STATUS se corrigió el 2026-11-13; queda la cifra por sesión, que sale del volcado de S02-6 (tras el 2026-12-10). *Texto anterior:* decide la vuelta de TI-09-ARCH y corrige un dato que hoy planifican TSFM (TS-16-QCONO, TS-08-DYN); minutos de trabajo\
 > **Responsable:** raíz del laboratorio; puerta de usuario (token `sub:` de lectura de qn, el mismo de S02-6)\
-> **Seguimiento:** TI-09-SONDA en [PLAN_ARCHIVO_OPCIONES.md](../backlog/PLAN_ARCHIVO_OPCIONES.md); SPRINT-03 fila 3
+> **Seguimiento:** TI-09-SONDA en [PLAN_ARCHIVO_OPCIONES.md](../../backlog/PLAN_ARCHIVO_OPCIONES.md); SPRINT-03 fila 3
 
-**Snapshot al cierre de SPRINT-01 (2026-11-09, NO RESUELTA):** [archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-TI09-SONDA-CADENAS.md](../archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-TI09-SONDA-CADENAS.md)
+**Snapshot al cierre de SPRINT-01 (2026-11-09, NO RESUELTA):** [archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-TI09-SONDA-CADENAS.md](../../archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-TI09-SONDA-CADENAS.md)
 
 ---
 
 ## 1. Contexto y comportamiento observado
 
-- Dicen «vacías»: [STATUS.md](../STATUS.md) fila «Datos» y SPRINT-01 §6 del laboratorio (2026-11-08, TI-01-INV), y
+- Dicen «vacías»: [STATUS.md](../../STATUS.md) fila «Datos» y SPRINT-01 §6 del laboratorio (2026-11-08, TI-01-INV), y
   `quantdesk/docs/plans/backlog/PLAN_TSFM_FINANZAS.md` §3 (2026-11-09).
 - Dice «se publica»: `quantdesk-backend/docs/plans/current/EXECUTION.md` (2026-11-09, run `157c2754`, `SUCCESS`,
   `options_chain_coverage_ratio` 0,998 en `market.options.chain`).
@@ -63,7 +63,7 @@ día hábil desde el 2026-11-09 tiene hoy poco valor (el lector sólo usa sesion
 
 Evidencia nueva (no estaba en la ficha):
 
-- **Sonda de contraste del 2026-11-13** ([EXECUTION de SPRINT-02](../archive/SPRINT-02_2026-11-11_2026-11-13/EXECUTION.md),
+- **Sonda de contraste del 2026-11-13** ([EXECUTION de SPRINT-02](../../archive/SPRINT-02_2026-11-11_2026-11-13/EXECUTION.md),
   fila `2026-11-13 TI-09-ARCH (6)` «Sonda de contraste»): token `ti09arch-lectura-20261113` (id 39, `main`, lectura de
   `market.options.chain` y `market.options.fx`), emitido 04:36Z y revocado 04:38Z. `market.options.chain` **tiene
   datos** (/latest 509 símbolos: 502 EQUITY, 4 ETF, 3 INDEX; 1018 de 1022 combinaciones con `capture_id`);

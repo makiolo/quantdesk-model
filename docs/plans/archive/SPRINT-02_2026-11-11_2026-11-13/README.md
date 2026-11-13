@@ -7,4 +7,4 @@
 - [EXECUTION.md](EXECUTION.md): registro de ejecución (lo crea la activación; la raíz lo continúa).
 - [issues/](issues/index.md): incidencias del sprint.
 
-Último cerrado: [SPRINT-01](../SPRINT-01_2026-11-07_2026-11-09/SPRINT.md). Próximo: [SPRINT-03](../../next/SPRINT.md).
+Último cerrado: [SPRINT-01](../SPRINT-01_2026-11-07_2026-11-09/SPRINT.md). Próximo: [SPRINT-03](../../current/SPRINT.md).
