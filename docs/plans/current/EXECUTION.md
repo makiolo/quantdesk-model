@@ -49,7 +49,11 @@ decisiones del usuario, con fecha y hora local (CET).
 - **Respuesta de network:** `sub:market.ohlcv.v2` basta. El corte es reproducible con `x-qn-head-cycle` (H) guardado
   en el manifiesto y el filtro `_cycle <= H`, sin `fresh=true`. Para los OAS se emite otro token. Se emite con
   `qn-token` tras la aprobación. Detalle en el borrador, «Respuestas de las raíces». Quantdesk: revisión en curso.
-  Backend: sin respuesta todavía.
+- **Respuesta del backend:** prefieren A2 (tarea de Windows registrada por ellos con `run_scheduler.cmd`). La señal de
+  salida válida va por qn, como un objeto de estado en un topic de operaciones que hay que acordar con network; su sensor
+  alimenta `DagsterJobStale`, y la credencial añade `pub` sobre ese topic. Sin señal de fin de MT5: se mira el `/latest`
+  de la vela. Están de acuerdo con el horario, con `sin_mt5` y con la credencial. Los OAS están en percent y PUB-02
+  sigue pendiente. Se consulta a network por el topic de estado.
 - **Norma nueva de la skill** (usuario, 2026-11-14, retransmitida por `quantdesk-f1`): al preparar un sprint entra todo
   lo pendiente (backlog, issues abiertos y arrastres) y la revisión de planes revisa también los issues. Si las
   dependencias o la capacidad no lo permiten, se ofrece partir el sprint explicando tarea por tarea. SPRINT-03 ya lo

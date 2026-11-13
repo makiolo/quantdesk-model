@@ -182,3 +182,29 @@ Informe entregado aquí: no se indicó ruta `-o`. Sin escrituras, commits ni men
    - La única versión por objeto es `_schema_version`.
    - Las lecturas profundas de v2 son lentas, con un fichero por día (PLAN_LAGO_PARTICIONADO); avisarán si cambia.
 4. Emiten el token con la skill `qn-token` cuando el usuario apruebe el contrato.
+
+### backend (`quantdesk-backend-24`, 2026-11-14)
+
+1. **Dónde corre: prefieren A2** (tarea programada de Windows).
+   - Contra A1: exige un servidor SSH en el PC y guardar en mini una credencial para entrar al PC, y `machine_docker_op`
+     sólo conoce ejecutores Linux con Docker.
+   - A2 no rompe S03-D2 en lo esencial: el backend registra la tarea desde su repo con `run_scheduler.cmd` (skill
+     `programador-tareas`, idempotente y con política de huecos), y el exportador sigue siendo nuestro.
+   - **Condición:** Pushgateway sólo escucha en 10.10.0.3 (WireGuard) y el PC no llega allí, así que la señal de salida
+     válida va a mini por qn (LAN, 192.168.1.46:8790).
+   - Propuesta: tras validar, el exportador publica un objeto pequeño de estado (sesión D, corte C, hash del manifiesto,
+     estado `ok|sin_mt5|error`) en un topic de operaciones que se acuerda con network. Un sensor de Dagster del backend lee
+     su `/latest` y alimenta `DagsterJobStale` con la última salida válida, nunca con el último run.
+   - Eso amplía la credencial exclusiva con `pub` sobre ese topic. Alternativa peor: abrir Pushgateway en la LAN.
+2. **Sin señal de fin del publicador MT5.** Basta con mirar en qn la última vela: `/api/v1/topics/market.ohlcv.v2/latest`
+   con `interval=1d` y `source=mt5`, `_ts = D 00:00 UTC` y `_recv_ts < C`. Ojo: `to` es exclusivo (lo vieron en CH-02).
+   El horario `15 0 * * 2-6` UTC les vale.
+3. **`sin_mt5`:** de acuerdo con avisar, no publicar y conservar la salida anterior. Con el objeto de estado, `sin_mt5`
+   queda visible y no cuenta como frescura. El sensor nuevo no se apoya en `run_failure_alerts.py:148`.
+4. **Credencial:** de acuerdo con `sub:market.ohlcv.v2`, más el `pub` del topic de estado si sale A2.
+5. **OAS:**
+   - Unidad verificada en FRED: «Percent, NSA, Daily Close»; el dato de D sale hacia las 9:02-9:05 CST de D+1.
+   - La captura guarda `unit='percent'` desde `36aba3d`, y `fred_oas_capture_schedule` está activo desde hoy (22:00 UTC,
+     lunes a viernes). Es captura interna en `app_db`, no publicación en qn.
+   - El contrato de PUB-02 llega en su SPRINT-03; GAP-PUB-01 sigue abierto. Avisarán al publicar.
+6. Corregido en su `e4a22fb`: su `next/SPRINT.md` ya cita nuestro SPRINT-03, filas 1 y 2. S03-D3 está bien en su lado.
