@@ -23,7 +23,8 @@ Uso, con el venv del laboratorio:
 Cada origen es independiente (semilla derivada de semilla|activo|origen|modelo, Chronos-2 con lote 1), asi que un
 subconjunto reproduce exactamente las filas de la corrida completa. Toto corre en un subproceso con su venv aparte
 (modelos.Toto); si el venv no existe queda SALTADO y la corrida sigue con los demas modelos.
-Solo CPU. Los datasets se leen de E:/quantdesk-lab/datasets/TI-02-DATA (solo lectura); las salidas pesadas van a
+Solo CPU. Los datasets antiguos se leen de TI-02-DATA y los dos MT5 fijados de TI-02-DATA-V2, ambos bajo
+E:/quantdesk-lab/datasets (solo lectura); las salidas pesadas van a
 E:/quantdesk-lab/runs/TS-00-BENCH/; los pesos de Chronos-2 se leen de la cache de HF del laboratorio sin red.
 """
 from __future__ import annotations
@@ -108,17 +109,22 @@ def cmd_correr(a) -> int:
         print(f"banco_walkforward: HF_HOME={hf!r} no esta bajo {rutas.LAB}: PARO")
         return 2
     os.environ["HF_HUB_OFFLINE"] = "1"  # los pesos ya estan en la cache del laboratorio; ninguna corrida usa red
+    if a.dataset in rutas.HASHES_MT5:
+        rutas.TMP = rutas.TMP_FINCAST = rutas.LAB + "/tmp/TS-00-BENCH-MT5"
     if not espacio_c_ok():
         return 3
-    os.makedirs(out, exist_ok=True)
     nombres = [m for m in a.modelos.split(",") if m]
     activos = [x for x in a.activos.split(",") if x] if a.activos else None
     comando = ".venv/Scripts/python -X utf8 scripts/banco_walkforward.py " + " ".join(sys.argv[1:]).replace(os.sep, "/")
     def fabrica(nombres, hilos):
         return fabrica_modelos(nombres, hilos, fincast_timeout=a.fincast_timeout)
 
-    pred, met, meta = banco.ejecutar(a.dataset, out, nombres, activos, a.max_origenes, a.semilla, a.hilos, comando,
-                                     a.reanudar, fabrica, cada=a.cada, solo_limpia=a.solo_limpia)
+    try:
+        pred, met, meta = banco.ejecutar(a.dataset, out, nombres, activos, a.max_origenes, a.semilla, a.hilos, comando,
+                                      a.reanudar, fabrica, cada=a.cada, solo_limpia=a.solo_limpia)
+    except ValueError as exc:
+        print(f"banco_walkforward: {exc}")
+        return 2
     if "fincast" in nombres:
         meta["config"]["fincast_timeout_s"] = a.fincast_timeout
         meta["config"]["fincast_driver"] = "errores_sin_recargar_v2"
@@ -146,7 +152,7 @@ def cmd_correr(a) -> int:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Banco walk-forward TS-00-BENCH.")
     ap.add_argument("--selftest", action="store_true", help="prueba sin red ni datos reales")
-    ap.add_argument("--dataset", help="nombre del dataset en E:/quantdesk-lab/datasets/TI-02-DATA")
+    ap.add_argument("--dataset", help="preset congelado: TI-02-DATA (antiguos) o TI-02-DATA-V2 (MT5)")
     ap.add_argument("--out", metavar="DIR", help="subdirectorio de E:/quantdesk-lab/runs/TS-00-BENCH")
     ap.add_argument("--modelos", default=",".join(MODELOS))
     ap.add_argument("--activos", default="", help="lista separada por comas (por defecto, todos)")

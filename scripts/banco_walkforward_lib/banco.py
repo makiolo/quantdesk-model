@@ -35,6 +35,12 @@ PRESETS = {
     "binance_c20261101": {
         "tabla": "binance_ohlcv_1d", "ventana": 1000, "inicio": "2023-11-01", "fin": "2026-10-12", "paso_dias": 3,
     },
+    "mt5_fx28_cierre_c20261101": {
+        "tabla": "lago_ohlcv_1d", "ventana": 250, "inicio": "2025-10-20", "fin": "2026-10-03", "paso_dias": 1,
+    },
+    "mt5_fx28_hist_cierre_c20261101": {
+        "tabla": "lago_ohlcv_1d", "ventana": 250, "inicio": "2001-01-02", "fin": "2026-10-03", "paso_dias": 20,
+    },
 }
 
 
@@ -80,7 +86,7 @@ def _filas_corte(ins, c, modelo, Q, info, cpu_s, error):
     return filas
 
 
-def correr_serie(serie, cortes, modelos, semilla, progreso=None):
+def correr_serie(serie, cortes, modelos, semilla, progreso=None, tiempos=None):
     """Predicciones de todos los modelos en todos los cortes de una serie. Devuelve lista de filas."""
     filas = []
     for i, c in enumerate(cortes):
@@ -88,6 +94,7 @@ def correr_serie(serie, cortes, modelos, semilla, progreso=None):
             if m.nombre == "fincast" and not es_origen_limpio(c.origen_ms):
                 continue
             t0 = time.process_time()
+            w0 = time.perf_counter()
             try:
                 Q, info = m.predecir(c.precios, semilla_par(semilla, serie.instrument, c.origen_ms, m.nombre), HMAX)
                 Q = np.asarray(Q, float)
@@ -102,6 +109,10 @@ def correr_serie(serie, cortes, modelos, semilla, progreso=None):
                     print(f"  FALLO {serie.instrument} {c.origen_ms} {m.nombre}: {err}", flush=True)
             # el CPU de un subproceso (Toto) no lo ve process_time: lo mide el trabajador y se suma aqui
             externo = float(info.pop("cpu_s_externo", 0.0)) if isinstance(info, dict) else 0.0
+            if tiempos is not None:
+                t = tiempos.setdefault(m.nombre, {"total_s": 0.0, "n": 0})
+                t["total_s"] += time.perf_counter() - w0
+                t["n"] += 1
             filas += _filas_corte(serie.instrument, c, m.nombre, Q, info, time.process_time() - t0 + externo, err)
         if progreso:
             progreso(i + 1, len(cortes))
@@ -252,6 +263,8 @@ def ejecutar(dataset, out, nombres_modelos, activos, max_origenes, semilla, hilo
 
     inicio_pared = time.perf_counter()
     cfg = PRESETS[dataset]
+    if dataset == "mt5_fx28_hist_cierre_c20261101" and set(nombres_modelos) - {"hmm", "garch", "chronos2"}:
+        raise ValueError("ampliacion MT5: solo hmm,garch,chronos2; Toto y FinCast excluidos por contrato")
     solo_limpia = solo_limpia or nombres_modelos == ["fincast"]
     series, meta_ds = datos.cargar_dataset(rutas.dataset_dir(dataset), cfg["tabla"])
     if set(meta_ds["intervalos_ms"]) != {datos.DIA_MS}:
@@ -283,6 +296,7 @@ def ejecutar(dataset, out, nombres_modelos, activos, max_origenes, semilla, hilo
         if getattr(m, "pesos", None):
             meta.setdefault("pesos", {})[m.nombre] = m.pesos
     partes = []
+    tiempos = {}
     w0 = time.perf_counter()
     for ins in nombres:
         cortes, omit = datos.cortes_de_serie(series[ins], rej, cfg["ventana"], HMAX)
@@ -307,7 +321,7 @@ def ejecutar(dataset, out, nombres_modelos, activos, max_origenes, semilla, hilo
             if i % 25 == 0 or i == n:
                 print(f"  {ins}: {i}/{n} origenes, {time.perf_counter() - t0:.0f} s", flush=True)
 
-        df = pd.DataFrame(correr_serie(series[ins], cortes, modelos, semilla, prog),
+        df = pd.DataFrame(correr_serie(series[ins], cortes, modelos, semilla, prog, tiempos),
                           columns=["instrument", "origen_ms", "k", "ts_ultima_ms", "modelo", "h", "y", "rv",
                                    "ok", "error", "cpu_s", "info", *QCOLS])
         df.to_parquet(fp + ".tmp", index=False)
@@ -341,6 +355,7 @@ def ejecutar(dataset, out, nombres_modelos, activos, max_origenes, semilla, hilo
     meta["convergencia"] = conv
     meta["pared_s"] = time.perf_counter() - w0
     meta["pared_total_s"] = time.perf_counter() - inicio_pared
+    meta["pared_modelos"] = {m: {**t, "por_origen_s": t["total_s"] / t["n"]} for m, t in tiempos.items()}
     meta["predicciones_sha256"] = hash_predicciones(pred)
     meta["metricas_sha256"] = hashlib.sha256(met.to_csv(index=False, float_format="%.10g").encode()).hexdigest()
     with open(os.path.join(out, "meta.json"), "w", encoding="utf-8") as f:

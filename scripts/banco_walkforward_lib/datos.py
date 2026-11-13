@@ -123,11 +123,19 @@ def cargar_dataset(directorio: str, tabla: str):
     """Lee la tabla OHLCV del dataset con pyarrow y describe el dataset con data_py (hash verificado)."""
     import data_py
     import pyarrow.parquet as pq
+    from . import rutas
 
+    if not os.path.isfile(os.path.join(directorio, "manifest.json")):
+        raise ValueError(f"dataset ausente: {directorio} (falta manifest.json)")
     desc = json.loads(data_py.dataset_describe_json(directorio, True))
     if not desc.get("ok"):
         raise ValueError(f"data_py.dataset_describe_json fallo: {desc}")
     d = desc["description"]
+    nombre = os.path.basename(os.path.normpath(directorio))
+    esperado = rutas.HASHES_MT5.get(nombre)
+    if esperado and (d["dataset_hash"] != esperado or d["dataset_id"] != nombre):
+        raise ValueError(f"dataset MT5 {nombre}: hash/id distinto; esperado {esperado}, "
+                         f"recibido {d['dataset_hash']} / {d['dataset_id']}")
     t = [x for x in d["tables"] if x["table_id"] == tabla]
     if not t or not t[0].get("hash_verified"):
         raise ValueError(f"tabla {tabla} ausente o hash no verificado en {directorio}")

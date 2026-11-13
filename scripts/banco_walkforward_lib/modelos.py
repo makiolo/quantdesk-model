@@ -261,8 +261,10 @@ class FinCast:
         import subprocess
         import threading
 
+        from . import rutas
+
         env = dict(os.environ, HF_HOME="E:/quantdesk-lab/cache/hf", HF_HUB_OFFLINE="1",
-                   TMP="E:/quantdesk-lab/tmp/TS-00-BENCH-FINCAST", TEMP="E:/quantdesk-lab/tmp/TS-00-BENCH-FINCAST")
+                   TMP=rutas.TMP_FINCAST, TEMP=rutas.TMP_FINCAST)
         for v in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
             env[v] = str(self.hilos)
         os.makedirs(env["TMP"], exist_ok=True)

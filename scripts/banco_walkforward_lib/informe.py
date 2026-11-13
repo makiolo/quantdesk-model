@@ -151,6 +151,11 @@ def _cargar_toto(run, base_runs):
 def escribir(runs, repeticiones, destino, pilotos=None, totos=None, fincasts=None) -> int:
     import pandas as pd
 
+    if any(_cargar(r)[0]["dataset"]["dataset_id"] in rutas.HASHES_MT5 for r in runs):
+        from . import informe_mt5
+
+        return informe_mt5.escribir(runs, repeticiones, destino, pilotos, totos, fincasts)
+
     cargados = [(_cargar(r), r) for r in runs]
     cargados.sort(key=lambda x: (x[0][0]["dataset"]["dataset_id"] != CABECERA, x[0][0]["dataset"]["dataset_id"]))
     tt = [_cargar_toto(r, runs) + (r,) for r in (totos or [])]

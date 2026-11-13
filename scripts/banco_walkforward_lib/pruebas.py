@@ -250,6 +250,12 @@ def selftest() -> int:
     prueba_puertas_fincast()
     prueba_cruces_sprint01()
     prueba_seleccion_fincast()
+    prueba_mt5_presets_rutas_hash()
+    prueba_mt5_umbrales()
+    prueba_mt5_diferencial_bordes()
+    prueba_mt5_ausentes_y_comunes()
+    prueba_mt5_situacion_y_coste()
+    prueba_mt5_oraculo_parquet()
     print("selftest ok")
     return 0
 
@@ -722,3 +728,216 @@ def prueba_seleccion_fincast():
         _cerca(r["comun"], b, 1e-15, "comun condicionado")
         _cerca(r["variacion_pct"], 100 * (b / a - 1), 1e-12, "efecto de seleccion")
     print("seleccion FinCast: n por activo/h y efecto CRPS deciles antes/despues contra calculo a mano: ok")
+
+
+def prueba_mt5_presets_rutas_hash():
+    import json
+    import tempfile
+    from pathlib import Path
+    from unittest.mock import patch
+    import data_py
+    from . import rutas, informe_mt5 as mt
+
+    assert banco.PRESETS[mt.CABECERA] == banco.PRESETS[mt.ANTIGUO], "cabecera MT5 cambia la rejilla antigua"
+    assert banco.PRESETS[mt.ANTIGUO] == dict(tabla="lago_ohlcv_1d", ventana=250, inicio="2025-10-20", fin="2026-10-03", paso_dias=1)
+    assert banco.PRESETS["binance_c20261101"] == dict(tabla="binance_ohlcv_1d", ventana=1000, inicio="2023-11-01", fin="2026-10-12", paso_dias=3)
+    for ds in rutas.HASHES_MT5:
+        assert rutas.dataset_dir(ds).replace("\\", "/") == rutas.DATASETS_V2 + "/" + ds
+    for ds in (mt.ANTIGUO, "binance_c20261101"):
+        assert rutas.dataset_dir(ds).replace("\\", "/") == rutas.DATASETS + "/" + ds
+    assert rutas.dentro(rutas.validar_destino_informe(rutas.DOCS_MT5), rutas.DOCS_MT5)
+    for nombre in ("../mt5", "mt5/fuga", "mt5\\fuga"):
+        try:
+            rutas.dataset_dir(nombre)
+            raise AssertionError("ruta de dataset no autorizada aceptada")
+        except rutas.RutaNoAutorizada:
+            pass
+    with tempfile.TemporaryDirectory(prefix="mt5-hash-", dir=rutas.TMP_FINCAST) as tmp:
+        for ds in rutas.HASHES_MT5:
+            dd = Path(tmp, ds)
+            out = Path(tmp, "sin_run_" + ds)
+            with patch.object(rutas, "dataset_dir", return_value=str(dd)):
+                for existe in (False, True):
+                    if existe:
+                        dd.mkdir()
+                        (dd / "manifest.json").write_text("{}", encoding="utf-8")
+                    desc = {"ok": True, "description": {"dataset_id": ds, "dataset_hash": "sha256:incorrecto"}}
+                    with patch.object(data_py, "dataset_describe_json", return_value=json.dumps(desc)), \
+                            patch.object(__import__("pyarrow.parquet", fromlist=["read_table"]), "read_table") as lectura:
+                        try:
+                            banco.ejecutar(ds, str(out), ["hmm"], None, 1, banco.SEMILLA, 2, "selftest hash",
+                                          False, lambda n, h: (_ for _ in ()).throw(AssertionError("carga modelo prematura")))
+                            raise AssertionError("dataset ausente/hash distinto aceptado")
+                        except ValueError as exc:
+                            assert ("hash/id distinto" if existe else "dataset ausente") in str(exc)
+                        lectura.assert_not_called()
+                        assert not out.exists(), "se escribe run antes de verificar dataset"
+        try:
+            banco.ejecutar(mt.AMPLIACION, str(Path(tmp, "prohibido")), ["toto"], None, 1,
+                          banco.SEMILLA, 2, "selftest ampliacion", False, None)
+            raise AssertionError("Toto permitido en ampliacion")
+        except ValueError as exc:
+            assert "Toto y FinCast excluidos" in str(exc)
+    print("MT5 presets/rutas: cabecera identica, V2 exclusivo, hashes fijados/ausente sin runs, ampliacion restringida: ok")
+
+
+def prueba_mt5_umbrales():
+    from . import informe_mt5 as mt
+
+    def evaluar(valores, rechazos=0, banda=1., fincast=False):
+        return mt.evaluar_criterios([dict(h=h, crps_rel=v, n_activos=28, rechazos_01=rechazos,
+                                         rechazos_99=0, banda_rel=banda)
+                                    for h, v in zip(banco.HORIZONTES, valores)], fincast)
+    assert evaluar([.97, .98, .96])["resultado"] == "pasa"
+    assert evaluar([.96, .98, .99])["c1"] == "no pasa"
+    assert evaluar([.96, .98, .99])["c2"] == evaluar([.96, .98, .99])["c3"] == "pasa"
+    assert evaluar([.96, .97, 1.03])["resultado"] == "no pasa"
+    assert evaluar([.96, .97, 1.02])["resultado"] == "pasa"
+    assert evaluar([.96, .97, .99], rechazos=3)["c2"] == "no pasa"
+    assert evaluar([.96, .97, .99], rechazos=3)["c1"] == evaluar([.96, .97, .99], rechazos=3)["c3"] == "pasa"
+    assert evaluar([.96, .97, .99], rechazos=2)["resultado"] == "pasa"
+    assert evaluar([.96, .97, .99], banda=2.)["resultado"] == "pasa"
+    assert evaluar([.96, .97, .99], banda=2.01)["c3"] == "no pasa"
+    assert evaluar([.96, .97, .99], banda=2.01)["c1"] == evaluar([.96, .97, .99], banda=2.01)["c2"] == "pasa"
+    fc = evaluar([.96, .97, .99], rechazos=28, banda=100, fincast=True)
+    assert fc["c1"] == fc["resultado"] == "pasa" and fc["c2"] == fc["c3"] == "no aplica"
+    assert mt.evaluar_criterios([])["resultado"] == "no evaluable"
+    assert evaluar([.96, .97, float("nan")])["resultado"] == "no evaluable"
+    print("MT5 umbrales aislados: CRPS 2/3 y tope 1.02, Kupiec 2/28 frente 3/28, banda 2/2.01, FinCast no aplica: ok")
+
+
+def prueba_mt5_diferencial_bordes():
+    from . import informe_mt5 as mt
+
+    # 249 frente a 248 barras antes del inicio, sin modelos ni datos reales.
+    inicio = T0 + 249 * DIA
+    cfg = dict(inicio=datos.fecha(inicio), fin=datos.fecha(inicio + 45 * DIA), paso_dias=1, ventana=250)
+    nueva = datos.series_desde_tabla(_tabla(300, np.exp(np.arange(300) * .001)), 0)["SINT"]
+    ix = np.arange(1, 300)  # la antigua carece de la primera barra
+    antigua = datos.Serie("SINT", nueva.ts_ms[ix], nueva.disp_ms[ix], nueva.close[ix])
+    assert mt.causa_exclusivo(nueva, antigua, inicio + DIA, cfg) == "barra extra antes de inicio (249 frente a 248)"
+    claves = {("SINT", t) for t in datos.rejilla_origenes(cfg["inicio"], cfg["fin"], 1)}
+    d = mt.diferencial({"SINT": antigua}, {"SINT": nueva}, cfg, claves)
+    assert d["estado"] == "explicado" and len(d["exclusivos"]) == 1
+    assert all(r["max_abs_pb"] == 0 for r in d["resumen_delta_y"])
+    assert datos.cortar(nueva, inicio, 250, banco.HMAX) is None, "249 barras no bastan"
+    assert datos.cortar(nueva, T0 + 281 * DIA, 250, banco.HMAX) is None, "faltan 20 futuros"
+    assert datos.cortar(nueva, T0 + 280 * DIA, 250, banco.HMAX) is not None
+    corta = datos.Serie("SINT", nueva.ts_ms[:270], nueva.disp_ms[:270], nueva.close[:270])
+    assert mt.causa_exclusivo(nueva, corta, T0 + 260 * DIA, cfg) == "falta de 20 pasos futuros"
+    ix = np.delete(np.arange(300), 260)
+    hueco = datos.Serie("SINT", nueva.ts_ms[ix], nueva.disp_ms[ix], nueva.close[ix])
+    assert datos.fecha(int(nueva.ts_ms[260])) in mt.causa_exclusivo(nueva, hueco, T0 + 261 * DIA, cfg)
+    assert "BLOQUEADO" in mt.causa_exclusivo(nueva, nueva, T0 + 270 * DIA, cfg)
+    # Se usan sabados y domingos como barras; inicio tardio representa GBPNZD.
+    inv = mt.inventario({"SINT": nueva}, cfg)[0]
+    assert inv["sabados"] > 0 and inv["domingos"] > 0
+    c = datos.cortar(nueva, inicio + DIA, 250, banco.HMAX)
+    _cerca(float(c.y[0]), math.log(nueva.close[c.k + 1] / nueva.close[c.k]), 1e-15, "MT5 fin de semana no filtrado")
+    tardia = datos.Serie("GBPNZD", nueva.ts_ms + 10 * 365 * DIA, nueva.disp_ms + 10 * 365 * DIA, nueva.close)
+    antes = mt.inventario({"GBPNZD": tardia}, cfg)[0]
+    assert antes["origenes_validos"] == 0 and antes["sin_ventana"] > 0
+    cfg_tardia = {**cfg, "fin": datos.fecha(T0 + (10 * 365 + 280) * DIA), "paso_dias": 20}
+    tarde = mt.inventario({"GBPNZD": tardia}, cfg_tardia)[0]
+    assert tarde["origenes_validos"] > 0
+    primera = datos.rejilla_origenes(tarde["primer_origen"], tarde["primer_origen"], 1)[0]
+    assert int((tardia.disp_ms <= primera).sum()) >= 250
+    print("MT5 bordes/diferencial: 249/248, hueco fechado, futuros 20, causa desconocida bloqueada, fines de semana y GBPNZD tardio: ok")
+
+
+def prueba_mt5_ausentes_y_comunes():
+    from . import informe_mt5 as mt
+    import pandas as pd
+
+    # GARCH de referencia tiene un segundo origen extremo; el cociente debe usar solo el comun.
+    filas = []
+    q = np.linspace(-.1, .1, 21)
+    for h in banco.HORIZONTES:
+        for m, i in (("hmm", 1), ("garch", 1), ("chronos2", 1), ("toto", 1), ("fincast", 1), ("garch", 2)):
+            filas.append(dict(instrument="SINT", h=h, modelo=m, origen_ms=banco.CORTE_LIMPIO_MS + i * DIA,
+                              k=i, ts_ultima_ms=banco.CORTE_LIMPIO_MS + (i - 1) * DIA,
+                              y=0. if i == 1 else 100., rv=.01, ok=True, **dict(zip(banco.QCOLS, q))))
+    pred = pd.DataFrame(filas)
+    vacio = mt.revisar([], ["SINT"])
+    assert all(v["resultado"] == "no evaluable" for v in vacio.values())
+    base = {"pred": pred[pred.modelo.isin(["hmm", "garch", "chronos2"])],
+            "meta": {"config": {"modelos": ["hmm", "garch", "chronos2"]}}}
+    toto = {"pred": pred[pred.modelo == "toto"], "meta": {"config": {"modelos": ["toto"]}}}
+    r = mt.revisar([base, toto], ["SINT"])
+    assert r["fincast"]["resultado"] == "no evaluable"
+    assert r["fincast"]["c2"] == r["fincast"]["c3"] == "no aplica"
+    assert all(v["crps_rel"] == 1. for v in r["toto"]["horizontes"])
+    parcial = mt.revisar([base, toto], ["SINT", "AUSENTE"])
+    assert parcial["toto"]["resultado"] == "no evaluable", "no aprobar con activos ausentes"
+    co = mt._comunes(pred, ["garch", "fincast"], limpia=True)
+    assert len(co) == 6 and not (co.k == 2).any()
+    met = banco.metricas_tabla(co, ["garch", "fincast"], limpia=True)
+    assert (met.n == 1).all() and (met.crps_deciles == met.crps_deciles.iloc[0]).all()
+    fc = {"pred": pred[pred.modelo == "fincast"], "meta": {"config": {"modelos": ["fincast"]}}}
+    rankings = mt.clasificaciones([base, toto, fc], ["SINT"])
+    assert all("fincast" not in rr for rr in rankings["principal_crps21"].values())
+    assert all("fincast" not in rr for rr in rankings["submuestra_toto_crps21"].values())
+    assert all(set(rr) == {"hmm", "chronos2", "toto", "fincast"} and set(rr.values()) == {1.}
+               for rr in rankings["limpia_comun_crps_deciles"].values())
+    ausentes = mt.clasificaciones([base, toto], ["SINT"])
+    assert all(v is None for rr in ausentes["limpia_comun_crps_deciles"].values() for v in rr.values())
+    print("MT5 ausentes/comunes: modelo o activo incompleto no evaluable; GARCH alineado a Toto/FinCast; no aplica en colas: ok")
+
+
+def prueba_mt5_situacion_y_coste():
+    from . import informe_mt5 as mt
+
+    def revision(v):
+        return {m: mt.evaluar_criterios([dict(h=h, crps_rel=x, n_activos=28, rechazos_01=0, rechazos_99=0, banda_rel=1.)
+                                        for h, x in zip(banco.HORIZONTES, v)], m == "fincast") for m in mt.MODELOS}
+    a, b = revision([.96, .99, 1.01]), revision([.98, 1.01, .99])
+    s = mt.situacion(a, b)
+    assert s["cambia"] and len(s["cruces"]) == 12
+    assert not mt.situacion(a, a)["cambia"]
+    a, b = revision([1.1] * 3), revision([1.1] * 3)
+    a["hmm"] = revision([1.2] * 3)["hmm"]
+    b["hmm"] = revision([1.05] * 3)["hmm"]
+    assert mt.situacion(a, b)["cambia"] and not mt.situacion(a, b)["cruces"], "cambio de orden sin cruzar umbral"
+    meta = dict(pared_modelos={m: dict(total_s=2., por_origen_s=.2) for m in ["hmm", "garch", "chronos2"]},
+                pared_s=7., pared_carga_modelos_s=5., omitidos={"SINT": dict(evaluados=10)},
+                config=dict(paso_dias=20, hilos_torch=2))
+    c = mt.presupuesto({"meta": meta}, [dict(origenes_validos=100)])
+    _cerca(c["estimada_s"], 75., 1e-12, "cuenta pared extrapolada")
+    assert c["cabe_2h"] and not mt.presupuesto({"meta": meta}, [dict(origenes_validos=20000)])["cabe_2h"]
+    meta["pared_total_s"] = 15.
+    _cerca(mt.presupuesto({"meta": meta}, [dict(origenes_validos=100)])["estimada_s"], 78., 1e-12,
+           "lectura/hash/preparacion fija incluida")
+    print("MT5 situacion/coste: cruces 1/.97, orden sin cruce, cuenta por modelo y limite 2h: ok")
+
+
+def prueba_mt5_oraculo_parquet():
+    import json
+    import tempfile
+    from pathlib import Path
+    from unittest.mock import patch
+    import pandas as pd
+    from . import rutas, informe_mt5 as mt
+
+    close = np.exp(np.arange(275) * .001) * 1.1
+    tabla = _tabla(275, close, inst="EURUSD")
+    serie = datos.series_desde_tabla(tabla, 0)["EURUSD"]
+    origen = T0 + 250 * DIA
+    corte = datos.cortar(serie, origen, 250, banco.HMAX)
+    pred = pd.DataFrame(banco._filas_corte("EURUSD", corte, "garch", np.zeros((20, 21)), {}, 0., None))
+    with tempfile.TemporaryDirectory(prefix="mt5-oraculo-", dir=rutas.TMP_FINCAST) as tmp:
+        tabla.to_parquet(Path(tmp, "precios.parquet"), index=False)
+        Path(tmp, "manifest.json").write_text(json.dumps(dict(tables=[dict(table_id="lago_ohlcv_1d", path="precios.parquet")])), encoding="utf-8")
+        with patch.object(datos, "cortar", side_effect=AssertionError("el oraculo no puede usar el banco")), \
+                patch.object(datos, "cargar_dataset", side_effect=AssertionError("el oraculo lee parquet directo")):
+            ora = mt.oraculo(dict(pred=pred), tmp)
+        assert ora["coincide"] and ora["close_0"] == close[249] and ora["close_1"] == close[250]
+        _cerca(ora["log_c1_c0"], .001, 1e-15, "oraculo parquet h1 independiente")
+        run = dict(pred=pred, run="fixture-parquet")
+        assert mt.validar_objetivos(run, {"EURUSD": serie}, dict(ventana=250))["identicos"]
+        pred.loc[pred.h == 1, "y"] += .01
+        try:
+            mt.validar_objetivos(run, {"EURUSD": serie}, dict(ventana=250))
+            raise AssertionError("objetivo alterado aceptado en el diferencial")
+        except ValueError as exc:
+            assert "difieren del dataset" in str(exc)
+    print("MT5 oraculo: dos close de parquet sin funciones del banco; objetivo alterado bloquea informe: ok")
