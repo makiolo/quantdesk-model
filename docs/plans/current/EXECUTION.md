@@ -28,4 +28,13 @@ decisiones del usuario, con fecha y hora local (CET).
 - Activación: dossier movido de `next/` a `current/`, `future/SPRINT-04` promovido a `next/` (En planificación, premisas
   por revalidar), fichas ISSUE-TI09-SONDA-CADENAS e ISSUE-TI12-MT5-INTRADIA-LOCAL a `current/issues/`. Enlaces
   recalculados con un script que resuelve cada enlace relativo contra su ubicación anterior, también en el archivo
-  (cambio editorial de enlaces: cambian los SHA-256 de los ficheros de `archive/` tocados).
+  (cambio editorial de enlaces: cambian los SHA-256 de los ficheros de `archive/` tocados). Commit `4535ef6`.
+- **Alertas (informe de las 00:42):** 0 urgentes, 0 por gestionar; IGNORAR la parada de MT5 (cuenta bloqueada, tarea
+  desactivada por R2). Alertmanager responde por SSH desde el VPS. Límite: MT5 sin sonda ni alerta en el Prometheus del
+  backend. Bloque de URL y filtro versionado en SPRINT_PROJECT §12. Próxima revisión: después de las 08:45.
+
+## Fila 1 — contrato de TI-02-DIARIO (L3)
+
+- **00:5x.** Borrador encargado a Codex `gpt-6.1-sol` high en `--sandbox read-only` (intento a1; ficha en
+  `.git/sprint-runtime/s03/TI-02-DIARIO-contrato/ficha.md`; supervisor PID 14660). Revisión: las raíces del backend y de
+  `quantdesk` por mensaje y la aprobación del usuario (es un contrato, no código).

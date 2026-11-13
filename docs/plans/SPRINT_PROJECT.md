@@ -146,6 +146,21 @@ Los entregables son datasets e informes con hash, no paquetes publicados.
   reales no lo necesitan; la procedencia (fuente, bróker, versión) va en un fichero adjunto al dataset y
   se incorpora al manifiesto cuando TI-03-FMT exista.
 
+## 12. Alertas
+
+Revisión cada 8 h según la skill (`references/alertas.md`). Propuesto por la primera revisión (2026-11-14) a partir de
+la observabilidad del backend; versionado por la raíz.
+
+- API principal: `http://10.10.0.3:9093/alertmanager/api/v2/alerts`; alternativa: `http://10.10.0.1:9093/alertmanager/api/v2/alerts`
+  (desde Windows agotan el tiempo; responden por SSH desde el VPS).
+- Parámetros: `active=true&silenced=false&inhibited=true&unprocessed=true`.
+- Alcance (unión, una consulta por alternativa, deduplicar por `fingerprint`; varios `filter` en una petición son AND):
+  `proyecto="quantdesk-model"`; `topic="market.ohlcv.v2"` con `source=~"mt5(:.*)?"`; `job="publicador_mt5"`;
+  `service="publicador_mt5"`; `service="fxspot-market-data-mt5"`. Añadir los jobs del exportador TI-02-DIARIO al
+  acordar su contrato.
+- Límite conocido: el `prometheus.yml` del backend declara MT5 sin sonda ni alerta; la ausencia de alertas no prueba
+  que el 1d de MT5 esté fresco.
+
 ## Anexos
 
 Ninguno.
