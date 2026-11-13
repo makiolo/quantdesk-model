@@ -2,17 +2,12 @@
 
 Notas de la raíz de guardia (skill global `sprint`, `references/guardia.md`). Como mucho 80 líneas.
 
-## Estado (2026-11-14 ~00:30 local). Cierre de la guardia `quantdesk-model-c4` a petición del usuario
+## Estado (2026-11-14). Guardia `quantdesk-model-4d`
 - **Sin sprint activo; fase: planificación.** SPRINT-02 cerrado con arrastres el 2026-11-13 (`archive/SPRINT-02_2026-11-11_2026-11-13/`).
-- **Revisión de planes del 2026-11-13 hecha y aplicada en el árbol, pero SIN COMMIT.** La shell de esta sesión murió (el usuario
-  mata los bash.exe, norma «sin bash.exe») y no se pudo comprobar `git status`, hacer commit ni push. **Primera tarea de
-  la guardia siguiente:**
-  1. revisar `git status` y `git diff --stat -- docs/plans`;
-  2. hacer `git add` selectivo de `docs/plans` (los ficheros nuevos `future/SPRINT-04/SPRINT.md` y
-     `archive/FUERA-SPRINT_2026-11-09_2026-11-13/ARCHIVE_MANIFEST.md` no tienen seguimiento; nunca `bash.exe.stackdump`);
-  3. hacer commit `docs(plans): revisión de planes 2026-11-13 (3 actualizados, 1 issue cerrada, partición de SPRINT-03)`,
-     con las líneas de atribución, push y poner el hash en `backlog/REVISIONES.md` («Commits: pendiente»);
-  4. regenerar el kanban de `index.md` con `sprint_db.py kanban --write`, que aún apunta a las rutas viejas.
+- Revisión de planes del 2026-11-13 commiteada y empujada en `41efbbf` (la guardia `c4` murió antes del commit); hash
+  anotado en `backlog/REVISIONES.md` y kanban de `index.md` regenerado (`scripts/sprint_db.py kanban --write`).
+- Raíces vivas a la entrada: `quantdesk-f1`, `quantdesk-backend-24`, `quantdesk-network-21` (presentación enviada a las tres).
+- `bash.exe.stackdump` sin seguimiento en la raíz del repo: nunca añadirlo.
 - Decisiones del usuario R0–R8 (detalle en `backlog/REVISIONES.md`, entrada 2026-11-13):
   - **R1 partición:** SPRINT-03 nuevo en `next/`, activable ya y sin depender de quantdesk. SPRINT-04 nuevo en `future/`
     (S02-1…S02-4 y §3; espera a quantdesk SPRINT-03). El antiguo SPRINT-04 de entrenamiento pasa a SPRINT-05 (espera a quantdesk SPRINT-04).
@@ -44,7 +39,10 @@ Notas de la raíz de guardia (skill global `sprint`, `references/guardia.md`). C
   restricciones y los 4 puntos por acordar están en `next/SPRINT.md` §3 («Entrada de la fila 1»). **Nosotros** les
   avisamos cuando MT5 vuelva a publicar.
 - **network** (era `quantdesk-network-f0`; la guardia nueva entra por su GUARDIA.md): avisará de cambios en retención o
-  esquema de `market.*`, en el borrado o en el horizonte de revisión. D7 conciliado en su `85c4708`.
+  esquema de `market.*`, en el borrado o en el horizonte de revisión. D7 conciliado en su `85c4708`. Confirmado por
+  `quantdesk-network-21` el 2026-11-14: `market.*` sin cambios; la Fase 3 (borrado) irá en el sprint que siga a COP y
+  rechazará `market.*` en `main` por defecto; avisarán cuando la 3.2 se despliegue (único resto de la 3.4,
+  C-RETIRADA-02); nuestra sustitución de PLAN_ARCHIVO_OPCIONES §4 les vale. Visto bueno de 4c/5: escribirles tras el desbloqueo.
 - Norma nueva (usuario, 2026-11-13 23:40, ya en la skill): no se usa bash.exe para nada que dure. Los hijos se lanzan con
   `tools/lanza/hijo.py`, el vigía con `wsvigia.py` por WebSocket en un puerto propio (quantdesk usa el 8765).
 

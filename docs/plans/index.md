@@ -60,8 +60,13 @@ graph LR
     end
 
     subgraph N["⏳ 2. Próximos (next y future)"]
-        N1["SPRINT-03<br/>Ciclo sintético-real y procedencia en el manifiesto · En planificación"]:::next
-        N2["SPRINT-04<br/>Escalera de entrenamiento, ajuste fino y adaptadores · En planificación"]:::next
+        N1["SPRINT-03<br/>Exportador diario, operación de MT5 y cobertura de cadenas… · En planificación"]:::next
+        N2["PLAN_DATOS_VIA_QN<br/>Datos de mercado vía qn (MT5, publicadores públicos, export…"]:::next
+        N3["PLAN_ARCHIVO_OPCIONES<br/>Archivo de cadenas de opciones del laboratorio (TI-09-ARCH)"]:::next
+        N4["SPRINT-04<br/>Ciclo sintético-real y procedencia en el manifiesto · En planificación"]:::next
+        N5["SPRINT-05<br/>Escalera de entrenamiento, ajuste fino y adaptadores · En planificación"]:::next
+        N1 --> N2
+        N1 --> N3
     end
 
     subgraph D["✅ 3. Sprints cerrados"]
@@ -72,8 +77,6 @@ graph LR
     subgraph P["⚠️ 4. Issues abiertas"]
         P1["ISSUE-TI09-SONDA-CADENAS<br/>¿Hay cadenas de opciones en qn? Sonda de sólo lectura · Abierto"]:::issues
         P2["ISSUE-TI12-MT5-INTRADIA-LOCAL<br/>Guardar en local el 1m y 5m de MT5 antes de que el bróker l… · Abierto"]:::issues
-        P3["ISSUE-TI12-MT5-SYNC<br/>Publicar el 1d de MT5 sólo con la historia sincronizada, po… · En resolución vía ISSUE-TI12-M"]:::issues
-        P4["ISSUE-TI12-MT5-VELA-A-MEDIAS<br/>El publicador MT5 publicó la vela 1d del 2026-11-09 a media… · En resolución"]:::issues
     end
 
     B --> N
@@ -83,13 +86,14 @@ graph LR
     click B1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/backlog/PLAN_ARCHIVO_OPCIONES.md" _blank
     click B2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/backlog/PLAN_DATOS_VIA_QN.md" _blank
     click N1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/next/SPRINT.md" _blank
-    click N2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/future/SPRINT-04/SPRINT.md" _blank
+    click N2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/backlog/PLAN_DATOS_VIA_QN.md" _blank
+    click N3 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/backlog/PLAN_ARCHIVO_OPCIONES.md" _blank
+    click N4 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/future/SPRINT-04/SPRINT.md" _blank
+    click N5 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/future/SPRINT-05/SPRINT.md" _blank
     click D1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/archive/SPRINT-01_2026-11-07_2026-11-09/SPRINT.md" _blank
     click D2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/archive/SPRINT-02_2026-11-11_2026-11-13/SPRINT.md" _blank
     click P1 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/issues/ISSUE-TI09-SONDA-CADENAS.md" _blank
     click P2 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md" _blank
-    click P3 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/issues/ISSUE-TI12-MT5-SYNC.md" _blank
-    click P4 href "https://github.com/makiolo/quantdesk-model/blob/main/docs/plans/issues/ISSUE-TI12-MT5-VELA-A-MEDIAS.md" _blank
 ```
 
 <details><summary>Enlaces de los planes e issues</summary>
@@ -101,8 +105,11 @@ graph LR
 
 **⏳ Próximos (next y future)**
 
-- [SPRINT-03](next/SPRINT.md) — Ciclo sintético-real y procedencia en el manifiesto
-- [SPRINT-04](future/SPRINT-04/SPRINT.md) — Escalera de entrenamiento, ajuste fino y adaptadores
+- [SPRINT-03](next/SPRINT.md) — Exportador diario, operación de MT5 y cobertura de cadenas…
+  - [PLAN_DATOS_VIA_QN](backlog/PLAN_DATOS_VIA_QN.md) — Datos de mercado vía qn (MT5, publicadores públicos, export…
+  - [PLAN_ARCHIVO_OPCIONES](backlog/PLAN_ARCHIVO_OPCIONES.md) — Archivo de cadenas de opciones del laboratorio (TI-09-ARCH)
+- [SPRINT-04](future/SPRINT-04/SPRINT.md) — Ciclo sintético-real y procedencia en el manifiesto
+- [SPRINT-05](future/SPRINT-05/SPRINT.md) — Escalera de entrenamiento, ajuste fino y adaptadores
 
 **✅ Sprints cerrados**
 
@@ -113,8 +120,6 @@ graph LR
 
 - [ISSUE-TI09-SONDA-CADENAS](issues/ISSUE-TI09-SONDA-CADENAS.md) — ¿Hay cadenas de opciones en qn? Sonda de sólo lectura
 - [ISSUE-TI12-MT5-INTRADIA-LOCAL](issues/ISSUE-TI12-MT5-INTRADIA-LOCAL.md) — Guardar en local el 1m y 5m de MT5 antes de que el bróker l…
-- [ISSUE-TI12-MT5-SYNC](issues/ISSUE-TI12-MT5-SYNC.md) — Publicar el 1d de MT5 sólo con la historia sincronizada, po…
-- [ISSUE-TI12-MT5-VELA-A-MEDIAS](issues/ISSUE-TI12-MT5-VELA-A-MEDIAS.md) — El publicador MT5 publicó la vela 1d del 2026-11-09 a media…
 
 </details>
 <!-- kanban:fin -->

@@ -64,7 +64,8 @@ Una entrada por revisión, la más reciente arriba (skill `sprint`, `references/
   edita a mano), `issues/index.md`, `archive/index.md`; enlaces editoriales en `archive/SPRINT-01_…/SPRINT.md` y
   `archive/SPRINT-02_…/SPRINT.md`. Avisos por mensaje a cargo de la raíz: backend (TI-02-DIARIO en SPRINT-03; discrepancia
   de C-BACKLOG_README-09) y `quantdesk` (`PLAN_TSFM_FINANZAS` §3, cadenas presentes).
-- Commits: pendiente.
+- Commits: `41efbbf` `docs(plans): revisión de planes 2026-11-13 (3 actualizados, 1 issue cerrada, partición de SPRINT-03)`
+  (hecho por la guardia siguiente el 2026-11-14).
 
 ## 2026-11-10 — revisión parcial (quantdesk, quantdesk-backend, quantdesk-model)
 
