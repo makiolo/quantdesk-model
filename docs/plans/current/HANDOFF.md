@@ -30,7 +30,7 @@ Ola 1 de SPRINT-02 (detalle completo en `docs/plans/current/EXECUTION.md`, secci
 | 1b-A | TI-02-DATA-V2, código + regeneración de los 4 datasets con `0e67465` (4/4 idénticos) | **ACEPTADA** (A4 ronda 4 ACEPTAR) | código `3e35ed5`, informe `565f9a0`, registro `8bbc057`; informe `current/execution/TI-02-DATA-V2/informe.md` (órdenes del paso 1 en `:89-97` y del paso 2 en `:104-110`) |
 | 1b-B | volcado v2 del FX 1d de MT5 desde qn + exportación de `mt5_fx28_cierre_c20261101` y `mt5_fx28_hist_cierre_c20261101` + cuadre | **espera al usuario** (necesita su `QN_TOKEN`; ver Preguntas) | — |
 | 1b-C | dos tablas del banco (cabecera y ampliación, con FinCast) + informe + umbrales TS-00-OBJ | sin empezar (tras 1b-B) | — |
-| 5 | TI-12-MT5 | **en espera**: cuenta MT5 bloqueada (usuario, 2026-11-11). Alcance fijado: h1 de `@continuo`, sin símbolos nuevos | — |
+| 5 | TI-12-MT5 | **en espera (a), decisión del usuario 2026-11-13**: cuenta MT5 bloqueada; el parquet de `D:/dev/deeplearning_dev` sólo trae FX28 h1 (28 de las 194 series de `@continuo`) y no sirve. Alcance: h1 de `@continuo`, sin símbolos nuevos | EXECUTION 2026-11-13 |
 | 6 | TI-09-ARCH | **desbloqueada; aviso formal recibido (2026-11-13)**: OC-03 desplegada (`cc1811d`), primer cierre completo sesión NY 2026-11-12 (`capture_id` `2026-11-12-163125-5b2305`, 509/510). Contrato del lector en EXECUTION (fila 2026-11-13). Siguiente: ficha de la parte de laboratorio; contrastar sus ejemplos contra el lago necesita `QN_TOKEN` en el entorno (puerta de usuario) | mensaje de `quantdesk-backend-89` |
 | 7 | TI-13-PUB | ola 2 desbloqueada (1b-A aceptada); **pregunta enviada** a `quantdesk-backend-fe` sobre qué hay publicado en qn (topic, `source`, intervalos, rango) | mensaje entre sesiones 2026-11-11 ~13:05 |
 
