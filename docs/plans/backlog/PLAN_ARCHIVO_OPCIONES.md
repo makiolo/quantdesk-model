@@ -53,7 +53,7 @@ Cambios decididos el 2026-11-09 que la especificación anterior aún no recoge (
   o en una tarea al lado). El lector y el informe de huecos agrupan por subyacente y `asset_type`. *(Decisión
   2026-11-10, D11:)* **no hay subyacente de respaldo** del OHLCV diario ni para esos ETF e índices: sólo cuentan las
   filas con `underlying_price` de OC-03.
-- **Cobertura en SPRINT-02 del laboratorio:** la fila 6 de [current/SPRINT.md](../current/SPRINT.md) («TI-09-ARCH
+- **Cobertura en SPRINT-02 del laboratorio:** la fila 6 de [current/SPRINT.md](../archive/SPRINT-02_2026-11-11_2026-11-13/SPRINT.md) («TI-09-ARCH
   (cobertura)») sigue condicionada a que antes se entregue esta parte.
 
 Correcciones de la revisión del 2026-11-10 (verificadas contra el código del backend en `e90eb03`, el inventario
@@ -126,7 +126,7 @@ y por eso rige la condición de arriba sobre `lake delete`.
 
 | Tarea local | Depende de | Estado | Mientras tanto |
 |---|---|---|---|
-| TI-09-ARCH | backend OC-03-CLOSE (su SPRINT-02, aún en `next/`: S02-D6) | **servida (2026-11-13)**: desplegada en `cc1811d`; corte 2026-11-12, primer cierre completo `capture_id` `2026-11-12-163125-5b2305`; contrato del lector en [current/EXECUTION.md](../current/EXECUTION.md) (fila 2026-11-13) | última captura de cada día (agrupando `_ts`, §2), **sin spot de respaldo** (D11: sólo `underlying_price` de OC-03; C-ARCHIVO_OPCIONES-01 resuelta) |
+| TI-09-ARCH | backend OC-03-CLOSE (su SPRINT-02, aún en `next/`: S02-D6) | **servida (2026-11-13)**: desplegada en `cc1811d`; corte 2026-11-12, primer cierre completo `capture_id` `2026-11-12-163125-5b2305`; contrato del lector en [current/EXECUTION.md](../archive/SPRINT-02_2026-11-11_2026-11-13/EXECUTION.md) (fila 2026-11-13) | última captura de cada día (agrupando `_ts`, §2), **sin spot de respaldo** (D11: sólo `underlying_price` de OC-03; C-ARCHIVO_OPCIONES-01 resuelta) |
 | TI-09-ARCH | backend OC-01/OC-02 (alerta en origen); network OCS-02 (S3 sin retención) | **hechas** (2026-11-08/09); la garantía de OCS-02 queda con la excepción del borrado genérico (§4) | — |
 | TI-09-ARCH (universo) | backend: 5–10 ETF/índices en la captura (OC-03 o tarea al lado) | decidido (usuario, 2026-11-09), sin fecha | sólo acciones del S&P 500 |
 | TI-09-SONDA | token de lectura de qn (usuario) | puerta de usuario | — |

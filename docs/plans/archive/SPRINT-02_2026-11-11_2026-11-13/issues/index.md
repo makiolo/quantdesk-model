@@ -1,7 +1,7 @@
 # Issues del sprint activo (SPRINT-02)
 
-Una ficha viva por ID ([plantilla](../../issues/TEMPLATE_ISSUE.md)). Las de fuera de sprint siguen en
-[issues/](../../issues/index.md).
+Una ficha viva por ID ([plantilla](../../../issues/TEMPLATE_ISSUE.md)). Las de fuera de sprint siguen en
+[issues/](../../../issues/index.md).
 
 | ID | Estado | Severidad | Tarea | Ficha |
 |---|---|---|---|---|

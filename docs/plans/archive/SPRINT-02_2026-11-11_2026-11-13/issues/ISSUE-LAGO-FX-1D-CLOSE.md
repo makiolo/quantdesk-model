@@ -14,7 +14,7 @@
 > **Responsable:** raíz del laboratorio; el arreglo en origen lo decide el usuario con el backend\
 > **Seguimiento:** SPRINT-02, fila 1b de [current/SPRINT.md](../SPRINT.md) (TI-02-DATA-V2 y repetición de la tabla FX sobre el 1d de MT5, en dos tablas): usuario, 2026-11-10, revisión de planes (D2, D15). Sustituye el seguimiento anterior «fila 2», que no contenía este trabajo
 
-**Snapshot al cierre de SPRINT-01 (2026-11-09, NO RESUELTA):** [archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-LAGO-FX-1D-CLOSE.md](../../archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-LAGO-FX-1D-CLOSE.md)
+**Snapshot al cierre de SPRINT-01 (2026-11-09, NO RESUELTA):** [archive/SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-LAGO-FX-1D-CLOSE.md](../../SPRINT-01_2026-11-07_2026-11-09/issues/ISSUE-LAGO-FX-1D-CLOSE.md)
 
 ---
 

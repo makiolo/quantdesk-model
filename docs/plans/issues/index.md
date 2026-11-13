@@ -11,4 +11,4 @@ el archivo; archivado no significa resuelto.
 | ISSUE-TI12-MT5-VELA-A-MEDIAS | En resolución (guarda hecha; 23 velas republicadas y verificadas, `b9cbbbe`; falta reactivar la tarea); se fusionará con ISSUE-TI12-MT5-SYNC al cerrar | Alta | Fuera de sprint — urgente | [ficha](ISSUE-TI12-MT5-VELA-A-MEDIAS.md) |
 | ISSUE-TI12-MT5-SYNC | En resolución vía VELA-A-MEDIAS (D1, usuario 2026-11-10: 23 velas republicadas; carga de @continuo aplazada) | Alta | Fuera de sprint — urgente | [ficha](ISSUE-TI12-MT5-SYNC.md) |
 
-ISSUE-LAGO-FX-1D-CLOSE pasó al sprint activo al iniciar SPRINT-02 (2026-11-11): [current/issues/](../current/issues/index.md).
+ISSUE-LAGO-FX-1D-CLOSE pasó al sprint activo al iniciar SPRINT-02 (2026-11-11): [current/issues/](../archive/SPRINT-02_2026-11-11_2026-11-13/issues/index.md).
