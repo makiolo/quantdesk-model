@@ -69,7 +69,7 @@ y terminal (mutex), y se ejecuta en una sola ventana.
 > - un día sin datos en qn da un aviso, nunca un fichero vacío;
 > - el FX diario va con `source=mt5`;
 > - `quantdesk` no importa un cliente de qn ni lee tokens: la credencial de lectura la pone el lado Dagster;
-> - los OAS son de uso interno (S03-D4): no salen del equipo del usuario y no hay fixtures con valores de ICE.
+> - los OAS son de uso interno (S03-D3 del backend, de la decisión D4 del usuario; corregido el 2026-11-14): no salen del equipo del usuario y no hay fixtures con valores de ICE.
 >
 > Su SPRINT-03 publica FRED (PUB-01) y OAS (PUB-02) y programa el exportador (PUB-05-EXPORT). Confirman que Yahoo/Stooq
 > (PUB-03) y cripto (PUB-04) no están en él.

@@ -33,8 +33,20 @@ decisiones del usuario, con fecha y hora local (CET).
   desactivada por R2). Alertmanager responde por SSH desde el VPS. Límite: MT5 sin sonda ni alerta en el Prometheus del
   backend. Bloque de URL y filtro versionado en SPRINT_PROJECT §12. Próxima revisión: después de las 08:45.
 
+- **Aviso de network (informativo):** el usuario elevó D7 a principio del ADR-001 (§5 A1, network `34eacdf`): el bucket
+  `qn-lakehouse` necesita una copia verificada y, mientras no exista, `market.*` no se reconstruye ni se borra (`lake
+  delete` rechaza `market.*` en `main`). La copia común (COP) sigue siendo el respaldo de TI-09-ARCH. Sin cambios aquí.
+
 ## Fila 1 — contrato de TI-02-DIARIO (L3)
 
 - **00:5x.** Borrador encargado a Codex `gpt-6.1-sol` high en `--sandbox read-only` (intento a1; ficha en
   `.git/sprint-runtime/s03/TI-02-DIARIO-contrato/ficha.md`; supervisor PID 14660). Revisión: las raíces del backend y de
   `quantdesk` por mensaje y la aprobación del usuario (es un contrato, no código).
+- **~01:10.** Borrador a1 terminado (exit 0) y aceptado como base: [borrador-contrato-a1.md](execution/TI-02-DIARIO/borrador-contrato-a1.md),
+  con la revisión de la raíz encima. Hay dos opciones en el punto a: A1, Dagster invoca por SSH al PC; A2, tarea de
+  Windows con un sensor de frescura en Dagster. Dos errores para la fila 2 (`volume_kind`, limpieza OHLCV). Referencia
+  S03-D4 corregida a S03-D3 en SPRINT.md. Se envía a las raíces del backend, de `quantdesk` y de network.
+- **Norma nueva de la skill** (usuario, 2026-11-14, retransmitida por `quantdesk-f1`): al preparar un sprint entra todo
+  lo pendiente (backlog, issues abiertos y arrastres) y la revisión de planes revisa también los issues. Si las
+  dependencias o la capacidad no lo permiten, se ofrece partir el sprint explicando tarea por tarea. SPRINT-03 ya lo
+  cumplía (R0); se aplica al planificar SPRINT-04.
