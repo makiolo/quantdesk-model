@@ -46,6 +46,10 @@ decisiones del usuario, con fecha y hora local (CET).
   con la revisión de la raíz encima. Hay dos opciones en el punto a: A1, Dagster invoca por SSH al PC; A2, tarea de
   Windows con un sensor de frescura en Dagster. Dos errores para la fila 2 (`volume_kind`, limpieza OHLCV). Referencia
   S03-D4 corregida a S03-D3 en SPRINT.md. Se envía a las raíces del backend, de `quantdesk` y de network.
+- **Respuesta de network:** `sub:market.ohlcv.v2` basta. El corte es reproducible con `x-qn-head-cycle` (H) guardado
+  en el manifiesto y el filtro `_cycle <= H`, sin `fresh=true`. Para los OAS se emite otro token. Se emite con
+  `qn-token` tras la aprobación. Detalle en el borrador, «Respuestas de las raíces». Quantdesk: revisión en curso.
+  Backend: sin respuesta todavía.
 - **Norma nueva de la skill** (usuario, 2026-11-14, retransmitida por `quantdesk-f1`): al preparar un sprint entra todo
   lo pendiente (backlog, issues abiertos y arrastres) y la revisión de planes revisa también los issues. Si las
   dependencias o la capacidad no lo permiten, se ofrece partir el sprint explicando tarea por tarea. SPRINT-03 ya lo

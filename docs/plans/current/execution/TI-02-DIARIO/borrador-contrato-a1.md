@@ -162,3 +162,23 @@ Hay una discrepancia de referencia: la entrada de M llama **S03-D4** al uso inte
 | TI-02-DIARIO-OAS, SPRINT-03 fila 7 | Fila 2; backend SPRINT-03 PUB-01/PUB-02 y contrato qn acordado con network | Incorporar las dos series aprobadas con unidad y disponibilidad verificadas, exclusivamente dentro del perímetro interno; no bloquea fila 2 | decidido (usuario, `<fecha>`); pendiente de PUB-02 |
 
 Informe entregado aquí: no se indicó ruta `-o`. Sin escrituras, commits ni mensajes a otras raíces.
+## Respuestas de las raíces
+
+### network (`quantdesk-network-21`, 2026-11-14), fuente `crates/qn-server/README.md` (tablas REST l. 1353 y 2479; fuentes de consulta l. 1202-1253)
+
+1. **Alcance:** `sub:market.ohlcv.v2` basta para todo lo que usa `descarga_lago.py`: `GET /topics` (lista sólo lo que el
+   token puede leer), y `GET /topics/{t}/schema`, `GET /topics/{t}/latest` y `GET /objects/{t}`, que piden `sub` sobre el topic.
+   No hace falta ningún permiso de administración. El docstring del script dice «lectura sobre `market.>`»; con el token
+   exclusivo, cualquier otro topic dará `unknown_topic` o 403 (corregirlo en la fila 2). Para los OAS de PUB-02 se emite otro
+   token y se sustituye, porque el CLI no amplía tokens. Hay que decirles con qué `--envs` se emite (previsiblemente `main`).
+2. **Cortes reproducibles:** `/objects` no tiene un parámetro `as_of`, pero cada respuesta trae `x-qn-head-cycle` (H) y
+   `x-qn-lake-cycle` (P), y cada fila trae `_cycle`, `_offset`, `_batch_id`, `_recv_ts` y `_schema_version`.
+   - Receta: guardar H en el manifiesto del volcado; para reproducir, releer y quedarse con las filas de `_cycle <= H`.
+   - Las filas tardías llegan con un `_cycle` mayor y quedan fuera, que es lo correcto.
+   - No usar `fresh=true`: las filas provisionales traen `_cycle` y `_offset` nulos.
+3. **Garantías:**
+   - La retención no borra filas vigentes (OCS-02a).
+   - `lake delete` está vetado sobre `market.*` hasta que exista la copia verificada (D7, ADR-001 A1); avisarán antes.
+   - La única versión por objeto es `_schema_version`.
+   - Las lecturas profundas de v2 son lentas, con un fichero por día (PLAN_LAGO_PARTICIONADO); avisarán si cambia.
+4. Emiten el token con la skill `qn-token` cuando el usuario apruebe el contrato.
