@@ -803,6 +803,30 @@ def prueba_mt5_umbrales():
     assert fc["c1"] == fc["resultado"] == "pasa" and fc["c2"] == fc["c3"] == "no aplica"
     assert mt.evaluar_criterios([])["resultado"] == "no evaluable"
     assert evaluar([.96, .97, float("nan")])["resultado"] == "no evaluable"
+    # Solo la cola 99%: 3/28 falla aunque la cola 1% no rechace ningun activo.
+    filas_99 = [dict(h=h, crps_rel=v, n_activos=28, rechazos_01=0, rechazos_99=3, banda_rel=1.)
+                for h, v in zip(banco.HORIZONTES, [.96, .97, .99])]
+    solo_99 = mt.evaluar_criterios(filas_99)
+    assert solo_99["c2"] == solo_99["resultado"] == "no pasa"
+    assert solo_99["c1"] == solo_99["c3"] == "pasa"
+    # Un solo horizonte no puede diluir sus 3/28 rechazos en los otros dos.
+    filas_h5 = [{**r, "rechazos_99": 3 if r["h"] == 5 else 0} for r in filas_99]
+    solo_h5 = mt.evaluar_criterios(filas_h5)
+    assert [r["c2"] for r in solo_h5["horizontes"]] == ["pasa", "no pasa", "pasa"]
+    assert solo_h5["c2"] == solo_h5["resultado"] == "no pasa"
+    assert solo_h5["c1"] == solo_h5["c3"] == "pasa"
+    ag = mt.lectura_agregada(solo_h5, 1., 1.)
+    assert ag["rechazos_99"] == 3 and ag["n_activos_horizonte"] == 84
+    assert ag["resultado"] == "pasa" and ag["cambios"]["resultado"] == "cambia"
+    # Banda: h5 puede fallar con un P99 conjunto que pasa; la lectura no se mezcla.
+    banda_h5 = mt.evaluar_criterios([{**r, "rechazos_99": 0, "banda_rel": 2.01 if r["h"] == 5 else 1.}
+                                    for r in filas_h5])
+    assert banda_h5["c3"] == banda_h5["resultado"] == "no pasa"
+    assert mt.lectura_agregada(banda_h5, 2., 1.)["resultado"] == "pasa"
+    assert mt.lectura_agregada(banda_h5, 2.01, 1.)["resultado"] == "no pasa"
+    assert mt.lectura_agregada(mt.evaluar_criterios([]), 1., 1.)["resultado"] == "no evaluable"
+    assert mt.lectura_agregada(fc, fincast=True)["c2"] == "no aplica"
+    print("MT5 C1 revision: solo cola 99%, solo h5, sensibilidad agregada Kupiec/banda sin cambiar cada horizonte: ok")
     print("MT5 umbrales aislados: CRPS 2/3 y tope 1.02, Kupiec 2/28 frente 3/28, banda 2/2.01, FinCast no aplica: ok")
 
 
@@ -842,6 +866,30 @@ def prueba_mt5_diferencial_bordes():
     assert tarde["origenes_validos"] > 0
     primera = datos.rejilla_origenes(tarde["primer_origen"], tarde["primer_origen"], 1)[0]
     assert int((tardia.disp_ms <= primera).sum()) >= 250
+    # Antigua D contiene el close de la sesion MT5 anterior con datos: desfase de
+    # una barra, incluidos fines de semana y un hueco adicional entre sesiones.
+    dias = np.arange(450)
+    habiles = dias[(dias + T0 // DIA + 3) % 7 < 5]
+    habiles = np.delete(habiles, 253)[:300]
+    ts = T0 + habiles * DIA
+    precios = np.exp(.001 * np.sin(np.arange(300) * 1.7) + .0001 * np.arange(300) ** 1.1)
+    mt5 = datos.Serie("SINT", ts, ts + DIA, precios)
+    desplazada = datos.Serie("SINT", ts[1:], ts[1:] + DIA, precios[:-1])
+    cfg_al = dict(inicio=datos.fecha(int(ts[251] + DIA)), fin=datos.fecha(int(ts[260] + DIA)),
+                  paso_dias=1, ventana=250)
+    claves_al = {("SINT", t) for t in datos.rejilla_origenes(cfg_al["inicio"], cfg_al["fin"], 1)}
+    al = mt.diferencial({"SINT": desplazada}, {"SINT": mt5}, cfg_al, claves_al)
+    assert al["estado"] == "explicado" and not al["sin_alinear"]
+    assert len(al["resumen_delta_y_alineado"]) == 3
+    assert all(r["delta_y_alineado_pb"] == 0 for r in al["deltas"])
+    assert all(r["max_abs_pb"] == 0 for r in al["resumen_delta_y_alineado"])
+    assert all(r["max_abs_pb"] > 0 for r in al["resumen_delta_y"])
+    assert not al["extremos"], "los extremos deben usar el delta alineado, que es cero"
+    _cerca(al["correlaciones_h1"][0]["alineado"], 1., 1e-15, "correlacion h1 desplazada alineada")
+    assert al["correlaciones_h1"][0]["misma_etiqueta"] < .99
+    assert any(len(datos.rejilla_origenes(r["fecha_barra_mt5_alineada"], r["fecha_barra_antigua"], 1)) > 2
+               for r in al["deltas"]), "el fixture debe cruzar sesiones no consecutivas en calendario"
+    print("MT5 diferencial alineado: desplazamiento de una barra con huecos, delta 0 frente a misma etiqueta distinto de 0: ok")
     print("MT5 bordes/diferencial: 249/248, hueco fechado, futuros 20, causa desconocida bloqueada, fines de semana y GBPNZD tardio: ok")
 
 

@@ -37,6 +37,31 @@ def _estado(condicion):
     return "no evaluable" if condicion is None else "pasa" if condicion else "no pasa"
 
 
+def lectura_agregada(evaluacion, banda_p99=None, garch_banda_p99=None, fincast=False):
+    """Sensibilidad: rechazos/activo-horizonte y P99 conjunto de anchuras, sin tocar C1."""
+    filas = evaluacion["horizontes"]
+    completa = len(filas) == len(banco.HORIZONTES) and all(r["c2"] != "no evaluable" for r in filas)
+    n = sum(r.get("n_activos", 0) for r in filas)
+    r = {"n_activos_horizonte": n, "c1": evaluacion["c1"]}
+    for cola in ("01", "99"):
+        r["rechazos_" + cola] = sum(f["rechazos_" + cola] for f in filas) if completa and not fincast else None
+    r["c2"] = "no aplica" if fincast else _estado(
+        all(r["rechazos_" + c] / n <= .10 for c in ("01", "99")) if completa and n else None)
+    banda_completa = all(f["c3"] != "no evaluable" for f in filas)
+    r["banda_p99"], r["garch_banda_p99"] = banda_p99, garch_banda_p99
+    r["banda_rel"] = (float(banda_p99 / garch_banda_p99)
+                      if not fincast and banda_completa and _numero(banda_p99)
+                      and _numero(garch_banda_p99) and garch_banda_p99 > 0 else None)
+    r["c3"] = "no aplica" if fincast else _estado(r["banda_rel"] <= 2 if _numero(r["banda_rel"]) else None)
+    aplicables = [r["c1"]] if fincast else [r[c] for c in ("c1", "c2", "c3")]
+    r["resultado"] = ("no evaluable" if "no evaluable" in aplicables
+                      else _estado(all(c == "pasa" for c in aplicables)))
+    r["cambios"] = {c: ("no evaluable" if "no evaluable" in (evaluacion[c], r[c])
+                        else "cambia" if evaluacion[c] != r[c] else "no cambia")
+                    for c in ("c2", "c3", "resultado")}
+    return r
+
+
 def evaluar_criterios(filas, fincast=False):
     """Contrato puro, sin redondear antes de comparar; un horizonte ausente no aprueba.
 
@@ -192,6 +217,9 @@ def revisar(partes, activos):
                     r["motivo"] = "cobertura incompleta de activos; no se reduce el denominador"
             filas.append(r)
         salida[m] = evaluar_criterios(filas, m == "fincast")
+        ancho = (comun.assign(w=comun.q20 - comun.q00).groupby("modelo").w.quantile(.99)
+                 if not comun.empty and m != "fincast" else {})
+        salida[m]["agregada"] = lectura_agregada(salida[m], ancho.get(m), ancho.get("garch"), m == "fincast")
     return salida
 
 
@@ -290,7 +318,7 @@ def diferencial(antiguas, nuevas, cfg, claves_piloto):
     de la otra fuente aunque el piloto no haya inferido ese origen.
     """
     rej = datos.rejilla_origenes(cfg["inicio"], cfg["fin"], cfg["paso_dias"])
-    exclusivos, deltas = [], []
+    exclusivos, deltas, sin_alinear = [], [], []
     for ins in sorted(nuevas):
         sa, sn = antiguas[ins], nuevas[ins]
         ca = {c.origen_ms: c for c in datos.cortes_de_serie(sa, rej, cfg["ventana"], banco.HMAX)[0]}
@@ -304,21 +332,62 @@ def diferencial(antiguas, nuevas, cfg, claves_piloto):
         for t in sorted(ka & kn):
             if (ins, t) not in claves_piloto:
                 continue
+            # La barra antigua D representa el cierre de la sesion MT5 anterior a D.
+            # Se busca por ts de la barra, no t-1 dia ni el anterior origen del piloto.
+            j = int(np.searchsorted(sn.ts_ms, ca[t].ts_ultima_ms, side="left")) - 1
+            alineable = j >= 0 and j + banco.HMAX < len(sn.close)
+            if alineable:
+                lc = np.log(sn.close[j:j + banco.HMAX + 1])
+                yn_alineado = lc[1:] - lc[0]
+            else:
+                sin_alinear.append({"instrument": ins, "fecha": datos.fecha(t),
+                                    "causa": "sin sesion MT5 anterior o sin 20 barras futuras"})
             for h in banco.HORIZONTES:
                 dy = float((cn[t].y[h - 1] - ca[t].y[h - 1]) * 10000)
+                da = float((yn_alineado[h - 1] - ca[t].y[h - 1]) * 10000) if alineable else None
                 deltas.append({"instrument": ins, "fecha": datos.fecha(t), "h": h, "delta_y_pb": dy,
-                               "abs_delta_y_pb": abs(dy)})
+                               "abs_delta_y_pb": abs(dy), "delta_y_alineado_pb": da,
+                               "abs_delta_y_alineado_pb": abs(da) if alineable else None,
+                               "y_antigua": float(ca[t].y[h - 1]), "y_mt5": float(cn[t].y[h - 1]),
+                               "y_mt5_alineado": float(yn_alineado[h - 1]) if alineable else None,
+                               "fecha_barra_antigua": datos.fecha(ca[t].ts_ultima_ms),
+                               "fecha_barra_mt5": datos.fecha(cn[t].ts_ultima_ms),
+                               "fecha_barra_mt5_alineada": datos.fecha(int(sn.ts_ms[j])) if alineable else None})
     dd = pd.DataFrame(deltas)
-    resumen, extremos = [], []
+    resumen, resumen_alineado, por_par, correlaciones, extremos = [], [], [], [], []
+
+    def resumir(g, alineado=False):
+        suf = "_alineado" if alineado else ""
+        delta, absoluto = g["delta_y" + suf + "_pb"], g["abs_delta_y" + suf + "_pb"]
+        if not delta.notna().any():
+            return {"n": 0, "mediana_delta_pb": None, "media_abs_pb": None,
+                    "mediana_abs_pb": None, "max_abs_pb": None}
+        return {"n": int(delta.count()), "mediana_delta_pb": float(delta.median()),
+                "media_abs_pb": float(absoluto.mean()), "mediana_abs_pb": float(absoluto.median()),
+                "max_abs_pb": float(absoluto.max())}
+
+    def correlacion(g, columna):
+        pares = g[["y_antigua", columna]].dropna()
+        return (float(pares.y_antigua.corr(pares[columna]))
+                if len(pares) >= 2 and (pares.std() > 0).all() else None)
+
     if not dd.empty:
         for h, g in dd.groupby("h"):
-            resumen.append({"h": int(h), "n": len(g), "mediana_delta_pb": float(g.delta_y_pb.median()),
-                            "mediana_abs_pb": float(g.abs_delta_y_pb.median()), "max_abs_pb": float(g.abs_delta_y_pb.max())})
+            resumen.append({"h": int(h), **resumir(g)})
+            resumen_alineado.append({"h": int(h), **resumir(g, True)})
         for (ins, h), g in dd.groupby(["instrument", "h"]):
-            med = float(g.abs_delta_y_pb.median())
-            extremos += g[g.abs_delta_y_pb > 5 * med].assign(mediana_abs_par_h_pb=med).to_dict("records")
-    return {"estado": "BLOQUEADO" if any(x["causa"].startswith("BLOQUEADO") for x in exclusivos) else "explicado",
+            por_par.append({"instrument": ins, "h": int(h), "misma_etiqueta": resumir(g), "alineado": resumir(g, True)})
+            med = g.abs_delta_y_alineado_pb.median() if g.abs_delta_y_alineado_pb.notna().any() else None
+            if med is not None:
+                extremos += g[g.abs_delta_y_alineado_pb > 5 * med].assign(mediana_abs_par_h_pb=float(med)).to_dict("records")
+            if h == 1:
+                correlaciones.append({"instrument": ins, "n": len(g), "n_alineados": int(g.y_mt5_alineado.count()),
+                                      "misma_etiqueta": correlacion(g, "y_mt5"),
+                                      "alineado": correlacion(g, "y_mt5_alineado")})
+    return {"estado": "BLOQUEADO" if sin_alinear or any(x["causa"].startswith("BLOQUEADO") for x in exclusivos) else "explicado",
             "exclusivos": exclusivos, "resumen_delta_y": resumen, "extremos": extremos,
+            "resumen_delta_y_alineado": resumen_alineado, "resumen_por_par": por_par,
+            "correlaciones_h1": correlaciones, "sin_alinear": sin_alinear,
             "deltas": deltas, "explicacion": "close 00:00 UTC de yfinance → cierre de sesion 17:00 NY de MT5"}
 
 
@@ -432,6 +501,14 @@ def escribir(runs, repeticiones, destino, pilotos=None, totos=None, fincasts=Non
     if base:
         claves = set(base["pred"][["instrument", "origen_ms"]].drop_duplicates().itertuples(index=False, name=None))
     dif = diferencial(series[ANTIGUO], series[CABECERA], banco.PRESETS[CABECERA], claves)
+    # Control de escala con mas observaciones; no altera el diferencial del piloto.
+    pares_control = [ins for ins in ("EURUSD", "USDJPY") if ins in series[ANTIGUO] and ins in series[CABECERA]]
+    cfg = banco.PRESETS[CABECERA]
+    rej_control = datos.rejilla_origenes(cfg["inicio"], cfg["fin"], cfg["paso_dias"])
+    control = diferencial({ins: series[ANTIGUO][ins] for ins in pares_control},
+                          {ins: series[CABECERA][ins] for ins in pares_control}, cfg,
+                          {(ins, t) for ins in pares_control for t in rej_control})
+    control = {k: control[k] for k in ("estado", "resumen_por_par", "correlaciones_h1", "sin_alinear")}
     ora = oraculo(base, rutas.dataset_dir(CABECERA)) if base and "EURUSD" in base["meta"]["config"]["activos"] else None
     ph = next((r for r in pp if r["meta"]["dataset"]["dataset_id"] == AMPLIACION), None)
     coste = presupuesto(ph, inventarios[AMPLIACION]) if ph else None
@@ -515,15 +592,42 @@ def escribir(runs, repeticiones, destino, pilotos=None, totos=None, fincasts=Non
           "la submuestra MT5 frente a la antigua; las bases se alinean a cada muestra sin reindexarla. "
           "Un activo/modelo/horizonte ausente o p-valor no finito deja el criterio no evaluable. "
           "Las cifras del piloto son provisionales y los tests tienen poca potencia."]
+    L += ["", "Sensibilidad a la lectura alternativa agregada (no sustituye el veredicto por cada horizonte): "
+          "C2 suma rechazos de h1/h5/h20 por cola y divide por la suma de activos-horizonte "
+          "(84 si hay 28 pares en los tres); no son 84 activos distintos ni un nuevo test Kupiec. "
+          "C3 calcula P99 sobre todas las anchuras de h1/h5/h20 juntas, y lo divide por el P99 conjunto "
+          "de GARCH en los mismos orígenes; no promedia los cocientes por horizonte. "
+          "C1 conserva su definición. FinCast mantiene C2/C3 no aplica en ambas lecturas."]
     if ausentes:
         L += ["", "Referencias ausentes (no evaluables): " + "; ".join(ausentes)]
     for etiqueta, resultados in (("Antigua (yfinance, proxy)", antes), ("MT5 cabecera (proxy)", despues)):
         L += [f"### {etiqueta}"]
         _tabla(L, ["modelo", "h", "n activos", "CRPS rel.", "≤0,97", "≤1,02", "Kupiec rechazos 1%/99%", "C2", "P99 banda/GARCH", "C3", "QLIKE"],
                [[m, r["h"], r["n_activos"], _f(r.get("crps_rel")), r["crps_097"], r["tope_102"],
-                 "no aplica" if m == "fincast" else f"{r.get('rechazos_01', '—')}/{r.get('rechazos_99', '—')}",
+                 "no aplica" if m == "fincast" else
+                 f"1%: {r.get('rechazos_01', '—')}/{r['n_activos']}; 99%: {r.get('rechazos_99', '—')}/{r['n_activos']}",
                  r["c2"], _f(r.get("banda_rel")), r["c3"], _f(r.get("qlike"))]
                 for m in MODELOS for r in resultados[m]["horizontes"]])
+        detalle = []
+        for m in MODELOS:
+            ev, ag = resultados[m], resultados[m]["agregada"]
+            for c in ("c2", "c3"):
+                por_h = []
+                for r in ev["horizontes"]:
+                    cifra = (f"1%: {r.get('rechazos_01', '—')}/{r['n_activos']}; "
+                             f"99%: {r.get('rechazos_99', '—')}/{r['n_activos']}" if c == "c2"
+                             else _f(r.get("banda_rel")))
+                    por_h.append("no aplica" if m == "fincast" else cifra + "; " + r[c])
+                agregado = (f"1%: {ag['rechazos_01']}/{ag['n_activos_horizonte']}; "
+                            f"99%: {ag['rechazos_99']}/{ag['n_activos_horizonte']}" if c == "c2"
+                            else _f(ag["banda_rel"]))
+                detalle.append([m, "(2) Kupiec" if c == "c2" else "(3) banda P99/GARCH", *por_h,
+                                ev[c], "no aplica" if m == "fincast" else agregado, ag[c], ag["cambios"][c]])
+        _tabla(L, ["modelo", "condición", "h1", "h5", "h20", "cada horizonte", "cifra agregada",
+                   "veredicto agregado", "¿cambia condición?"], detalle)
+        _tabla(L, ["modelo", "conclusión cada horizonte", "conclusión agregada", "¿cambiaría veredicto del modelo?"],
+               [[m, resultados[m]["resultado"], resultados[m]["agregada"]["resultado"],
+                 resultados[m]["agregada"]["cambios"]["resultado"]] for m in MODELOS])
     _tabla(L, ["modelo", "C1 antigua → MT5", "C2 antigua → MT5", "C3 antigua → MT5", "conclusión antigua → MT5", "¿cambia conclusión?", "alcance"],
            [[m, *[antes[m][c] + " → " + despues[m][c] for c in ("c1", "c2", "c3", "resultado")], cambios[m], despues[m]["alcance"]] for m in MODELOS])
     L += ["Cambia la conclusión (pasa ↔ no pasa) de algún modelo: **" +
@@ -547,6 +651,14 @@ def escribir(runs, repeticiones, destino, pilotos=None, totos=None, fincasts=Non
           "Se lista toda diferencia de validez en la rejilla y se marca si pertenece al piloto. "
           "--max-origenes limita inferencias, no la validez de la fuente contraria. "
           "Antes de inicio: 249 barras MT5 frente a 248 antiguas en cada par; el primer origen válido se adelanta un día."]
+    L += ["", "ISSUE-LAGO-FX-1D-CLOSE: hay un desfase de una barra entre etiquetas. El close de yfinance "
+          "fechado D es el precio de las 00:00 UTC de D y corresponde aproximadamente al cierre de la sesión "
+          "MT5 anterior con datos (17:00 NY, aproximadamente 21:00/22:00 UTC de esa sesión). "
+          "Se conservan Δy de la misma etiqueta de origen y Δy alineado: barra antigua D frente a la barra "
+          "MT5 anterior a D con datos, usando h barras futuras de cada fuente. Se busca la sesión anterior "
+          "por par, también al cruzar fines de semana o festivos; no se resta un día de calendario. "
+          "Δy = y MT5 − y antigua. Esta alineación es sólo diagnóstica: no cambia la rejilla de orígenes "
+          "ni las tablas de métricas o de umbrales; D15 compara cada tabla con su propia fuente."]
     ia, im = inventarios[ANTIGUO], inventarios[CABECERA]
     L += ["", f"Orígenes válidos totales: antigua {sum(r['origenes_validos'] for r in ia)}, "
           f"MT5 {sum(r['origenes_validos'] for r in im)}; "
@@ -554,12 +666,48 @@ def escribir(runs, repeticiones, destino, pilotos=None, totos=None, fincasts=Non
           f"MT5 {sorted({r['primer_origen'] for r in im if r['primer_origen']})}."]
     _tabla(L, ["par", "fecha", "sólo en", "en piloto", "causa"],
            [[r["instrument"], r["fecha"], r["solo_en"], r["en_piloto"], r["causa"]] for r in dif["exclusivos"]])
-    _tabla(L, ["h", "orígenes comunes del piloto", "mediana Δy pb", "mediana |Δy| pb", "máximo |Δy| pb"],
-           [[r["h"], r["n"], _f(r["mediana_delta_pb"]), _f(r["mediana_abs_pb"]), _f(r["max_abs_pb"])] for r in dif["resumen_delta_y"]])
-    L += ["Casos |Δy| > 5×mediana de |Δy| de ese par/h: revisión humana por la raíz, sin umbral de aceptación de Δy."]
-    _tabla(L, ["par", "fecha", "h", "Δy pb", "mediana |Δy| par/h pb"],
-           [[r["instrument"], r["fecha"], r["h"], _f(r["delta_y_pb"]), _f(r["mediana_abs_par_h_pb"])] for r in dif["extremos"]])
-    L += ["Todos los Δy por par/fecha/h: diferencial.csv. No se atribuye causalidad individual a los valores extremos.", "",
+    _tabla(L, ["alineación", "h", "orígenes comunes del piloto", "mediana Δy pb", "media abs(Δy) pb",
+               "mediana abs(Δy) pb", "máximo abs(Δy) pb"],
+           [[et, r["h"], r["n"], _f(r["mediana_delta_pb"]), _f(r["media_abs_pb"]),
+             _f(r["mediana_abs_pb"]), _f(r["max_abs_pb"])]
+            for et, rr in (("misma etiqueta", dif["resumen_delta_y"]), ("alineado", dif["resumen_delta_y_alineado"]))
+            for r in rr])
+    L += ["### Diferencial por par y horizonte (pb)"]
+    _tabla(L, ["par", "h", "n misma etiqueta/alineado", "media abs(Δy) misma etiqueta", "media abs(Δy) alineado",
+               "mediana abs(Δy) misma etiqueta", "mediana abs(Δy) alineado", "máximo abs(Δy) misma etiqueta", "máximo abs(Δy) alineado"],
+           [[r["instrument"], r["h"], f"{r['misma_etiqueta']['n']}/{r['alineado']['n']}",
+             *[_f(r[al][c]) for c in ("media_abs_pb", "mediana_abs_pb", "max_abs_pb")
+               for al in ("misma_etiqueta", "alineado")]] for r in dif["resumen_por_par"]])
+    L += ["### Correlación de retornos h=1 (Pearson, por par)", "",
+          "Misma muestra de orígenes del diferencial en las dos alineaciones; no se infieren "
+          "predicciones adicionales. Si la varianza es cero o hay menos de dos retornos, no evaluable."]
+    _tabla(L, ["par", "n misma etiqueta/alineado", "correlación misma etiqueta", "correlación alineada"],
+           [[r["instrument"], f"{r['n']}/{r['n_alineados']}", _f(r["misma_etiqueta"]), _f(r["alineado"])]
+            for r in dif["correlaciones_h1"]])
+    L += ["### Control de escala h=1 en toda la rejilla de cabecera", "",
+          "Diagnóstico adicional desde los datasets, sin nuevas inferencias: EURUSD y USDJPY en todos los "
+          "orígenes válidos comunes de la misma rejilla (ventana 250 y 20 futuros exigidos). "
+          "El número de retornos de cada muestra figura en las tablas. Se muestran ambas muestras por "
+          "separado para contrastar el orden de magnitud de unos 7–10 pb medido en la revisión; "
+          "no se sustituyen los registros ni los extremos de las corridas suministradas."]
+    _tabla(L, ["par", "n", "media abs(Δy) misma etiqueta pb", "media abs(Δy) alineado pb",
+               "correlación misma etiqueta", "correlación alineada"],
+           [[r["instrument"], r["alineado"]["n"], _f(r["misma_etiqueta"]["media_abs_pb"]),
+             _f(r["alineado"]["media_abs_pb"]), _f(c["misma_etiqueta"]), _f(c["alineado"])]
+            for r in control["resumen_por_par"] if r["h"] == 1
+            for c in control["correlaciones_h1"] if c["instrument"] == r["instrument"]])
+    L += ["### Extremos del Δy alineado", "",
+          "Casos |Δy alineado| > 5×mediana de |Δy alineado| de ese par/h: revisión humana por la raíz, "
+          "sin umbral de aceptación de Δy. La regla se aplica exclusivamente al diferencial alineado; "
+          "el diferencial de la misma etiqueta queda como dato."]
+    _tabla(L, ["par", "fecha origen", "barra antigua", "sesión MT5 alineada", "h", "Δy alineado pb",
+               "Δy misma etiqueta pb", "mediana abs(Δy alineado) par/h pb"],
+           [[r["instrument"], r["fecha"], r["fecha_barra_antigua"], r["fecha_barra_mt5_alineada"], r["h"],
+             _f(r["delta_y_alineado_pb"]), _f(r["delta_y_pb"]), _f(r["mediana_abs_par_h_pb"])] for r in dif["extremos"]])
+    if dif["sin_alinear"]:
+        L += ["BLOQUEADO: faltan barras para la alineación: `" + json.dumps(dif["sin_alinear"], ensure_ascii=False) + "`."]
+    L += ["Todos los Δy por par/fecha/h, retornos y fechas de barras: diferencial.csv. "
+          "No se atribuye causalidad individual a los valores extremos.", "",
           "## Oráculo independiente EURUSD h=1", "", "`" + json.dumps(ora, ensure_ascii=False) + "`", "",
           "## Medida de pilotos y presupuesto de ampliación"]
     _tabla(L, ["run", "modelo", "n", "CPU s/origen", "pared s/origen", "pared carga s", "pared total s"],
@@ -584,6 +732,7 @@ def escribir(runs, repeticiones, destino, pilotos=None, totos=None, fincasts=Non
                 "piloto": piloto, "datasets": descripciones, "inventarios": inventarios,
                 "antigua": antes, "mt5": despues,
                 "cambios_conclusion": cambios, "situacion_partida": sit, "diferencial": dif, "oraculo": ora,
+                "control_alineacion_rejilla": control,
                 "rankings_comparables": {"antiguos": rankings_antes, "mt5": rankings_despues},
                 "presupuesto": coste, "referencias_ausentes": ausentes,
                 "objetivos_verificados_con_parquet": objetivos,
@@ -604,4 +753,5 @@ def escribir(runs, repeticiones, destino, pilotos=None, totos=None, fincasts=Non
     hashes = {f.name: hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(p.iterdir()) if f.is_file() and f.name != "SHA256SUMS"}
     (p / "SHA256SUMS").write_text("\n".join(f"{v}  {k}" for k, v in hashes.items()) + "\n", encoding="utf-8")
     print(f"informe MT5: {p / 'informe.md'}; sha256 {hashes['informe.md']}; diferencial {dif['estado']}")
-    return 2 if dif["estado"] == "BLOQUEADO" or (ora and not ora["coincide"]) or (coste and not coste["cabe_2h"]) else 0
+    return 2 if (dif["estado"] == "BLOQUEADO" or control["estado"] == "BLOQUEADO"
+                 or (ora and not ora["coincide"]) or (coste and not coste["cabe_2h"])) else 0
