@@ -25,7 +25,8 @@ Notas de la raíz de guardia (skill global `sprint`, `references/guardia.md`). C
   cuando publique el mercado público (su SPRINT-03) o si cambia OC-03.
 - Network recordó que hay que tener «copia propia antes de `lake delete`». Respuesta: no, por D7 (usuario, 2026-11-10): la copia es la común
   (PLAN_COPIA_PERIODICA_LAGO), y `lake delete` no se usa sobre `market.*` hasta que esa copia exista. En su PLAN_RETIRADA_TOPICS_EVENTOS,
-  Fase 3, las líneas 99-100 contradicen a D7; las concilia network. Se le pasó la lista de lo que depende aquí de qn.
+  Fase 3, las líneas 99-100 contradecían a D7; network las concilió en su commit `85c4708`, anotó nuestras 4 dependencias de qn y
+  avisará de los cambios. Se le pasó la lista de lo que depende aquí de qn.
 
 ## Preguntas abiertas al usuario
 1. **S02-6 frente al bloqueo de SPRINT-03.** La medición de TI-09-ARCH puede hacerse tras el 2026-12-10, pero SPRINT-03
