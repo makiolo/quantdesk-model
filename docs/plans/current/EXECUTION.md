@@ -145,3 +145,14 @@ decisiones del usuario, con fecha y hora local (CET).
   commit. Cinco GAP para el usuario en el plan.
 - **PLAN_RSC_BRAIN adoptado por el backend** (`quantdesk-backend-24`, commit `c01e49d` de su repo): plan en su backlog, línea en su índice y fila de GOBERNANZA «propuesto». Entra al planificar su siguiente sprint, junto a PLAN_RETIRADA_MEM0. GAP 1-5 pendientes del usuario.
 - **Aviso de cambio en la skill** (`quantdesk-network-b2`, usuario 2026-11-14): `sprint_db.py task` y `attempt start/end` ya regeneran `~/.claude/sprint-db/index.html`; `update` sólo hace falta cuando cambian ficheros del repo (`references/sprint-db.md`). Sin acción.
+- **Fila 2, entrega a1** (`4c34af1` oráculo rojo, `237220f` verde; gate 15/15; diferencial: sólo `volume_kind`
+  `traded`→`tick_count` en 3 filas MT5). Rutas autorizadas comprobadas por la raíz. **Revisión r1** (`gpt-6-astra` high,
+  intento 309): **RECHAZAR**, A5 legítimo, gate 15/15 reproducido, oráculo con contraste independiente válido. Tres
+  bloqueantes reproducidos con qn local (`E:/quantdesk-lab/runs/TI-02-DIARIO/revision-r1/informe.txt`):
+  1. `nucleo.py:147`: `sin_mt5` falso si `latest` muestra una republicación de D posterior a C o una barra de D+1;
+  2. `nucleo.py:361`: un 202 con `durable=false` se toma como éxito;
+  3. `nucleo.py:369`: si qn acepta el `ok` y se pierde la respuesta, se borran los productos y queda un `ok` sin datos.
+  Intento 290 → rechazada.
+- **Segunda vuelta** con la misma sesión de Codex (`codex exec resume`). El primer relanzamiento (intento 313) arrancó con
+  `gpt-5.6-terra`, porque `resume` sin `-m` no conserva el modelo de la sesión: parado con `arbol.py --kill` a los ~30 s,
+  sin cambios en el árbol (fallida). Relanzado con `-m gpt-6.1-sol` xhigh (intento 314).
