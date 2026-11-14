@@ -1,100 +1,122 @@
-# HANDOFF de la raíz — relevo 1
+# HANDOFF de la raíz — relevo 2
 
 ## Relevo
-- Número: 1
-- Sale: sesión 2ed6ea1b-5994-4369-a983-cbc5d4646f9d (`quantdesk-model-4d`, antes raíz de guardia), claude-opus-5-5,
-  contexto 70.7 %
-- Escrito: 2026-11-14T01:14:40+01:00
-- HEAD al escribir: 1aa21801c946323a578267c11a05c34185b2fbf7
+- Número: 2
+- Sale: sesión 2ab53d59-60b1-4f92-84cf-bf4a7115386f (`quantdesk-model-00`), claude-opus-5-5, contexto 70.5 %
+- Escrito: 2026-11-14T11:25:46+01:00
+- HEAD al escribir: ad43ba057610b5ea1b9296b4ea836be54f3d0f0c
 - LAUNCH: docs/plans/current/LAUNCH.md · bloque del coordinador: «§8. Prompt de la raíz (relevos y recuperación)»
 - Relevos anteriores: `git log --follow -- docs/plans/current/HANDOFF.md`
-- Aceptado: sesión 2ab53d59-60b1-4f92-84cf-bf4a7115386f, 2026-11-14T01:16:15+01:00, contexto inicial 21.9 %
 
 ## Arranque
-1. `S:/Projects/quantdesk-model/.venv/Scripts/python.exe -X utf8 C:/Users/makiolo/.claude/skills/sprint/tools/claude_or.py handoff accept docs/plans/current/HANDOFF.md`: valida este archivo y anota tu sesión.
+1. `S:/Projects/quantdesk-model/.venv/Scripts/python.exe -X utf8 C:/Users/makiolo/.claude/skills/sprint/tools/claude_or.py handoff accept docs/plans/current/HANDOFF.md`: valida este archivo y anota tu sesión. Después, pon tu nombre de `ListAgents` en `~/.claude/relevos.json`, clave `quantdesk-model`.
 2. Lee sólo esto: este archivo, el bloque del coordinador del LAUNCH, `docs/plans/SPRINT_PROJECT.md` (y las
    políticas que liste), la skill global `sprint` (`C:/Users/makiolo/.claude/skills/sprint/SKILL.md`, `references/launch.md`,
-   `references/handoff.md`) y las fichas de los hijos en vuelo. El resto, cuando haga falta y delegando.
-3. `git status`, el estado del gate o candados de SPRINT_PROJECT «Comandos» y `git log --oneline 1aa21801c946..HEAD`.
-4. Adopta los hijos en vuelo: comprueba su proceso y su salida y vigílala; no relances un ID vivo.
-5. Lanza el vigía de caché con `run_in_background` desde la raíz del repo:
-   `S:/Projects/quantdesk-model/.venv/Scripts/python.exe -X utf8 C:/Users/makiolo/.claude/skills/sprint/scripts/cache_heartbeat.py` (`references/handoff.md`, «Latido de caché»).
-6. Busca en la memoria del proyecto (SPRINT_PROJECT «Identidad») las palabras clave del siguiente paso.
+   `references/handoff.md`) y la ficha en espera (`.git/sprint-runtime/s03/TI-12-MT5-OPS/ficha-turno.md`). El resto,
+   cuando haga falta y delegando.
+3. `git status`, el estado del gate o candados de SPRINT_PROJECT «Comandos» y `git log --oneline ad43ba057610..HEAD`.
+4. Hijos en vuelo: ninguno (abajo).
+5. **Vigía, no `cache_heartbeat.py`** (la skill lo sustituyó el 13-11; `references/handoff.md`, «Latido de caché»):
+   - el servidor `wsvigia.py` sigue vivo en el puerto **8775** (`.git/sprint-runtime/s03/wsvigia.pid`), con las listas
+     `s03/fins.txt` y `s03/follow.txt`;
+   - comprueba su `.pid` y suscríbete con `Monitor({ws: {url: 'ws://127.0.0.1:8775/'}, timeout_ms: 1800000})`, re-armado
+     en cada caducidad;
+   - si está muerto, arráncalo con `tools/lanza/lanza.py --dir .git/sprint-runtime/s03 --nombre wsvigia -- <python>
+     tools/vigia/wsvigia.py --port 8775 -- --base .git/sprint-runtime/s03 --fins s03/fins.txt --follow s03/follow.txt`.
+   - **Paso 5b (alertas): SUSPENDIDO** hasta el 2026-11-17 00:59 (decisión del usuario, SKILL.md); no lances la revisión.
+6. Busca en la memoria del proyecto: `mt5-descargas-prudentes`, `codex-resume-modelo`, `bash-trampas-commit`.
 7. Commit del HANDOFF con la aceptación y continúa con «Siguiente paso».
 
-**Shell:** usa la herramienta PowerShell. Bash, sólo para órdenes triviales: el envoltorio ejecutó con `eval` backticks
-y `!` dos veces en este tramo (memoria `bash-trampas-commit`). Mensajes de commit: Write a un fichero y `git commit -F`.
+**Shell:** herramienta PowerShell; mensajes de commit con Write/Set-Content a un fichero del scratchpad y `git commit -F`.
 
 ## Estado
-- **SPRINT-03 activo desde el 2026-11-14** (`4535ef6`); SPRINT-04 promovido a `next/`. La guardia `quantdesk-model-4d`
-  pasó a raíz inicial. Detalle de todo el tramo en `current/EXECUTION.md`.
-- **Fila 1 (TI-02-DIARIO, contrato, L3): CERRADA** (`1e50e5e`).
-  - Contrato decidido por el usuario: `current/execution/TI-02-DIARIO/contrato-propuesta.md`.
-  - El borrador y las respuestas de las tres raíces están en `borrador-contrato-a1.md`.
-  - Escrito en GOBERNANZA, DEPENDENCIAS, PLAN_DATOS_VIA_QN §4 y SPRINT.md §2/§4.
-- **Fila 2 (TI-02-DIARIO, código sin OAS, L6): sin encargar.** Espera la respuesta de `quantdesk-f1` sobre
-  `FX_DATE_SHIFT` (ver «Siguiente paso»). En la BDD, `TI-02-DIARIO` está `en_curso`; el intento 283 (borrador) cerró
-  `aceptada`.
-- **Filas 3, 4a–4c, 5, 6 y 7:** esperan su puerta:
-  - fila 3: fecha ≥ 2026-12-11;
-  - filas 4a–4c y 5: desbloqueo de la cuenta MT5; el usuario estudia pagar por datos;
-  - filas 6 y 7: PUB-02 del backend.
-- **Alertas:** primera revisión a las 00:42 (`.git/sprint-runtime/alertas/ultima.json`): sin incidencias. Toca otra
-  pasadas las 08:45. URL y filtro en SPRINT_PROJECT §12.
-- **Cuota** (01:1x): Claude 80 % (reinicio 2026-11-16 23:59 UTC); Codex 62 % (reinicio 2026-11-18 08:07 UTC). Orden
-  temporal: Codex implementa y revisa hasta el 2026-11-17 00:59.
+- **SPRINT-03 activo.** Detalle completo en `current/EXECUTION.md` (secciones del relevo 1).
+- **Fila 1 (contrato TI-02-DIARIO): cerrada** (`1e50e5e`, relevo 0).
+- **Fila 2 (código TI-02-DIARIO): CERRADA** el 2026-11-14 en `a47ccf4`:
+  - r1 rechazó la primera entrega; r2 ACEPTAR, con A5 legítimo;
+  - gate de la raíz 15/15 sobre HEAD fijo;
+  - registrada en SPRINT.md, STATUS.md y la BDD (tarea `cerrada`).
+- **Despliegue de TI-02-DIARIO** (fuera de la fila):
+  - token id 43 instalado en `E:/quantdesk-lab/secrets/ti02-diario.env` (comprobado sin leer el valor);
+  - **falta que el backend registre la tarea de Windows** (su PUB-05-EXPORT, con permiso del usuario); su raíz activa
+    es `quantdesk-backend-22` (ver `relevos.json`). Dirá la hora de la primera ejecución: revisar su log en
+    `E:/quantdesk-lab/runs/TI-02-DIARIO/`.
+- **MT5 desbloqueado** (usuario, 2026-11-14), con contraseña nueva ya puesta en `E:/quantdesk-lab/secrets/mt5.json`.
+  - Prueba de login con turno: OK.
+  - **Primera pasada del publicador** (09:26–09:34, exit 0): sólo 5 de 28 pares publicaron (10–12-11). Los otros 23
+    tenían historia del terminal sólo hasta el 09-11 (sin sincronizar) y todos retienen 1 vela.
+  - La tarea `\quantdesk\publicador_mt5` sigue **Disabled**.
+- **quantlab** (proyecto nuevo, raíz `quantlab-f0`) es el único que descarga histórico de MT5 (usuario):
+  - las filas 4a, 4b y 5 pasan a sus sprints 1 y 2;
+  - la 4c sigue aquí sólo como publicador diario con turno hasta el traspaso;
+  - filas en DEPENDENCIAS y GOBERNANZA (`8ead3db`);
+  - hay que replanificar SPRINT-03 al revisarlo o cerrarlo.
+- **Filas 3, 6 y 7:** esperan su puerta (fecha ≥ 2026-12-11; PUB-02 del backend).
+- **Cuota** (11:2x): Claude 93 % (reinicio el 17-11 01:00), Codex 91 % (reinicio el 18-11 09:07). Codex tiene dos
+  cuentas: al 98 % se avisa al usuario. Lo que deba ir a Claude usa antes Fable 5.2.
 
 ## En vuelo
-Ninguno. Los dos Codex del tramo (alertas y borrador del contrato) terminaron con exit 0.
+Ninguno. El cron de la segunda pasada (13:07) se canceló al relevar: lo hace la sucesora (abajo).
 
 ## Decisiones
-- Usuario, 2026-11-14: «vale» a planificar e iniciar SPRINT-03 empezando por la fila 1 (EXECUTION, SPRINT.md cabecera).
-- Usuario, 2026-11-14 (AskUserQuestion): contrato de TI-02-DIARIO (EXECUTION; GOBERNANZA; DEPENDENCIAS;
-  PLAN_DATOS_VIA_QN §4):
-  - A2, tarea de Windows registrada por el backend;
-  - sólo OHLCV en `desktop.daily-ohlcv/v1` y `engine.market-history/v1`; los JSON siguen con los notebooks de `quantdesk`;
-  - topic `ops.export.status` y token `sub:market.ohlcv.v2` + `pub:ops.export.status`;
-  - el resto tal cual.
-- Raíz: fuente del FX como parámetro de la política de fuentes (hoy `mt5`), porque el usuario estudia pagar por datos
-  (nota en el contrato).
-- Raíz: SPRINT_PROJECT §12 «Alertas» versionado con la URL y el filtro de la primera revisión.
-- Norma nueva de la skill (usuario vía `quantdesk-f1`): al planificar entra todo lo pendiente; se aplica a SPRINT-04
-  (EXECUTION).
+Todas versionadas en EXECUTION (relevo 1), salvo que se diga otra cosa:
+- **Fila 2:** cierre con `a47ccf4`. Decisiones de la raíz en la ficha:
+  - ausencia parcial de FX = `sin_mt5`;
+  - `manifest_sha256` del intento también en `sin_mt5` y `error`;
+  - festivo FX sin barras = `ok` sin publicación.
+- **rsc-brain:** plan en el backlog del backend (`c01e49d`). El usuario lo integró en el SPRINT-02 del backend (raíl R,
+  `c372ae8`) con estas GAP:
+  - GAP-1: `qn-pgprod`;
+  - GAP-2: pública con OAuth;
+  - GAP-3: sin embeddings.
+  La GAP-4 y la GAP-5 las pregunta el backend.
+- **MT5** (usuario, AskUserQuestion):
+  - reactivar hoy el publicador;
+  - descargas grandes tras el 18-11 (ahora de quantlab);
+  - token id 36 mantenido: revisado el 14-11, la próxima revisión al cerrar SPRINT-03.
+- **quantlab:** decisiones del usuario retransmitidas por `quantlab-f0`, versionadas en DEPENDENCIAS y GOBERNANZA
+  (`8ead3db`).
+- **Cambios de la skill anotados:**
+  - avisar de todo cambio en la skill;
+  - compilación sin exportaciones;
+  - `sprint_db` regenera la web;
+  - alertas suspendidas hasta el 17-11;
+  - turno de MT5 (`~/.claude/mt5/turno.lock` y `uso.jsonl`);
+  - quantlab, único para histórico;
+  - dos cuentas de Codex y Fable para Claude.
 
 ## Preguntas abiertas al usuario
-Ninguna. Network registrará el topic y emitirá el token pidiendo confirmación al usuario desde su propia sesión.
+Ninguna.
 
 ## Compromisos con otras raíces
-- **`quantdesk-f1`:** responderá con ruta:línea la pregunta de `FX_DATE_SHIFT` (`daily.py:97`, se aplica en su notebook
-  28): dirección del desplazamiento, si algún lector vuelve a desplazar, acciones y SPX, rango de fechas y si usamos su
-  `write_ohlcv`. **Pidió no encargar la fila 2 hasta entonces.** Hay que avisarle al aceptar la fila 2.
-- **`quantdesk-backend-24`:** espera la orden exacta de la tarea de Windows (script, argumentos, cwd y venv) cuando la
-  fila 2 esté aceptada. Su sensor usa el `ts` del sobre de `ops.export.status` (cuando termina la validación) y sólo
-  cuenta `status=ok`.
-- **`quantdesk-network-b2`** (la raíz de network desde hoy; `-21` ya no escribe): registrará `ops.export.status` y
-  emitirá el token, con la confirmación del usuario, y avisará. Respuestas de despliegue en EXECUTION: el token no va
-  atado a host; `QN_URLS=http://192.168.1.48:8790/qn,http://192.168.1.46:8790/qn,http://192.168.1.45:8790/qn`; sin TLS
-  en la LAN.
-- Nosotros avisamos al backend cuando MT5 vuelva a publicar.
+- **Backend (`quantdesk-backend-22`):** registra la tarea de Windows de TI-02-DIARIO y avisa de la primera ejecución.
+  Le prometimos reactivar la tarea diaria del publicador antes del lunes 16-11 a las 23:30.
+- **quantdesk (`quantdesk-cb` o la que figure en `relevos.json`):** informada del cierre de la fila 2. No queda nada
+  pendiente.
+- **quantlab (`quantlab-f0`):** espera que respetemos `turno.lock` hasta el traspaso y que no añadamos código de
+  descarga de MT5. Avisará cuando QL-10 entregue el h1 en `E:/quantlab`.
+- **network (`quantdesk-network-b2`):** nada pendiente.
 
 ## Conocimiento promovido
-Memoria `bash-trampas-commit` ampliada: PowerShell para órdenes no triviales y nada que cambie el árbol en las órdenes
-de verificación. Lo demás está versionado (contrato y EXECUTION); no hay grafo de conocimiento en este proyecto.
+- Memoria nueva `codex-resume-modelo`: `codex exec resume` sin `-m` arranca con el modelo por defecto. Propuesto al
+  usuario anotarlo en `tools/lanza/README.md` de la skill; no hubo respuesta.
+- Lo demás está en EXECUTION.
 
 ## Siguiente paso
-Cuando llegue la respuesta de `quantdesk-f1` sobre `FX_DATE_SHIFT`, escribir la ficha de la fila 2 en
-`.git/sprint-runtime/s03/TI-02-DIARIO-codigo/ficha.md` (plantilla `references/ficha.md`, L6, riesgo numérico-silencioso).
-Contrastar con la fuente cada hora, zona y regla que ponga. La ficha recoge:
-- el contrato aprobado;
-- el `ts_ms` del FX de MT5 según la respuesta de `quantdesk`;
-- el uso de `quantdesk.daily.write_ohlcv` de la rueda, si lo aceptan, con `sources` explícitas;
-- `volume_kind=tick_count`;
-- el docstring de `descarga_lago.py` corregido (ni «`market.>`» ni «el host donde se emite»);
-- paso a la siguiente URL de `QN_URLS`;
-- H (`x-qn-head-cycle`) en el manifiesto y el filtro `_cycle <= H`, sin `fresh=true`;
-- publicación del objeto de estado con `batch_id` determinista, job `ti02-diario`;
-- `sin_mt5` sin publicar nada;
-- un oráculo contra `quantdesk.daily` y un test diferencial frente a `Base`.
-
-Después: revisión de la ficha por un modelo barato de sólo lectura, autor Codex `gpt-6.1-sol` xhigh y revisor
-`gpt-6-astra` high (LAUNCH §2), lanzados con `lanza.py`/`hijo.py`. Mientras no llegue la respuesta, no se encarga nada.
+1. **Segunda pasada del publicador** con turno, a partir de las 13:00:
+   - comprobar que no existe `~/.claude/mt5/turno.lock`;
+   - lanzar con `lanza.py` en `.git/sprint-runtime/s03/TI-12-MT5-OPS` (nombre `pub-pasada2`) el ejecutor
+     `S:/Apps/tmp/claude/claude/37f65974f743234e/2ab53d59-60b1-4f92-84cf-bf4a7115386f/scratchpad/mt5_turno_runner.py`,
+     con `--plan "…" -- <python> -X utf8 scripts/publicador_mt5.py --ejecutar --topic market.ohlcv.v2 --intervalos 1d
+     --republicar-revisiones --pausa-serie-s 15` (orden completa en `s03/TI-12-MT5-OPS/pub-pasada1.log` y
+     `lz-pub-pasada1-eventos.jsonl`);
+   - añadir su `.fin` a `s03/fins.txt`;
+   - comparar con la pasada 1 (`E:/quantdesk-lab/runs/TI-12-MT5/publicador/ultimo.json`) y anotarlo en EXECUTION;
+   - al primer error de autenticación o de límite, parar y avisar al usuario.
+2. **Envoltorio del turno de MT5 para la tarea diaria.** Ficha escrita: `.git/sprint-runtime/s03/TI-12-MT5-OPS/ficha-turno.md`
+   (L3, base `ad43ba0`).
+   - Revisión previa de la ficha con `gpt-6-luna` high, sólo lectura.
+   - Autor Codex `gpt-6.1-sol` high; revisor `gpt-6-luna` high (revisión obligatoria en L3 hasta el 24-11).
+   - Al aceptarlo: `run_scheduler.cmd` registra la tarea con turno; después, comprobar que está habilitada (`Ready`).
+   - **Antes del lunes 16-11 a las 23:30.**
+3. Seguir los avisos del backend sobre la primera ejecución de TI-02-DIARIO.
