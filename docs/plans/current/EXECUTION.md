@@ -267,3 +267,25 @@ decisiones del usuario, con fecha y hora local (CET).
   (reinicio 18-11 08:07; aviso al usuario al 98 %).
 - **TI-12-MT5-OPS, envoltorio del turno:** revisión previa de `ficha-turno.md` con `gpt-6-luna` high, sólo lectura
   (intento BDD 333; `s03/TI-12-MT5-OPS/revficha-turno`).
+- **Decisión del usuario retransmitida por `quantdesk-6c`** (2026-11-14 ~11:30, literal): «El tema del secret y el .env
+  ya lo he arreglado se supone, y los tokens tienes libertad para generar los que necesites. Network puede usar mini o lo
+  que necesite». Para este laboratorio: los tokens que necesite (el 43 de TI-02-DIARIO u otros) los podemos generar
+  nosotros, coordinando con backend y network; ningún valor en chats ni logs. `quantdesk-6c` avisa además de que el
+  HANDOFF de la 01:14 daba MT5 por bloqueado: ya está corregido desde el relevo 2 (MT5 desbloqueado hoy, histórico vía
+  quantlab, uso por turnos según SKILL.md §0).
+- **TI-12-MT5-OPS, envoltorio del turno: ACEPTADO** (`494d97a`, base `8d790e3`).
+  - Ficha v2 tras la revisión previa de `gpt-6-luna` (CAMBIAR, 8 cambios incorporados: formato real de
+    `ultimo.json`, `token` en el candado y liberación por token, huérfano propio de `tarea-programada` retirable,
+    candado corrupto = ocupado, UTC con `Z`, saneado de secretos en `orden`/`errores`, registro a stderr si falla
+    `uso.jsonl`, hija con `CREATE_NO_WINDOW`; hija también con `pythonw.exe`).
+  - Autor `gpt-6.1-sol` high (intento 335): `scripts/mt5_turno.py` (767 líneas, 24 tests con tabla «caso borde → test»
+    completa) y `scripts/publicador_mt5_tarea.xml` (sólo cambia `Arguments`).
+  - Revisor `gpt-6-luna` high (intento 338): ACEPTAR, sin hallazgos; reprodujo la cadena `pythonw → envoltorio →
+    pythonw` (código 37 propagado, candado liberado; PID del lanzador del `.venv` ≠ PID de Python del candado). A5:
+    sólo el XML, sólo `<Arguments>`.
+  - Gate de la raíz sobre HEAD fijo `494d97a`, `scripts` limpio antes y después: `mt5_turno.py --selftest` 24 OK;
+    `run_selftests.py` 16 OK, 0 fallos (`E:/quantdesk-lab/runs/TI-12-MT5/gate-raiz-turno/`).
+  - **Tarea reactivada** (decisión del usuario «reactivar hoy el publicador», arriba): `run_scheduler.cmd` →
+    `ACTUALIZADA quantdesk\publicador_mt5`; estado **Ready**, próxima ejecución 2026-11-14 23:30, ya con turno.
+    Compromiso con el backend (antes del lunes 16-11 23:30) cumplido. Ojo: `LastTaskResult` = 2 de la ejecución que
+    el Programador anota el 13-11 23:30; se mira tras la de hoy.
