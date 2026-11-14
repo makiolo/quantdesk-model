@@ -258,3 +258,12 @@ decisiones del usuario, con fecha y hora local (CET).
   - **Consecuencia para SPRINT-03:** las filas 4a, 4b y 5 ya no las ejecuta este laboratorio. Se replanifican al cerrar o
     revisar el sprint. La 4c sigue aquí sólo en su parte operativa: publicador diario con turno hasta el traspaso.
 - **Aviso de cambio en la skill** (`quantlab-f0` por encargo del usuario, 2026-11-14; `niveles-y-modelos.md` §0 y SKILL.md): Claude 93 % (reinicio el 17-11 01:00), Codex 91 % (reinicio el 18-11 09:07). (1) Codex tiene dos cuentas: se sigue encargando a Codex y, cuando la cuenta activa llegue al 98 %, se avisa al usuario, que cambia a la segunda; no se pasa trabajo a Claude por eso. (2) Lo que deba ir a Claude (L9–L10, arenas o escalada con motivo) usa antes Fable 5.2 (`claude-fable-5-2`), con barra semanal propia; las raíces siguen en Opus. Se aplica desde el próximo encargo.
+
+### Relevo 2 (2026-11-14, `quantdesk-model-c1`)
+
+- **Aceptación** 11:26 (`3aa50a0`): sesión af8558d2, contexto inicial 17,3 %; `relevos.json` → `quantdesk-model-c1`.
+  `deps.py --sprint SPRINT-03`: LISTO. Vigía `wsvigia.py` vivo (PID 28040, puerto 8775) y Monitor re-armado. Alertas:
+  suspendidas hasta el 17-11 00:59 (SKILL.md). Cuota 11:28: Claude 94 % (reinicio 16-11 23:59), Fable 0 %, Codex 92 %
+  (reinicio 18-11 08:07; aviso al usuario al 98 %).
+- **TI-12-MT5-OPS, envoltorio del turno:** revisión previa de `ficha-turno.md` con `gpt-6-luna` high, sólo lectura
+  (intento BDD 333; `s03/TI-12-MT5-OPS/revficha-turno`).
