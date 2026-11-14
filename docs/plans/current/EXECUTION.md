@@ -257,3 +257,4 @@ decisiones del usuario, con fecha y hora local (CET).
     filas).
   - **Consecuencia para SPRINT-03:** las filas 4a, 4b y 5 ya no las ejecuta este laboratorio. Se replanifican al cerrar o
     revisar el sprint. La 4c sigue aquí sólo en su parte operativa: publicador diario con turno hasta el traspaso.
+- **Aviso de cambio en la skill** (`quantlab-f0` por encargo del usuario, 2026-11-14; `niveles-y-modelos.md` §0 y SKILL.md): Claude 93 % (reinicio el 17-11 01:00), Codex 91 % (reinicio el 18-11 09:07). (1) Codex tiene dos cuentas: se sigue encargando a Codex y, cuando la cuenta activa llegue al 98 %, se avisa al usuario, que cambia a la segunda; no se pasa trabajo a Claude por eso. (2) Lo que deba ir a Claude (L9–L10, arenas o escalada con motivo) usa antes Fable 5.2 (`claude-fable-5-2`), con barra semanal propia; las raíces siguen en Opus. Se aplica desde el próximo encargo.
