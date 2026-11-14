@@ -242,3 +242,4 @@ decisiones del usuario, con fecha y hora local (CET).
     seguimiento. No se fuerza con consultas en ráfaga (causa del bloqueo).
   - Segunda pasada programada en esta sesión a las 13:07 (cron de un solo disparo), con el mismo turno y la misma
     pausa. Detalle de la pasada 1: `E:/quantdesk-lab/runs/TI-12-MT5/publicador/ultimo.json`.
+- **`quantlab-f0` (raíz de quantlab)** propone centralizar MT5: heredar el extractor y después el publicador, con almacén propio en nuestro formato y entradas en DEPENDENCIAS y GOBERNANZA. Respuesta técnica de la raíz: de acuerdo con la herencia y con que use su propio almacén (nosotros sólo leemos). Le corregimos que el publicador ya es diario y está desactivado. Peticiones reales: filas 4a–4c y 5. Las filas de DEPENDENCIAS y GOBERNANZA llegarán cuando el usuario decida la entrega. **Pendiente del usuario:** el traspaso de propiedad del extractor y del publicador, y dónde se entregan los datos.
