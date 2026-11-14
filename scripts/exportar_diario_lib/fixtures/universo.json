@@ -1,0 +1,297 @@
+[
+  {
+    "observable": "FX.EURUSD",
+    "yahoo": "EURUSD=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.GBPUSD",
+    "yahoo": "GBPUSD=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.AUDUSD",
+    "yahoo": "AUDUSD=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.NZDUSD",
+    "yahoo": "NZDUSD=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.USDJPY",
+    "yahoo": "USDJPY=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.USDCHF",
+    "yahoo": "USDCHF=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.USDCAD",
+    "yahoo": "USDCAD=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.EURGBP",
+    "yahoo": "EURGBP=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.EURAUD",
+    "yahoo": "EURAUD=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.EURNZD",
+    "yahoo": "EURNZD=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.EURJPY",
+    "yahoo": "EURJPY=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.EURCHF",
+    "yahoo": "EURCHF=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.EURCAD",
+    "yahoo": "EURCAD=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.GBPAUD",
+    "yahoo": "GBPAUD=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.GBPNZD",
+    "yahoo": "GBPNZD=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.GBPJPY",
+    "yahoo": "GBPJPY=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.GBPCHF",
+    "yahoo": "GBPCHF=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.GBPCAD",
+    "yahoo": "GBPCAD=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.AUDNZD",
+    "yahoo": "AUDNZD=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.AUDJPY",
+    "yahoo": "AUDJPY=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.AUDCHF",
+    "yahoo": "AUDCHF=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.AUDCAD",
+    "yahoo": "AUDCAD=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.NZDJPY",
+    "yahoo": "NZDJPY=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.NZDCHF",
+    "yahoo": "NZDCHF=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.NZDCAD",
+    "yahoo": "NZDCAD=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.CHFJPY",
+    "yahoo": "CHFJPY=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.CADJPY",
+    "yahoo": "CADJPY=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "FX.CADCHF",
+    "yahoo": "CADCHF=X",
+    "kind": "fx"
+  },
+  {
+    "observable": "EQ.SPOT.AAPL",
+    "yahoo": "AAPL",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.MSFT",
+    "yahoo": "MSFT",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.NVDA",
+    "yahoo": "NVDA",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.AMZN",
+    "yahoo": "AMZN",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.GOOGL",
+    "yahoo": "GOOGL",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.META",
+    "yahoo": "META",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.BRK_B",
+    "yahoo": "BRK-B",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.AVGO",
+    "yahoo": "AVGO",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.TSLA",
+    "yahoo": "TSLA",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.JPM",
+    "yahoo": "JPM",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.LLY",
+    "yahoo": "LLY",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.V",
+    "yahoo": "V",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.UNH",
+    "yahoo": "UNH",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.XOM",
+    "yahoo": "XOM",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.MA",
+    "yahoo": "MA",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.JNJ",
+    "yahoo": "JNJ",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.PG",
+    "yahoo": "PG",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.HD",
+    "yahoo": "HD",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.COST",
+    "yahoo": "COST",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.ABBV",
+    "yahoo": "ABBV",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.WMT",
+    "yahoo": "WMT",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.NFLX",
+    "yahoo": "NFLX",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.BAC",
+    "yahoo": "BAC",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.CRM",
+    "yahoo": "CRM",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.KO",
+    "yahoo": "KO",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.ORCL",
+    "yahoo": "ORCL",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.CVX",
+    "yahoo": "CVX",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.MRK",
+    "yahoo": "MRK",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.AMD",
+    "yahoo": "AMD",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.PEP",
+    "yahoo": "PEP",
+    "kind": "equity"
+  },
+  {
+    "observable": "EQ.SPOT.SPX",
+    "yahoo": "^GSPC",
+    "kind": "equity"
+  }
+]

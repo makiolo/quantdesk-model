@@ -1,0 +1,10 @@
+{
+  "status_schema": {
+    "path": "S:/Projects/quantdesk-network/deploy/qn-topics/ops.export.status.json",
+    "commit": "4c5c1ac42e1ba19676ab18f3b895d15f2fca12d2"
+  },
+  "universe": {
+    "path": ".venv/Lib/site-packages/quantdesk/daily.py:118",
+    "wheel_sha256": "28c1ed662a79a1075a11e544a0f4fe3f10be70d0a9917a4abbf6eccad4c3c3fd"
+  }
+}

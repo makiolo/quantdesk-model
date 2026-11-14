@@ -1,0 +1,21 @@
+{
+  "kind": "object",
+  "tags": ["job"],
+  "max_tag_sets": 16,
+  "max_staleness": "2d",
+  "schema": {
+    "type": "object",
+    "title": "OpsExportStatus",
+    "properties": {
+      "session": {"type": "string", "format": "date"},
+      "cut_head_cycle": {"type": "integer"},
+      "manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+      "status": {"type": "string", "enum": ["ok", "sin_mt5", "error"]},
+      "detail": {"type": "string", "maxLength": 500},
+      "exporter_version": {"type": "string"},
+      "host": {"type": "string"}
+    },
+    "required": ["session", "cut_head_cycle", "manifest_sha256", "status", "exporter_version"],
+    "additionalProperties": false
+  }
+}
