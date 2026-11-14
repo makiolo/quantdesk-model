@@ -5,7 +5,6 @@ import copy
 import json
 import threading
 from contextlib import contextmanager
-from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
@@ -15,9 +14,10 @@ TOKEN_PRUEBA = "credencial-ficticia-ti02"
 
 
 def ns(value):
-    if isinstance(value, int):
+    if type(value) is int:
         return value
-    return int(datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()) * 10**9
+    from descarga_lago import ns_rfc3339
+    return ns_rfc3339(value)
 
 
 class Estado:
@@ -50,6 +50,8 @@ def servidor(estado=None):
             self.wfile.write(raw)
 
         def do_GET(self):
+            assert self.headers["Authorization"] == "Bearer " + TOKEN_PRUEBA
+            assert TOKEN_PRUEBA not in self.path
             parsed = urlsplit(self.path)
             ruta = parsed.path
             q = {k: v[0] for k, v in parse_qs(parsed.query).items()}

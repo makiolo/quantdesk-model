@@ -1053,6 +1053,15 @@ def prueba_rejilla_mt5(tmp: str) -> None:
     assert len(L.limpiar_ohlcv(f, ms(11, 11), 'recepcion', L.nuevo_contador(1))) == 1
 
 
+def prueba_volume_kind_por_fuente() -> None:
+    """TI-02-DIARIO: el lago MT5 cuenta ticks; Binance conserva volumen negociado."""
+    df = marco([('EURUSD', ms(11, 10), 1., 1.2, .9, 1.1, 100., ms(11, 10, 23), ms(11, 11)),
+                ('BTCUSDT', ms(11, 10), 1., 1.2, .9, 1.1, 5., ms(11, 11), ms(11, 11))])
+    df['source'] = ['mt5', 'binance']
+    out = L.limpiar_ohlcv(df, ms(11, 13), 'identicos', L.nuevo_contador(2))
+    assert dict(zip(out['instrument'], out['volume_kind'])) == {'EURUSD': 'tick_count', 'BTCUSDT': 'traded'}
+
+
 def correr() -> None:
     os.makedirs(LAB_TMP, exist_ok=True)
     tmp = tempfile.mkdtemp(prefix="selftest-", dir=LAB_TMP)
@@ -1077,6 +1086,7 @@ def correr() -> None:
         prueba_revisiones_mt5(tmp)
         prueba_mt5_sin_version_al_corte(tmp)
         prueba_rejilla_mt5(tmp)
+        prueba_volume_kind_por_fuente()
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print("selftest ok")

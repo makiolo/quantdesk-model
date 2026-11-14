@@ -211,7 +211,8 @@ def limpiar_ohlcv(df: pd.DataFrame, corte_ms: int, duplicados: str, c: dict, cal
         "instrument": df["instrument"].astype(object), "ts_ms": df["ts_ms"].astype("int64"),
         "interval_ms": df["interval_ms"].astype("int64"), "open": df["open"].astype("float64"),
         "high": df["high"].astype("float64"), "low": df["low"].astype("float64"), "close": df["close"].astype("float64"),
-        "volume": df["volume"].astype("float64"), "volume_kind": pd.Series(["traded"] * len(df), dtype=object),
+        "volume": df["volume"].astype("float64"), "volume_kind": pd.Series(np.where(df["source"].to_numpy() == "mt5", "tick_count", "traded")
+                                                        if "source" in df else ["traded"] * len(df), dtype=object),
         "available_at_ms": df["available_at_ms"].astype("Int64"), "revision": np.zeros(len(df), dtype="int32")})
     verificar_identidad(c, len(out))
     c["huecos"] = huecos(out, calendario)

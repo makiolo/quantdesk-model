@@ -8,11 +8,11 @@ Descarga `market.ohlcv.v2` del entorno `QN_ENV`, los instrumentos que lista
                                                    esquema de cada topic y lista de peticiones (ruta y parametros)
 
 Este script NO convierte nada: el paso 2 (`exportar_market_history.py`, con el .venv de Windows) lee este volcado. Existe
-aparte porque la credencial de qn solo puede usarse en el host donde se emite y no sale de el: aqui solo hay biblioteca
-estandar (Python >= 3.10, sin pandas ni pyarrow) y un unico fichero.
+aparte para usar solo biblioteca estandar (Python >= 3.10, sin pandas ni pyarrow) y un unico fichero. El fichero
+privado del token se conserva en el host del cliente; el token no esta ligado tecnicamente al host emisor.
 
-Variables: `QN_URLS` (bases separadas por comas, p. ej. http://192.168.1.48:8790/qn; se usa la primera), `QN_TOKEN`
-(permiso de lectura sobre market.>) y `QN_ENV` (entorno, por defecto main). La credencial se lee solo de `QN_TOKEN`, viaja
+Variables: `QN_URLS` (bases separadas por comas, p. ej. http://192.168.1.48:8790/qn; se pasa a la siguiente ante conexion fallida o HTTP 5xx), `QN_TOKEN`
+(permiso sub:market.ohlcv.v2) y `QN_ENV` (entorno, por defecto main). La credencial se lee solo de `QN_TOKEN`, viaja
 solo en la cabecera Authorization y no se imprime ni se escribe en ningun fichero, error o log (todo texto se sanea antes).
 
 Uso:
@@ -215,36 +215,63 @@ class Cliente:
     """GET a `{base}/api/v1{ruta}` con reintentos. La credencial va solo en la cabecera Authorization."""
 
     def __init__(self, base: str, acceso: str, env: str, espera_base: float = ESPERA_BASE_S):
-        self.base, self.acceso, self.env, self.espera_base = base, acceso, env, espera_base
+        self.bases = [b.strip().rstrip("/") for b in base.split(",") if b.strip()]
+        if not self.bases:
+            raise ValueError("QN_URLS no contiene ninguna URL")
+        self.base, self.acceso, self.env, self.espera_base = self.bases[0], acceso, env, espera_base
+        self.cabeceras = {}
 
     def get(self, ruta: str, params: dict, registro: list) -> dict:
+        doc, _ = self.get_con_cabeceras(ruta, params, registro)
+        return doc
+
+    def get_con_cabeceras(self, ruta: str, params: dict, registro: list) -> tuple[dict, dict]:
+        return self.solicitar("GET", ruta, params, registro)
+
+    def post(self, ruta: str, params: dict, doc: dict, registro: list) -> dict:
+        respuesta, _ = self.solicitar("POST", ruta, params, registro, doc)
+        return respuesta
+
+    def solicitar(self, metodo: str, ruta: str, params: dict, registro: list, doc: dict | None = None) -> tuple[dict, dict]:
         q = {"env": self.env, **params}
         entrada = {"ruta": f"/api/v1{ruta}", "params": {k: str(v) for k, v in q.items()}}
         registro.append(entrada)
-        url = f"{self.base}/api/v1{ruta}?{urllib.parse.urlencode(q)}"
         ultimo = ""
-        for intento in range(REINTENTOS + 1):
+        indice = self.bases.index(self.base)
+        intentos = max(REINTENTOS + 1, len(self.bases))
+        datos = None if doc is None else json.dumps(doc, separators=(",", ":"), allow_nan=False).encode("utf-8")
+        for intento in range(intentos):
             if intento:
                 entrada["intentos"] = intento + 1
-                time.sleep(self.espera_base * 2 ** (intento - 1))
-            req = urllib.request.Request(url, headers={"Authorization": f"Bearer {self.acceso}",
-                                                       "Accept": "application/json"})
+                time.sleep(self.espera_base * 2 ** min(intento - 1, 2))
+            self.cabeceras = {}
+            base = self.bases[indice % len(self.bases)]
+            url = f"{base}/api/v1{ruta}?{urllib.parse.urlencode(q)}"
+            req = urllib.request.Request(url, data=datos, method=metodo,
+                                         headers={"Authorization": f"Bearer {self.acceso}", "Accept": "application/json",
+                                                  "Content-Type": "application/json"})
             try:
                 with ABRIR(req, timeout=TIMEOUT_S) as r:
-                    doc = json.load(r)
-                if not isinstance(doc, dict):
+                    self.cabeceras = {k.lower(): v for k, v in r.headers.items()}
+                    respuesta = json.load(r)
+                if not isinstance(respuesta, dict):
                     raise ValueError("la respuesta no es un objeto JSON")
-                return doc
+                self.base = base
+                return respuesta, dict(self.cabeceras)
             except urllib.error.HTTPError as e:
+                self.cabeceras = {k.lower(): v for k, v in e.headers.items()}
                 crudo = e.read(4096).decode("utf-8", "replace")
                 if e.code in (401, 403):
                     raise Parada(f"qn rechaza la credencial (HTTP {e.code}) en {ruta}: comprueba QN_TOKEN, que no este "
-                                 f"revocado y que tenga permiso de lectura sobre market.> en el entorno {self.env}") from None
+                                 f"revocado y que tenga sub:market.ohlcv.v2 (lectura) o pub:ops.export.status "
+                                 f"(publicacion de estado), segun la operacion, en el entorno {self.env}") from None
                 if 300 <= e.code < 400:
                     raise RuntimeError(f"qn responde con una redireccion (HTTP {e.code}) en {ruta}: no se sigue, porque la cabecera "
                                        "Authorization no debe salir del host de QN_URLS; revisa QN_URLS") from None
                 if e.code >= 500 or e.code == 429:
                     ultimo = f"HTTP {e.code} en {ruta}: {sanear(crudo, self.acceso)}"
+                    if e.code >= 500:
+                        indice += 1
                     continue
                 try:
                     cuerpo = json.loads(crudo)
@@ -256,9 +283,12 @@ class Cliente:
                         isinstance(x, dict) and x.get("path") == "/limit" for x in detalles):
                     raise DemasiadasFilas(msg) from None
                 raise RuntimeError(msg) from None
-            except (urllib.error.URLError, OSError, http.client.HTTPException, ValueError) as e:
+            except (urllib.error.URLError, OSError, http.client.HTTPException) as e:
                 ultimo = f"{type(e).__name__} en {ruta}: {sanear(str(e), self.acceso)}"
-        raise RuntimeError(f"{ultimo} (tras {REINTENTOS + 1} intentos)")
+                indice += 1
+            except ValueError as e:
+                ultimo = f"{type(e).__name__} en {ruta}: {sanear(str(e), self.acceso)}"
+        raise RuntimeError(f"{ultimo} (tras {intentos} intentos)")
 
 
 def leer_ventana(cli: Cliente, lectura: str, combo: tuple, d0: date, d1: date, registro: list, volcar) -> None:
@@ -1008,7 +1038,7 @@ def main() -> int:
     if desde > hasta:
         print("descarga_lago: --desde es posterior a --hasta", file=sys.stderr)
         return EXIT_USO
-    base = os.environ.get("QN_URLS", "").split(",")[0].strip().rstrip("/")
+    base = os.environ.get("QN_URLS", "").strip()
     acceso = os.environ.get("QN_TOKEN", "").strip()
     env = os.environ.get("QN_ENV", "").strip() or "main"
     if not base or not acceso:

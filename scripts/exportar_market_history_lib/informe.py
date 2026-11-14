@@ -224,7 +224,7 @@ def generar(raiz: str, runs: str, nombres: list) -> str:
           "- Cadenas de opciones (`market.options.*`): vacias en el lago (TI-01-INV); TI-09-ARCH retirada.",
           "- MT5 (TI-12-MT5, a la espera de la puerta 2) y los corpus genericos de TI-13-PUB (sin OHLCV real con fecha).",
           "- De Binance: `quote_volume` y `n_trades`; `ohlcv/v1` no tiene donde ponerlos (`volume` es el volumen en activo base, "
-          "`volume_kind` = `traded`). Tampoco `value`, que es igual a `close`.",
+          "`volume_kind` = `tick_count` para MT5 y `traded` para las demas fuentes). Tampoco `value`, que es igual a `close`.",
           "- Del lago: el campo `date` (se usa `_ts`, ver el desfase arriba), `_clock_offset_ns` (nulo en todas las filas), "
           "`_batch_id`, `_cycle` y demas columnas de sistema.",
           "- Ninguna tabla `universe/v1` ni `corporate_actions/v1`: no se conocen altas, bajas ni acciones corporativas, y "
