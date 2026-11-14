@@ -80,6 +80,16 @@ decisiones del usuario, con fecha y hora local (CET).
   desktop va sin desplazar. La ficha espera la respuesta (`quantdesk-f1`: su revisor lo contrasta con el notebook 28;
   piden no encargar el código hasta entonces). Se pregunta a `quantdesk-network-b2` si los tokens van atados a host
   (docstring de `descarga_lago.py`) y qué `QN_URLS` alcanza el PC por LAN.
+- **Respuesta de `quantdesk-network-b2`:**
+  - Los tokens **no** van atados a host: viven en el Postgres de metadatos que comparten las tres réplicas. La frase del
+    docstring es una norma operativa (el fichero del token se queda en el host del cliente), no una restricción técnica:
+    hay que corregirla en la fila 2.
+  - El HTTP de qn en la LAN no tiene TLS, por eso el token es exclusivo y de concesión mínima.
+  - Base `http://<host>:8790/qn`, comprobada desde el PC (`/health` 200, `/qn/api/v1/topics` 401 sin token). `QN_URLS`
+    recomendado: `http://192.168.1.48:8790/qn,http://192.168.1.46:8790/qn,http://192.168.1.45:8790/qn` (macold, mini y
+    silver la última, ISSUE-SILVER-GPF). `descarga_lago.py` sólo usa la primera URL: el exportador diario debe pasar a la
+    siguiente si una réplica no responde.
+  - El JSON de `ops.export.status` está escrito y en test. Registro y token esperan la confirmación del usuario.
 - **Fila 1 cerrada** con el contrato decidido. Siguen: issue/JSON del topic a network, aviso al backend y encargo de la
   fila 2.
 - **Norma nueva de la skill** (usuario, 2026-11-14, retransmitida por `quantdesk-f1`): al preparar un sprint entra todo
