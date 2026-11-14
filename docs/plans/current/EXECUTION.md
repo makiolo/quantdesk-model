@@ -289,3 +289,31 @@ decisiones del usuario, con fecha y hora local (CET).
     `ACTUALIZADA quantdesk\publicador_mt5`; estado **Ready**, próxima ejecución 2026-11-14 23:30, ya con turno.
     Compromiso con el backend (antes del lunes 16-11 23:30) cumplido. Ojo: `LastTaskResult` = 2 de la ejecución que
     el Programador anota el 13-11 23:30; se mira tras la de hoy.
+- **quantlab** (`quantlab-f0`, 2026-11-14): anota nuestra pasada de las 13:07 y la tarea de las 23:30. Su primera
+  conexión real (QL-09a, ~144 peticiones y ≥ 15 min de pausas) aún no tiene hora, porque faltan credenciales del usuario.
+  No coincidirá con esas franjas, usa el mismo `turno.lock` con O_EXCL y mantiene el descriptor abierto todo el turno.
+  Avisará antes de lanzarla. Límite conocido de `mt5_turno.py`: si un candado ajeno se abre negando la lectura,
+  `leer_candado` (`scripts/mt5_turno.py:179`) lanza `PermissionError` y el envoltorio sale con error en vez de esperar.
+  Se ha pedido a quantlab que lo abra con compartición de lectura (lo normal en Python). Si no, issue para el envoltorio.
+- **Backend** (`quantdesk-backend-22`, relevo 8, 2026-11-14): confirma que el publicador está reactivado. La tarea de
+  Windows de TI-02-DIARIO va en su PUB-05-EXPORT (su SPRINT-03, aún sin empezar; su SPRINT-02 sigue activo, con la
+  ventana de Mongo hasta el 18-11). Avisará de la hora de la primera ejecución cuando la registre, con permiso del
+  usuario. Decisión del usuario retransmitida (vía quantlab): las fuentes que no son de MT5 (PUB-*) se quedan en el
+  backend. Para nosotros, el despliegue de TI-02-DIARIO sigue esperando ese aviso; nada que hacer.
+- **Aviso de cambio en la skill** (`quantlab-f0` por encargo del usuario, 2026-11-14; `niveles-y-modelos.md` §0,
+  «Actualización … quedan 2 más»): el usuario gastó uno de sus reinicios de Codex y le quedan 2. Codex está al 0 %, con
+  el próximo reinicio el 21-11 a las 11:38 UTC. Se sigue priorizando Codex para autores y revisores. La regla del 98 % no
+  cambia: avisar al usuario, que decide cuándo reinicia o cambia de cuenta. Se aplica desde el próximo encargo; no hay
+  que relanzar nada.
+- **Segunda pasada del publicador** (13:07–13:16 CET, exit 0, sin errores; primera ejecución real de
+  `scripts/mt5_turno.py`, sesión `quantdesk-model-c1`; turno tomado, liberado y con una línea en `uso.jsonl` con las
+  28 series; `s03/TI-12-MT5-OPS/pub-pasada2`). La orden es la de la pasada 1, con `--republicar-revisiones` y
+  `--pausa-serie-s 15`.
+  - Los 23 pares que en la pasada 1 sólo tenían historia hasta el 09-11 la tienen ya hasta el 12-11: publicaron 3 velas
+    cada uno (10, 11 y 12-11), **69 nuevas y 69 publicadas**. Los 5 de la pasada 1 (AUDJPY, EURUSD, GBPUSD, USDCAD,
+    USDCHF) dieron 0 nuevas, como se esperaba.
+  - Los 28 retienen 1 vela (`retenidas_sin_historia`), la del viernes 13-11. La guarda la retiene hasta que el terminal
+    tenga historia posterior; con el mercado cerrado el fin de semana, se publicará en la ejecución diaria del lunes
+    16-11 a las 23:30. `revisiones_a_republicar` = 0 en todas.
+  - Copia de la pasada 1: `s03/TI-12-MT5-OPS/ultimo-pasada1.json`; la pasada 2 está en
+    `E:/quantdesk-lab/runs/TI-12-MT5/publicador/ultimo.json`.
