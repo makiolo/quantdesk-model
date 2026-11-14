@@ -132,3 +132,9 @@ decisiones del usuario, con fecha y hora local (CET).
   un día FX incompleto); `manifest_sha256` = hash del manifiesto lateral del intento también en `sin_mt5`/`error`;
   festivo FX conocido sin barras = `ok` sin publicación nueva. Revisión de la ficha: Codex `gpt-6-luna` high, sólo
   lectura (PID 17992).
+- **Revisión de la ficha** (`gpt-6-luna` high, exit 0, `revficha-salida.md`): una observación, aceptada: la comprobación
+  previa de barras FX se limita a sesiones FX (los festivos FX versionados son ausencia esperada, contrato §4). Corregida
+  en la ficha.
+- **Fila 2 encargada** (2026-11-14 ~01:55): autor Codex `gpt-6.1-sol` xhigh, intento 290 en la BDD, lanzado con
+  `lanza.py`/`hijo.py` (PID de lanza en `TI-02-DIARIO-codigo/lz-autor-a1.pid`), seguido por el vigía. Revisor previsto:
+  `gpt-6-astra` high, con ficha + diff.
