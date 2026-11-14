@@ -189,3 +189,9 @@ decisiones del usuario, con fecha y hora local (CET).
   - GAP-3: sin embeddings al principio.
   - GAP-4 (curador) y GAP-5 (memorias actuales) siguen abiertas; las pregunta el backend antes de su fase 4.
   - Comunicado a `quantdesk-backend-1a`; pendiente su commit.
+- **rsc-brain en el SPRINT-02 del backend** (`quantdesk-backend-1a`, commit `c372ae8` de su repo, empujado):
+  - entra como raíl R, con las fases RSC-F0 a RSC-F6;
+  - plan §6 y GOBERNANZA con las GAP 1-3 «decidido (usuario, 2026-11-14)»; la 4 y la 5 se preguntan antes de RSC-F4;
+  - RSC-F3 (exposición pública) no se abre hasta que se acepte la auditoría de autenticación de RSC-F0.
+- **TI-02-DIARIO:** el backend registrará la tarea de Windows en su PUB-05-EXPORT (SPRINT-03), con permiso del usuario.
+  Avisará de la hora de la primera ejecución.
