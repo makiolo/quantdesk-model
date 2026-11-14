@@ -117,3 +117,18 @@ decisiones del usuario, con fecha y hora local (CET).
      ordenados; versiones de quantdesk, pandas y pyarrow fijadas; sin `clean_ohlcv` (rellena volumen con 0); escritura en
      carpeta temporal y publicación tras validar Parquet e índice.
   Con esto se desbloquea la ficha de la fila 2.
+- **Network (`quantdesk-network-b2`):** `ops.export.status` registrado en producción, env main (HTTP 201, versión 1,
+  2026-11-14T00:21:46Z; esquema del contrato sin cambios, network `4c5c1ac`). Token del exportador emitido con el visto
+  bueno del usuario: `ti02-exportador-20261114`, id 43, `sub:market.ohlcv.v2` + `pub:ops.export.status`, `--envs main`,
+  sin caducidad; el valor se queda en mini y el usuario lo copia al `.env` privado del PC. Variable que lee el exportador:
+  `QN_TOKEN` (del entorno o de `E:/quantdesk-lab/secrets/ti02-diario.env`).
+- **Aviso de cambio en la skill** (`quantdesk-f1`, SKILL.md §0 «Compilación normal, sin exportaciones»): Rust y C++ se
+  compilan en el checkout del proyecto por el gate, sin copias `git archive`. Afecta a SPRINT_PROJECT §3 «Build» de este
+  repo (ruedas de `quantdesk` en `E:/quantdesk-lab/build/<commit>/`): se revisa cuando haga falta una rueda nueva.
+  La fila 2 no compila nada.
+- **Fila 2: ficha escrita** (`.git/sprint-runtime/s03/TI-02-DIARIO-codigo/ficha.md`, base `aab7ade`), contrastada con
+  `nucleo.py:163-172` (el `_ts` del 1d de MT5 ya es D 00:00 UTC), `descarga_lago.py`, `daily.py` de la rueda, el esquema
+  de network y `calendarios.py`. Decisiones de la raíz en la ficha: ausencia parcial de FX MT5 = `sin_mt5` (no se publica
+  un día FX incompleto); `manifest_sha256` = hash del manifiesto lateral del intento también en `sin_mt5`/`error`;
+  festivo FX conocido sin barras = `ok` sin publicación nueva. Revisión de la ficha: Codex `gpt-6-luna` high, sólo
+  lectura (PID 17992).
