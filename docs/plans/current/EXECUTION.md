@@ -58,6 +58,11 @@ decisiones del usuario, con fecha y hora local (CET).
   `ops.export.status` (objeto, tag `job`, esquema cerrado, `max_staleness` 2d, `batch_id` determinista) y un token con
   `sub:market.ohlcv.v2` + `pub:ops.export.status`, `--envs main`. Tras la aprobación: issue en su repo con el JSON.
   Sólo falta quantdesk.
+- **Respuesta de quantdesk:** confirma la ruta y el formato del desktop, el mapa de símbolos desde `daily.universe()` y la
+  apertura de market-history por ruta explícita. Los JSON del mercado del día siguen con sus notebooks. Limpieza: rechazo
+  o cuarentena, sin `repair_ohlcv_range`. Lleva las mismas decisiones al usuario.
+- **Propuesta conjunta consolidada:** [contrato-propuesta.md](execution/TI-02-DIARIO/contrato-propuesta.md). Pendiente de
+  la aprobación del usuario.
 - **Norma nueva de la skill** (usuario, 2026-11-14, retransmitida por `quantdesk-f1`): al preparar un sprint entra todo
   lo pendiente (backlog, issues abiertos y arrastres) y la revisión de planes revisa también los issues. Si las
   dependencias o la capacidad no lo permiten, se ofrece partir el sprint explicando tarea por tarea. SPRINT-03 ya lo

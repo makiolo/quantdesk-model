@@ -238,3 +238,35 @@ piden por issue en su repo (GOBERNANZA).
    - abrimos un issue en network con el JSON;
    - network lo registra con `register.sh` y emite el token con `qn-token`;
    - el backend pide su propio `sub:ops.export.status`.
+
+### quantdesk (`quantdesk-f1`, relevo 56, 2026-11-14)
+
+Detalle con ruta:línea en `S:/Projects/quantdesk/.git/sprint-runtime/s02/TI02-REVISION/respuesta.md` (de su repo, no
+versionado aquí).
+
+1. **Ruta:** sí. Python y Rust comparten `%USERPROFILE%/EngineQuantDesktop/data/YYYYMMDD/ohlcv/` y la variable
+   `ENGINE_QUANT_DAILY_DATA` (`daily.py:40`, `daily_market.rs:77`). `write_ohlcv` recibe la carpeta explícita. Recomiendan
+   la raíz por defecto con YYYYMMDD = sesión completada. La regla actual salta fines de semana, pero no festivos.
+2. **Formato:** confirmado tal cual. Hay que pasar `sources` explícitas (si no, el escritor pone `yahoo`). El volumen por
+   serie no está en el contrato del desktop y añadirlo sería extender el suyo: de momento, metadatos laterales. En
+   `engine.market-history/v1` ya existe `volume_kind="tick_count"`.
+3. **Símbolos:** no hay catálogo universal qn→quantdesk. Sí está el universo diario `daily.universe()` (28 FX + 30
+   acciones + SPX, con alias como `^GSPC`→`EQ.SPOT.SPX`; `daily.py:84-118`). El mapa versionado se deriva de él y el
+   símbolo original se conserva en la procedencia.
+4. **market-history:** se abre por ruta explícita (`open_vendor_dataset(root, dataset_id)` con `FileVendor`), sin
+   descubrimiento. Proponen `root=E:/quantdesk-lab/datasets/TI-02-DIARIO` y `dataset_id` = nombre de la carpeta, igual
+   que en el manifiesto, abierto con verificación de hashes.
+5. **Mercado del día:** el cargador lee `market_fx28_spx30.json`, `option_chains_spx30.json`, `rate_curves_g8.json`,
+   `dividends_credit_fx_forwards.json` y `ohlcv/`, que hoy generan sus notebooks 28, 92, 93, 94 y 95. D-I4 exige el
+   mercado diario en los dos formatos más los OAS, pero no reparte los JSON. Recomiendan que los JSON sigan con sus
+   productores actuales y que TI-02-DIARIO haga OHLCV + history. Eso solo no cierra D-I4 ni XVA-03-DATA sin los OAS.
+6. **Limpieza:** les vale rechazar o poner en cuarentena sin reparar. `clean_ohlcv` ya descarta valores no finitos,
+   precios ≤ 0, volumen negativo y rangos incoherentes. **No usar `repair_ohlcv_range`**, que repara high/low. Hay que
+   fijar la política de duplicados y de volumen ausente: hoy se queda el último duplicado y el volumen ausente pasa a 0.
+7. **Festivos:** si falta la carpeta de un día, el lector toma la anterior y la marca stale. No distingue festivo NYSE de
+   FX. Recomiendan calendario y cobertura por instrumento, sin barras inventadas.
+
+Decisiones que quantdesk lleva al usuario junto con la propuesta conjunta, con su recomendación: los JSON siguen con sus
+productores; raíz por defecto y un único escritor por producto y fecha; cobertura con la historia disponible y los huecos
+publicados; sin MT5 en un día de FX esperado, no publicar y conservar el corte anterior con aviso; tarea de Windows
+vigilada por Dagster.
