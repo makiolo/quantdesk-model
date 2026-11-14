@@ -23,7 +23,7 @@ L3–L4 hasta el 2026-11-24, con tabla «caso borde → test»).
 
 | Rol | Proveedor / modelo | Esfuerzo | Notas |
 |---|---|---|---|
-| Raíz (coordina, negocia por mensaje, revisa, decide nivel) | Claude Opus 5.5 (`claude-opus-5-5`), suscripción | high | Se releva a sí misma por contexto (§6) |
+| Raíz (coordina, negocia por mensaje, revisa, decide nivel) | Claude Fable 5.2 (`claude-fable-5-2`), suscripción (usuario, 2026-11-14 ~17:40; antes Opus 5.5) | high | Se releva a sí misma por contexto (§6) |
 | Borrador del contrato, fila 1 (L3) | `gpt-6.1-sol` high, sólo lectura | high | Revisan el backend y `quantdesk` por mensaje; aprueba el usuario |
 | Autor L6 (fila 2; 4a cuando se abra) | `gpt-6.1-sol` xhigh | xhigh | |
 | Revisor L6 | `gpt-6-astra` high | high | Recibe ficha + diff, nunca el informe del autor |
