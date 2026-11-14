@@ -201,3 +201,12 @@ decisiones del usuario, con fecha y hora local (CET).
   revisión lanzada a las 08:50 (encargo `alertas/encargo-20261114-0850.md`) se paró con `arbol.py --kill` a los ~2 min,
   sin informe. `ultima.json` sigue con la de las 00:45. Se reanuda después del 17-11 00:59, incluido el paso 5b del
   Arranque de los relevos.
+- **MT5 desbloqueado.** Anuncio del usuario para todas las raíces (2026-11-14, retransmitido por `quantdesk-cb`): «acabo de
+  desbloquear la cuenta de Metatrader 5, todos los desarrollos pueden seguir».
+  - Comprobación de la raíz a las 09:1x, sólo lectura y sin pedir historia: el terminal está abierto por el usuario desde
+    las 09:02 (`D:\ICMarkets - MetaTrader 5`) y `terminal_info.connected=True` (ping 80 ms). La cuenta real responde, con
+    `trade_allowed` del terminal en False.
+  - La tarea `\quantdesk\publicador_mt5` sigue Disabled.
+  - Puertas de usuario pendientes (LAUNCH §3): reactivar la tarea (4c), aprobar el ritmo (4a), cada noche (4c y 5) y la
+    revisión del token id 36.
+  - Cuota a las 09:1x: Claude 92 % (reinicio el 2026-11-17 00:00 UTC), Codex 84 % (reinicio el 2026-11-18 08:07 UTC).
