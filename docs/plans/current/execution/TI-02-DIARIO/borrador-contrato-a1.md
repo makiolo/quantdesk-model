@@ -208,3 +208,33 @@ Informe entregado aquí: no se indicó ruta `-o`. Sin escrituras, commits ni men
      lunes a viernes). Es captura interna en `app_db`, no publicación en qn.
    - El contrato de PUB-02 llega en su SPRINT-03; GAP-PUB-01 sigue abierto. Avisarán al publicar.
 6. Corregido en su `e4a22fb`: su `next/SPRINT.md` ya cita nuestro SPRINT-03, filas 1 y 2. S03-D3 está bien en su lado.
+
+### network, topic de estado (`quantdesk-network-21`, 2026-11-14)
+
+Opinión técnica de la guardia. El registro del topic lo aprueba el usuario. Los esquemas de topics son de network y se
+piden por issue en su repo (GOBERNANZA).
+
+1. **Norma:** no hay ninguna contra publicar estado operativo en qn. Precedentes: `prometheus.metrics` y
+   `qn.canary.object`. Lo prefieren a abrir Pushgateway en la LAN.
+2. **Propuesta `deploy/qn-topics/ops.export.status.json`:**
+   - `kind` "object", `tags` ["job"], `max_tag_sets` 16, sin timeframes. El sensor lee `/latest?job=…`.
+   - Los tags son inmutables: sólo `job`; el host va dentro del objeto.
+   - Esquema con `additionalProperties` false, con estos campos:
+     - `session`: date (sesión D);
+     - `cut_head_cycle`: integer (`x-qn-head-cycle` del corte C);
+     - `manifest_sha256`: `^[0-9a-f]{64}$`;
+     - `status`: `ok|sin_mt5|error`;
+     - `detail`: opcional, como mucho 500 caracteres y sin secretos;
+     - `exporter_version`: string;
+     - `host`: opcional.
+   - Obligatorios: `session`, `cut_head_cycle`, `manifest_sha256`, `status` y `exporter_version`.
+   - `max_staleness` 2d. El `ts` del sobre es el instante en que termina la validación.
+   - Retención: 7 días en el log y para siempre en el lago (OCS-02); queda un historial auditable.
+   - Publicar con `POST /topics/ops.export.status/publish?wait=durable` y un `batch_id` determinista (job + session +
+     hash), para que un reintento salga como duplicado.
+3. **Credencial:** un token exclusivo con `--grant sub:market.ohlcv.v2 --grant pub:ops.export.status --envs main`
+   (`token create` admite varios `--grant`, `crates/qn-server/src/main.rs:283`). El `pub` va sólo a ese topic, sin comodín.
+4. **Tras la aprobación:**
+   - abrimos un issue en network con el JSON;
+   - network lo registra con `register.sh` y emite el token con `qn-token`;
+   - el backend pide su propio `sub:ops.export.status`.

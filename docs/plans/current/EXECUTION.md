@@ -54,6 +54,10 @@ decisiones del usuario, con fecha y hora local (CET).
   alimenta `DagsterJobStale`, y la credencial añade `pub` sobre ese topic. Sin señal de fin de MT5: se mira el `/latest`
   de la vela. Están de acuerdo con el horario, con `sin_mt5` y con la credencial. Los OAS están en percent y PUB-02
   sigue pendiente. Se consulta a network por el topic de estado.
+- **Network, topic de estado:** sin norma en contra y prefiere esta vía a abrir Pushgateway. Propone
+  `ops.export.status` (objeto, tag `job`, esquema cerrado, `max_staleness` 2d, `batch_id` determinista) y un token con
+  `sub:market.ohlcv.v2` + `pub:ops.export.status`, `--envs main`. Tras la aprobación: issue en su repo con el JSON.
+  Sólo falta quantdesk.
 - **Norma nueva de la skill** (usuario, 2026-11-14, retransmitida por `quantdesk-f1`): al preparar un sprint entra todo
   lo pendiente (backlog, issues abiertos y arrastres) y la revisión de planes revisa también los issues. Si las
   dependencias o la capacidad no lo permiten, se ofrece partir el sprint explicando tarea por tarea. SPRINT-03 ya lo
