@@ -138,3 +138,8 @@ decisiones del usuario, con fecha y hora local (CET).
 - **Fila 2 encargada** (2026-11-14 ~01:55): autor Codex `gpt-6.1-sol` xhigh, intento 290 en la BDD, lanzado con
   `lanza.py`/`hijo.py` (PID de lanza en `TI-02-DIARIO-codigo/lz-autor-a1.pid`), seguido por el vigía. Revisor previsto:
   `gpt-6-astra` high, con ficha + diff.
+- **Plan nuevo para el backend** (usuario, 2026-11-14): rsc-brain como cerebro wiki y memoria común de todos los
+  proyectos para la skill global, con Postgres reciclado (hueco de mem0 en `qn-pgprod`) y nginx. Borrador en
+  `.git/sprint-runtime/propuestas/PLAN_RSC_BRAIN.md`, entregado a `quantdesk-backend-24` para su
+  `docs/plans/backlog/PLAN_RSC_BRAIN.md` (dueño del compose y nginx según su GOBERNANZA). Pendiente su confirmación con
+  commit. Cinco GAP para el usuario en el plan.
