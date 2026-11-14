@@ -156,3 +156,27 @@ decisiones del usuario, con fecha y hora local (CET).
 - **Segunda vuelta** con la misma sesión de Codex (`codex exec resume`). El primer relanzamiento (intento 313) arrancó con
   `gpt-5.6-terra`, porque `resume` sin `-m` no conserva el modelo de la sesión: parado con `arbol.py --kill` a los ~30 s,
   sin cambios en el árbol (fallida). Relanzado con `-m gpt-6.1-sol` xhigh (intento 314).
+- **Fila 2 CERRADA (TI-02-DIARIO, código sin OAS)**, 2026-11-14 ~04:00. Entrega a2: `cd87b05` (regresiones rojas) y
+  **`a47ccf4`** (arreglo), sobre `4c34af1`/`237220f` de a1.
+  - **Revisión r2** (`gpt-6-astra` high, reanudando la sesión de r1, intento 322): **ACEPTAR**, sin hallazgos. Los
+    tres bloqueantes de r1 quedan resueltos y sus reproducciones dan el resultado correcto. Las 8 regresiones fallan por
+    aserción sobre `237220f` y pasan sobre `a47ccf4`. **A5: legítimo**: contra Base sólo se añade cobertura; frente a a1,
+    `prueba_previa` cambia por contrato. Evidencia en `E:/quantdesk-lab/runs/TI-02-DIARIO/revision-r2/informe.txt`
+    (sha256 `d647e90e…179c`).
+  - **Gate de la raíz** sobre HEAD fijo `a47ccf4`, sin cambios en `scripts/` antes ni después:
+    `scripts/run_selftests.py` 15 OK, 0 FALLO; incluye `exportar_diario.py` (19 grupos) y `smoke_env` (21
+    comprobaciones).
+  - **Diferencial contra `aab7ade`:** sólo cambia `volume_kind`, de `traded` a `tick_count`, en 3 filas MT5; Binance y
+    las demás columnas, intactas (`E:/quantdesk-lab/runs/TI-02-DIARIO/autor-r2/diferencial.json`).
+  - **BDD:** intentos 290 rechazada, 309 aceptada (revisión), 313 fallida (modelo equivocado), 314 aceptada y 322
+    aceptada; tarea `cerrada`.
+  - **Orden para la tarea de Windows** (para el backend, PUB-05-EXPORT):
+    `S:/Projects/quantdesk-model/.venv/Scripts/python.exe -X utf8 scripts/exportar_diario.py --ejecutar`.
+    - Se ejecuta con cwd `S:/Projects/quantdesk-model`, de martes a sábado a las 00:15 UTC.
+    - Variables: `QN_URLS=http://192.168.1.48:8790/qn,http://192.168.1.46:8790/qn,http://192.168.1.45:8790/qn` y
+      `QN_ENV=main`. `QN_TOKEN` se lee del entorno o de `E:/quantdesk-lab/secrets/ti02-diario.env`.
+    - Salida: 0 `ok`, 3 `sin_mt5`, 1 `error`, 2 uso.
+  - **Pendiente fuera de la fila:**
+    - el usuario copia el token id 43 a ese `.env`;
+    - el backend registra la tarea y el sensor;
+    - primera ejecución real. Con la cuenta MT5 bloqueada saldrá `sin_mt5`, que es lo esperado.
