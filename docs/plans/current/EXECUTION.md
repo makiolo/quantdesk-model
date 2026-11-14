@@ -210,3 +210,26 @@ decisiones del usuario, con fecha y hora local (CET).
   - Puertas de usuario pendientes (LAUNCH §3): reactivar la tarea (4c), aprobar el ritmo (4a), cada noche (4c y 5) y la
     revisión del token id 36.
   - Cuota a las 09:1x: Claude 92 % (reinicio el 2026-11-17 00:00 UTC), Codex 84 % (reinicio el 2026-11-18 08:07 UTC).
+- **Decisiones del usuario** (2026-11-14, AskUserQuestion en esta sesión):
+  1. **reactivar hoy el publicador** `quantdesk\publicador_mt5` (fila 4c, primera parte), con una primera pasada
+     vigilada a ritmo prudente;
+  2. **descargas grandes (4b incremental m1/m5 y 4a h1) tras el reinicio de Codex del 2026-11-18**: antes, Codex
+     añade la pausa entre series al extractor, con revisión;
+  3. **token id 36: se mantiene**; revisado por el usuario el 2026-11-14, la próxima revisión será al cerrar SPRINT-03.
+- **Contraseña de MT5 cambiada** (anuncio del usuario vía `quantdesk-cb`). El usuario la actualizó: «lo he
+  actualizado». Ficheros de credenciales MT5 del proyecto: `E:/quantdesk-lab/secrets/mt5.json` (claves path, login,
+  password y server; los usan el extractor y el publicador, `scripts/extractor_mt5_lib/lectura.py:126`).
+- **Regla nueva de la skill** (SKILL.md §0, «MetaTrader 5: un solo usuario a la vez», aviso de `quantdesk-cb`):
+  - turno exclusivo con `~/.claude/mt5/turno.lock`;
+  - peticiones en serie con pausas, y parada al primer error de autenticación o de límite;
+  - una línea por turno en `~/.claude/mt5/uso.jsonl`.
+  Se aplica ya a toda conexión y a los encargos.
+- **Prueba de login con turno** (09:3x): `initialize(path)` + `login` con `mt5.json`, OK; sin pedir historia; anotada en
+  `uso.jsonl`, junto con la consulta de estado de las 09:1x, que fue anterior a la regla.
+- **Primera pasada del publicador** lanzada con turno (ejecutor de la raíz que toma el candado, ejecuta y anota el
+  turno; `s03/TI-12-MT5-OPS/pub-pasada1`):
+  `publicador_mt5.py --ejecutar --topic market.ohlcv.v2 --intervalos 1d --republicar-revisiones --pausa-serie-s 15`.
+  Rellena desde la última vela en qn (parado desde el 2026-11-10) y republica las velas revisadas del 2026-11-09.
+- **Pendiente antes de reactivar la tarea programada:** el publicador no toma el turno de MT5, así que la tarea diaria
+  necesita un envoltorio versionado que lo tome. Hay que tenerlo antes del lunes 16-11 a las 23:30, la primera vela
+  nueva tras el fin de semana.
