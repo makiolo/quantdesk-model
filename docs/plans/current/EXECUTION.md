@@ -196,3 +196,8 @@ decisiones del usuario, con fecha y hora local (CET).
 - **TI-02-DIARIO:** el backend registrará la tarea de Windows en su PUB-05-EXPORT (SPRINT-03), con permiso del usuario.
   Avisará de la hora de la primera ejecución.
 - **Token del exportador instalado** (aviso de `quantdesk-cb`, a petición del usuario, 08:26): `E:/quantdesk-lab/secrets/ti02-diario.env` con una sola línea `QN_TOKEN=…`, comprobada por la raíz sin leer el valor (46 caracteres). La copia de mini se borró tras comprobar el hash. Faltan la tarea de Windows del backend y la primera ejecución (`sin_mt5` mientras MT5 siga bloqueado).
+- **Revisión de alertas SUSPENDIDA** (cambio de la skill, usuario 2026-11-14, para ahorrar cuota; aviso de `quantdesk-cb`;
+  SKILL.md:187 y `references/alertas.md`:3) hasta el reinicio semanal de Claude del **2026-11-17 a las 00:59**. La
+  revisión lanzada a las 08:50 (encargo `alertas/encargo-20261114-0850.md`) se paró con `arbol.py --kill` a los ~2 min,
+  sin informe. `ultima.json` sigue con la de las 00:45. Se reanuda después del 17-11 00:59, incluido el paso 5b del
+  Arranque de los relevos.
