@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 import json
+import socket
 import threading
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -29,6 +30,10 @@ class Estado:
         self.publicados = []
         self.respuestas = []
         self.transformar = lambda ruta, q, doc: doc
+        self.acciones_publicacion = []
+        self.publicacion_defecto = "durable"
+        self.peticiones_publicacion = []
+        self.respuestas_publicacion = []
 
 
 @contextmanager
@@ -94,11 +99,22 @@ def servidor(estado=None):
             assert isinstance(doc["ts"], int)
             schema = json.loads((FIXTURES / "ops.export.status.json").read_text(encoding="utf-8"))["schema"]
             Draft202012Validator(schema, format_checker=FormatChecker()).validate(doc["obj"])
+            estado.peticiones_publicacion.append(copy.deepcopy(doc))
+            accion = estado.acciones_publicacion.pop(0) if estado.acciones_publicacion else estado.publicacion_defecto
+            if accion == "rechazar":
+                return self.responder(403, {"message": "publicacion rechazada"})
             prev = next((p for p in estado.publicados if p["batch_id"] == doc["batch_id"]), None)
             if prev:
                 assert prev == doc, "un batch repetido debe conservar tambien ts y objeto"
             estado.publicados.append(doc)
-            self.responder(200, {"duplicate": prev is not None, "durable": True})
+            if accion == "perder":
+                self.close_connection = True
+                self.connection.shutdown(socket.SHUT_RDWR)
+                self.connection.close()
+                return
+            respuesta = {"duplicate": prev is not None, "durable": accion == "durable"}
+            estado.respuestas_publicacion.append(respuesta)
+            self.responder(200 if respuesta["durable"] else 202, respuesta)
 
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     thread = threading.Thread(target=httpd.serve_forever)
