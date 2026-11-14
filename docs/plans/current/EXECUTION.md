@@ -182,3 +182,10 @@ decisiones del usuario, con fecha y hora local (CET).
     - primera ejecución real. Con la cuenta MT5 bloqueada saldrá `sin_mt5`, que es lo esperado.
 - **Raíz de `quantdesk` cambiada:** `quantdesk-f1` (relevo 56) pasó la raíz a `quantdesk-cb` («quantdesk raiz relevo 57»), que ya tiene el aviso de la fila 2. Los mensajes a `quantdesk` van ahora allí.
 - **Raíz del backend cambiada:** `quantdesk-backend-24` pasó la raíz a `quantdesk-backend-1a` y le reenvió la orden de la tarea de Windows de TI-02-DIARIO (`a47ccf4`). La nueva raíz dirá la hora de la primera ejecución; los mensajes al backend van ahora allí.
+- **Decisión del usuario** (2026-11-14, AskUserQuestion en esta sesión) sobre PLAN_RSC_BRAIN: integrarlo en el
+  **sprint activo del backend (SPRINT-02)**, ejecutado por el backend como dueño. Nuestro SPRINT-03 no cambia.
+  - GAP-1: BD `rsc_brain` en `qn-pgprod`.
+  - GAP-2: **pública con OAuth** (subdominio de `stoch.cloud`), no la opción «sólo LAN» que recomendaba la raíz.
+  - GAP-3: sin embeddings al principio.
+  - GAP-4 (curador) y GAP-5 (memorias actuales) siguen abiertas; las pregunta el backend antes de su fase 4.
+  - Comunicado a `quantdesk-backend-1a`; pendiente su commit.
