@@ -243,3 +243,17 @@ decisiones del usuario, con fecha y hora local (CET).
   - Segunda pasada programada en esta sesión a las 13:07 (cron de un solo disparo), con el mismo turno y la misma
     pausa. Detalle de la pasada 1: `E:/quantdesk-lab/runs/TI-12-MT5/publicador/ultimo.json`.
 - **`quantlab-f0` (raíz de quantlab)** propone centralizar MT5: heredar el extractor y después el publicador, con almacén propio en nuestro formato y entradas en DEPENDENCIAS y GOBERNANZA. Respuesta técnica de la raíz: de acuerdo con la herencia y con que use su propio almacén (nosotros sólo leemos). Le corregimos que el publicador ya es diario y está desactivado. Peticiones reales: filas 4a–4c y 5. Las filas de DEPENDENCIAS y GOBERNANZA llegarán cuando el usuario decida la entrega. **Pendiente del usuario:** el traspaso de propiedad del extractor y del publicador, y dónde se entregan los datos.
+- **Decisiones del usuario sobre quantlab** (2026-11-14, retransmitidas por `quantlab-f0`; plan
+  `S:/Projects/quantlab/docs/plans/next/PLAN_SERVICIO_DATOS.md`, `871b112`):
+  - quantlab es el **único** que descarga histórico de MT5; el trading en vivo queda fuera.
+  - Entrega en su almacén `E:/quantlab`, con nuestro formato y parquet zstd; peticiones JSON en
+    `E:/quantlab/peticiones/entrada/`.
+  - Se recicla todo lo ya descargado: quantlab sólo lee nuestro `E:/quantdesk-lab`.
+  - Reparto de nuestras filas: la 4a (h1 de `@continuo`) pasa a su SPRINT-01 (QL-10), tras el 18-11. La 4b, la 4c
+    (traspaso del publicador) y la 5 pasan a su SPRINT-02, con la retirada de nuestro código de descarga MT5.
+  - Hasta el traspaso, nuestro publicador sigue tal cual, con `turno.lock`.
+  - Skill: viñeta «quantlab, único para histórico» en SKILL.md:198, que se aplica en la próxima planificación.
+  - Filas versionadas en DEPENDENCIAS (proyecto relacionado y dependencia de las filas 4a–4c y 5) y en GOBERNANZA (tres
+    filas).
+  - **Consecuencia para SPRINT-03:** las filas 4a, 4b y 5 ya no las ejecuta este laboratorio. Se replanifican al cerrar o
+    revisar el sprint. La 4c sigue aquí sólo en su parte operativa: publicador diario con turno hasta el traspaso.
