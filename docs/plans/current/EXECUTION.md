@@ -96,3 +96,24 @@ decisiones del usuario, con fecha y hora local (CET).
   lo pendiente (backlog, issues abiertos y arrastres) y la revisión de planes revisa también los issues. Si las
   dependencias o la capacidad no lo permiten, se ofrece partir el sprint explicando tarea por tarea. SPRINT-03 ya lo
   cumplía (R0); se aplica al planificar SPRINT-04.
+
+## Relevo 1 (2026-11-14 01:16, sesión `quantdesk-model-00`)
+
+- HANDOFF aceptado; `deps.py --sprint SPRINT-03`: LISTO. Cuota (01:20): Claude 80 % (reinicio 2026-11-16 23:59 UTC),
+  Codex 62 % (reinicio 2026-11-18 08:07 UTC). Alertas: última revisión 00:45, toca pasadas las 08:45.
+- Vigía `wsvigia.py` en el puerto 8775 (`.git/sprint-runtime/s03/wsvigia.pid`), seguido con Monitor; `relevos.json` →
+  `quantdesk-model-00`.
+- **Aviso de cambio en la skill** (`quantdesk-f1`, usuario 2026-11-14, SKILL.md §0): todo cambio en la skill sprint
+  (norma, referencia o `tools/`) se avisa en el momento por SendMessage a cada raíz viva; quien lo recibe lo anota. Sin
+  acción para nosotros salvo aplicarlo si editamos la skill.
+- **Respuesta de `quantdesk-f1` sobre `FX_DATE_SHIFT`** (detalle con ruta:línea en
+  `S:/Projects/quantdesk/.git/sprint-runtime/s02/TI02-REVISION/respuesta2.md`):
+  1. FX de MT5 de la sesión D: `ts_ms = D 00:00 UTC`, **sin** `FX_DATE_SHIFT`. `ts_ms` es la etiqueta de sesión, no el
+     instante de cierre (95_ohlcv_market_day_history:26). El shift de Yahoo es un `shift(-1)` de valores al preparar
+     (notebooks 28, 94, 95); ningún lector vuelve a desplazar.
+  2. Acciones y SPX: sin desplazamiento, fecha de sesión D.
+  3. Rango: ventana histórica explícita hasta D con cobertura declarada en `index.json`; nunca un fichero con sólo D.
+  4. Reutilizar `quantdesk.daily.write_ohlcv` con `sources` para todos los símbolos; datos ya validados, únicos y
+     ordenados; versiones de quantdesk, pandas y pyarrow fijadas; sin `clean_ohlcv` (rellena volumen con 0); escritura en
+     carpeta temporal y publicación tras validar Parquet e índice.
+  Con esto se desbloquea la ficha de la fila 2.

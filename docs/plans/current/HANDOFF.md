@@ -8,6 +8,7 @@
 - HEAD al escribir: 1aa21801c946323a578267c11a05c34185b2fbf7
 - LAUNCH: docs/plans/current/LAUNCH.md · bloque del coordinador: «§8. Prompt de la raíz (relevos y recuperación)»
 - Relevos anteriores: `git log --follow -- docs/plans/current/HANDOFF.md`
+- Aceptado: sesión 2ab53d59-60b1-4f92-84cf-bf4a7115386f, 2026-11-14T01:16:15+01:00, contexto inicial 21.9 %
 
 ## Arranque
 1. `S:/Projects/quantdesk-model/.venv/Scripts/python.exe -X utf8 C:/Users/makiolo/.claude/skills/sprint/tools/claude_or.py handoff accept docs/plans/current/HANDOFF.md`: valida este archivo y anota tu sesión.
