@@ -233,3 +233,12 @@ decisiones del usuario, con fecha y hora local (CET).
 - **Pendiente antes de reactivar la tarea programada:** el publicador no toma el turno de MT5, así que la tarea diaria
   necesita un envoltorio versionado que lo tome. Hay que tenerlo antes del lunes 16-11 a las 23:30, la primera vela
   nueva tras el fin de semana.
+- **Proyecto nuevo `quantlab`** (anuncio del usuario vía `quantdesk-cb`, 2026-11-14): `S:/Projects/quantlab` será el centro de datos central. Atenderá las peticiones de datos de todos los proyectos, descargará el histórico (primero MT5) y lo dejará disponible para todos; acabará siendo el único que hable con MT5. Su raíz inicial nos escribirá para coordinar `E:/quantdesk-lab`, el exportador, el lago qn, DEPENDENCIAS y GOBERNANZA. Mientras tanto sigue la norma de turnos de MT5. Afecta a las filas 4a–4c y 5 (extractor y publicador MT5): se revisan con quantlab antes de encargar código nuevo de MT5.
+- **Primera pasada del publicador** (09:26–09:34; exit 0; turno liberado y anotado en `uso.jsonl`):
+  - 5 de 28 pares publicaron 3 velas nuevas, las del 10, 11 y 12-11: AUDJPY, EURUSD, GBPUSD, USDCAD y USDCHF.
+  - Los otros 23 dieron 0 nuevas porque el terminal sólo tenía historia hasta el 09-11 (`mt5_hasta_utc`).
+  - En todos los pares queda 1 vela retenida por la guarda de historia (`retenidas_sin_historia`).
+  - Diagnóstico: el terminal recién autenticado aún no ha sincronizado la historia de los pares fuera de su lista de
+    seguimiento. No se fuerza con consultas en ráfaga (causa del bloqueo).
+  - Segunda pasada programada en esta sesión a las 13:07 (cron de un solo disparo), con el mismo turno y la misma
+    pausa. Detalle de la pasada 1: `E:/quantdesk-lab/runs/TI-12-MT5/publicador/ultimo.json`.
