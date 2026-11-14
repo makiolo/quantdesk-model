@@ -178,8 +178,9 @@ def prueba_previa(tmp):
             assert local(root, base)[0] == 3, caso
             sin_productos(root)
             comprobar_estado(root, e, "sin_mt5")
-            assert not any("/objects/" in p for p, _ in e.peticion)
-            filtros = [q for p, q in e.peticion if q.get("source") == "mt5"]
+            # Una ausencia en latest exige resolver la historia antes de sin_mt5.
+            assert any("/objects/" in p for p, _ in e.peticion)
+            filtros = [q for p, q in e.peticion if p.endswith("/latest") and q.get("source") == "mt5"]
             assert len(filtros) == 28 and all(q["interval"] == "1d" for q in filtros)
 
 
@@ -461,7 +462,9 @@ def correr():
             prueba(root / prueba.__name__)
             secretos(root / prueba.__name__)
             print(prueba.__name__ + ": OK", flush=True)
-    print(f"exportar_diario --selftest: {len(pruebas)} grupos OK")
+    from .selftests_r2 import PRUEBAS, correr as correr_r2
+    correr_r2()
+    print(f"exportar_diario --selftest: {len(pruebas) + len(PRUEBAS)} grupos OK")
 
 
 if __name__ == "__main__":

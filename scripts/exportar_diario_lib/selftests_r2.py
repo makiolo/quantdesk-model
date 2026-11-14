@@ -5,6 +5,7 @@ import copy
 import json
 from pathlib import Path
 import tempfile
+from unittest.mock import patch
 
 from .qn_falso import servidor
 from .selftests import check, dia, foto_productos, intentos, local, secretos, sin_productos
@@ -107,9 +108,61 @@ def prueba_respuesta_perdida_y_reejecucion(root):
         check(root)
 
 
+def prueba_rechazo_tras_respuesta_perdida(root):
+    from descarga_lago import REINTENTOS
+    for aceptado in (False, True):
+        with servidor() as (base, e):
+            folder = root / str(aceptado)
+            e.acciones_publicacion = (["perder"] * (REINTENTOS + 1)) if aceptado else []
+            e.publicacion_defecto = "rechazar"
+            assert local(folder, base)[0] == 1
+            mismo_sobre(e)
+            if aceptado:
+                check(folder)
+                assert registro(folder)["estado"] == "incierta"
+                foto = foto_productos(folder)
+                e.publicacion_defecto = "durable"
+                assert local(folder, base)[0] == 0
+                assert foto_productos(folder) == foto
+                assert e.respuestas_publicacion[-1] == {"durable": True, "duplicate": True}
+            else:
+                sin_productos(folder)
+                assert not e.publicados and registro(folder)["estado"] == "no_enviada"
+
+
+def prueba_reconciliar_estados_sin_productos(root):
+    rename = Path.rename
+
+    def fallar_motor(path, target):
+        if Path(target).parent.name == "datasets":
+            raise OSError("fallo simulado al publicar motor")
+        return rename(path, target)
+
+    for status, codigo in (("sin_mt5", 3), ("error", 1)):
+        with servidor() as (base, e):
+            folder = root / status
+            if status == "sin_mt5":
+                e.datos["rows"] = [r for r in e.datos["rows"] if not (r["symbol"] == "EURUSD" and dia(r) == "2026-11-12")]
+            e.publicacion_defecto = "no_durable"
+            with patch.object(Path, "rename", fallar_motor):
+                assert local(folder, base)[0] == 1
+            sin_productos(folder)
+            assert e.publicados[0]["obj"]["status"] == status
+            sobre = copy.deepcopy(e.publicados[0])
+            n_lecturas = len(e.peticion)
+            e.publicacion_defecto = "durable"
+            assert local(folder, base)[0] == codigo
+            assert e.publicados[-1] == sobre and len(e.peticion) == n_lecturas
+            assert registro(folder)["estado"] == "confirmada"
+            assert e.respuestas_publicacion[-1] == {"durable": True, "duplicate": True}
+            mismo_sobre(e)
+            sin_productos(folder)
+
+
 PRUEBAS = (prueba_republicacion_d, prueba_latest_dia_siguiente, prueba_estado_no_durable,
            prueba_estado_durable_tras_pendiente, prueba_respuesta_perdida_reconciliada,
-           prueba_respuesta_perdida_y_reejecucion)
+           prueba_respuesta_perdida_y_reejecucion, prueba_rechazo_tras_respuesta_perdida,
+           prueba_reconciliar_estados_sin_productos)
 
 
 def correr():

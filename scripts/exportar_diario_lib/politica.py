@@ -6,7 +6,8 @@ from pathlib import Path
 
 from descarga_lago import POLITICA_FUENTES, regla_fuente
 
-VERSION = "ti-02-diario.politica/v1"
+VERSION = "ti-02-diario.politica/v2"
+INTENTOS_PUBLICACION = 3
 DESDE = "2016-01-01"
 FESTIVOS_FX = ((1, 1), (12, 25))
 WHEEL = Path("E:/quantdesk-lab/wheels/quantdesk-0.0.0-cp312-cp312-win_amd64.whl")

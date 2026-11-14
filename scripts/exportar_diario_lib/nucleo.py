@@ -27,10 +27,10 @@ from quantdesk.data import open_vendor_dataset
 from descarga_lago import Cliente, leer_ventana, seleccionar_series, sha256_de, sanear
 from exportar_market_history_lib import formato as F
 from . import politica as P
+from . import publicacion as PUB
 from .datos import DIA, NUMERICAS, cobertura, ms_fecha, ns, preparar
 
 REPO = Path(__file__).resolve().parents[2]
-STATUS = "/topics/ops.export.status/publish"
 
 
 class BloqueoOcupado(ValueError):
@@ -144,8 +144,14 @@ def leer(lectura, desde, sesion, m):
                         presente = True
             if not presente:
                 faltan.append(symbol)
-        if faltan:
-            return [], faltan
+        # latest solo orienta la comprobacion: una version posterior a C o D+1
+        # puede ocultar una barra valida. La ausencia la decide preparar() sobre
+        # todas las versiones de objects resueltas dentro del corte H/C.
+        m["comprobacion_previa"] = {"sin_confirmar_en_latest": faltan}
+    # No depender del catalogo latest para encontrar la historia de los FX
+    # esperados, incluidos sus alias del mapa versionado.
+    aceptadas = set(aceptadas)
+    aceptadas.update((s, "1d", source) for s, info in P.MAPA.items() if info["kind"] == "fx")
     fuentes = {}
     rows = []
     for symbol, interval, source in sorted(aceptadas):
@@ -256,6 +262,33 @@ def exportar(a, bases, token, env, error_previo=None):
         guardar(manifiesto, raw)
         return digest
 
+    def salida(estado, detalle):
+        detalle = seguro(detalle, token)[:500]
+        runs.mkdir(parents=True, exist_ok=True)
+        with (runs / f"s{sesion:%Y%m%d}.log").open("a", encoding="utf-8") as f:
+            f.write(datetime.now(timezone.utc).isoformat() + " " + estado + " " + detalle + "\n")
+        print("exportar_diario: " + estado + ": " + detalle)
+        return {"ok": 0, "sin_mt5": 3, "error": 1}[estado]
+
+    # La reconciliacion precede a cualquier nueva lectura: mantiene el mismo H,
+    # manifiesto, ts y batch incluso si el mercado o latest ya han cambiado.
+    if not error_previo:
+        try:
+            pendiente = PUB.cargar_pendiente(a, env)
+        except Exception as e:
+            error_previo = "no se puede reconciliar la publicacion pendiente: " + seguro(e, token)
+        else:
+            if pendiente:
+                registro_path, registro, sobre, m = pendiente
+                try:
+                    PUB.publicar(cli, sobre, registro_path, registro, token)
+                except Exception as e:
+                    m["publicacion"] = PUB.detalle_manifiesto(registro_path, registro)
+                    detail = "publicacion incierta, productos conservados: " + seguro(e, token)
+                    terminar("error", detail)
+                    return salida("error", detail)
+                return salida(m["status"], "estado durable reconciliado: " + m["detail"])
+
     try:
         m["versiones"] = versiones()
         if error_previo:
@@ -344,6 +377,8 @@ def exportar(a, bases, token, env, error_previo=None):
         if status == "error":
             rollback()
     validado_ns = time.time_ns()
+    protegida = False
+    registro_path, registro = None, None
     try:
         digest = terminar(status, detail)
         if lectura.head is not None:
@@ -358,21 +393,24 @@ def exportar(a, bases, token, env, error_previo=None):
                 if sobre["obj"] != obj or sobre["batch_id"] != bid:
                     raise ValueError("recibo de publicacion inconsistente")
             guardar(recibo, canon(sobre))
-            cli.post(STATUS, {"wait": "durable"}, sobre, [])
+            registro_path, registro = PUB.crear_registro(a, env, sobre)
+            protegida = registro["estado"] in ("incierta", "confirmada")
+            PUB.publicar(cli, sobre, registro_path, registro, token)
+            protegida = True
         else:
             detail += "; sin H: no se publica estado"
             status = "error"
-        runs.mkdir(parents=True, exist_ok=True)
-        with (runs / f"s{sesion:%Y%m%d}.log").open("a", encoding="utf-8") as f:
-            f.write(datetime.now(timezone.utc).isoformat() + " " + status + " " + seguro(detail, token)[:500] + "\n")
     except Exception as e:
-        rollback()
+        protegida |= cli.publicacion_incierta or (registro is not None and registro["estado"] in ("incierta", "confirmada"))
+        if not protegida:
+            rollback()
+        if registro is not None:
+            m["publicacion"] = PUB.detalle_manifiesto(registro_path, registro)
         status, detail = "error", "fallo al registrar/publicar estado: " + seguro(e, token)
+        if protegida:
+            detail = "publicacion incierta, productos conservados; " + detail
         terminar(status, detail)
-        with (runs / f"s{sesion:%Y%m%d}.log").open("a", encoding="utf-8") as f:
-            f.write("error " + seguro(detail, token)[:500] + "\n")
-    print("exportar_diario: " + status + ": " + seguro(detail, token)[:500])
-    return {"ok": 0, "sin_mt5": 3, "error": 1}[status]
+    return salida(status, detail)
 
 
 def seguro_json(doc, token):

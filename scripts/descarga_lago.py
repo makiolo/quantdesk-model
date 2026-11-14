@@ -220,6 +220,7 @@ class Cliente:
             raise ValueError("QN_URLS no contiene ninguna URL")
         self.base, self.acceso, self.env, self.espera_base = self.bases[0], acceso, env, espera_base
         self.cabeceras = {}
+        self.publicacion_incierta = False
 
     def get(self, ruta: str, params: dict, registro: list) -> dict:
         doc, _ = self.get_con_cabeceras(ruta, params, registro)
@@ -250,7 +251,11 @@ class Cliente:
             req = urllib.request.Request(url, data=datos, method=metodo,
                                          headers={"Authorization": f"Bearer {self.acceso}", "Accept": "application/json",
                                                   "Content-Type": "application/json"})
+            incierta_anterior = self.publicacion_incierta
             try:
+                if metodo == "POST":
+                    # Desde que se intenta transmitir, un fallo de transporte no demuestra rechazo.
+                    self.publicacion_incierta = True
                 with ABRIR(req, timeout=TIMEOUT_S) as r:
                     self.cabeceras = {k.lower(): v for k, v in r.headers.items()}
                     respuesta = json.load(r)
@@ -259,6 +264,9 @@ class Cliente:
                 self.base = base
                 return respuesta, dict(self.cabeceras)
             except urllib.error.HTTPError as e:
+                if metodo == "POST" and e.code in (401, 403, 404):
+                    # Estos rechazos no aceptan el POST, pero tampoco deshacen una incertidumbre anterior.
+                    self.publicacion_incierta = incierta_anterior
                 self.cabeceras = {k.lower(): v for k, v in e.headers.items()}
                 crudo = e.read(4096).decode("utf-8", "replace")
                 if e.code in (401, 403):
