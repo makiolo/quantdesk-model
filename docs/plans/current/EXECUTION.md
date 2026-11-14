@@ -181,3 +181,4 @@ decisiones del usuario, con fecha y hora local (CET).
     - el backend registra la tarea y el sensor;
     - primera ejecución real. Con la cuenta MT5 bloqueada saldrá `sin_mt5`, que es lo esperado.
 - **Raíz de `quantdesk` cambiada:** `quantdesk-f1` (relevo 56) pasó la raíz a `quantdesk-cb` («quantdesk raiz relevo 57»), que ya tiene el aviso de la fila 2. Los mensajes a `quantdesk` van ahora allí.
+- **Raíz del backend cambiada:** `quantdesk-backend-24` pasó la raíz a `quantdesk-backend-1a` y le reenvió la orden de la tarea de Windows de TI-02-DIARIO (`a47ccf4`). La nueva raíz dirá la hora de la primera ejecución; los mensajes al backend van ahora allí.
