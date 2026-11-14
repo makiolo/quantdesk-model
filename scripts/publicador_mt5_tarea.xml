@@ -71,7 +71,7 @@
   <Actions Context="Usuario">
     <Exec>
       <Command>S:\Projects\quantdesk-model\.venv\Scripts\pythonw.exe</Command>
-      <Arguments>-X utf8 scripts\publicador_mt5.py --ejecutar --topic market.ohlcv.v2 --intervalos 1d</Arguments>
+      <Arguments>-X utf8 scripts\mt5_turno.py --plan "publicador 1d fx28 diario" -- S:\Projects\quantdesk-model\.venv\Scripts\pythonw.exe -X utf8 scripts\publicador_mt5.py --ejecutar --topic market.ohlcv.v2 --intervalos 1d</Arguments>
       <WorkingDirectory>S:\Projects\quantdesk-model</WorkingDirectory>
     </Exec>
   </Actions>
