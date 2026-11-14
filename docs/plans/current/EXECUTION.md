@@ -61,8 +61,17 @@ decisiones del usuario, con fecha y hora local (CET).
 - **Respuesta de quantdesk:** confirma la ruta y el formato del desktop, el mapa de símbolos desde `daily.universe()` y la
   apertura de market-history por ruta explícita. Los JSON del mercado del día siguen con sus notebooks. Limpieza: rechazo
   o cuarentena, sin `repair_ohlcv_range`. Lleva las mismas decisiones al usuario.
-- **Propuesta conjunta consolidada:** [contrato-propuesta.md](execution/TI-02-DIARIO/contrato-propuesta.md). Pendiente de
-  la aprobación del usuario.
+- **Propuesta conjunta consolidada:** [contrato-propuesta.md](execution/TI-02-DIARIO/contrato-propuesta.md).
+- **Decisión del usuario (2026-11-14, AskUserQuestion):** aprueba las cuatro recomendaciones:
+  - A2, tarea de Windows;
+  - sólo OHLCV + history (los JSON siguen con los notebooks de `quantdesk`);
+  - topic `ops.export.status` y token `sub:market.ohlcv.v2` + `pub:ops.export.status`;
+  - el resto de la propuesta tal cual.
+  Escrito en GOBERNANZA, DEPENDENCIAS, PLAN_DATOS_VIA_QN §4 y SPRINT.md §2/§4.
+- **Aviso de `quantdesk-f1`** (usuario, ~01:30): la cuenta MT5 sigue bloqueada y el usuario estudia pagar por datos. La
+  fuente del FX queda como parámetro de la política de fuentes (nota en el contrato); afecta también a las filas 4a–4c y 5.
+- **Fila 1 cerrada** con el contrato decidido. Siguen: issue/JSON del topic a network, aviso al backend y encargo de la
+  fila 2.
 - **Norma nueva de la skill** (usuario, 2026-11-14, retransmitida por `quantdesk-f1`): al preparar un sprint entra todo
   lo pendiente (backlog, issues abiertos y arrastres) y la revisión de planes revisa también los issues. Si las
   dependencias o la capacidad no lo permiten, se ofrece partir el sprint explicando tarea por tarea. SPRINT-03 ya lo

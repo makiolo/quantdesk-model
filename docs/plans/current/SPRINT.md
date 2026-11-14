@@ -48,7 +48,8 @@ Filas de [GOBERNANZA.md](../GOBERNANZA.md) que afectan a este sprint (revisadas 
 
 | Cosa | Dueño | Escribe | Decide | Nota para este sprint |
 |---|---|---|---|---|
-| Exportador diario TI-02-DIARIO: código | quantdesk-model | sesiones del laboratorio | usuario | Contrato con el backend **pendiente de acordar** (fila 1; R5) |
+| Exportador diario TI-02-DIARIO: código | quantdesk-model | sesiones del laboratorio | usuario | **Contrato decidido (usuario, 2026-11-14)**: [contrato-propuesta.md](execution/TI-02-DIARIO/contrato-propuesta.md) |
+| Topic `ops.export.status` y credencial del exportador | quantdesk-network | network registra y emite; el usuario instala el token | usuario | Decidido el 2026-11-14; registro y emisión pendientes |
 | Programación del exportador en Dagster | quantdesk-backend | sesiones del backend | usuario | Su PUB-05-EXPORT; depende del contrato y del código de las filas 1 y 2 |
 | Publicador MT5 → qn `market.ohlcv.v2` y copia local del intradía | quantdesk-model | sesiones del laboratorio | usuario (visto bueno de network y aviso al backend antes de publicar el universo ampliado) | Filas 4 y 5 |
 | Publicadores públicos en qn (FRED, OAS; Yahoo/Stooq y cripto sin sprint) | quantdesk-backend | sesiones del backend | usuario | Filas 6 y 7 consumen lo que publique |
@@ -112,7 +113,8 @@ sólo el inicio de la fila indicada.
 
 | Fila (tarea local) | Depende de (proyecto, sprint, tarea) | Condición | Estado |
 |---|---|---|---|
-| 1 TI-02-DIARIO (contrato) | quantdesk-backend, `next/SPRINT.md` (SPRINT-03), PUB-05-EXPORT; quantdesk, formatos de D-I4 (`PLAN_TSFM_INTEGRACION` §6) | respuesta por mensaje | decidido (usuario, 2026-11-13, revisión de planes, R5); contrato **pendiente de acordar** |
+| 1 TI-02-DIARIO (contrato) | quantdesk-backend, `next/SPRINT.md` (SPRINT-03), PUB-05-EXPORT; quantdesk, formatos de D-I4 (`PLAN_TSFM_INTEGRACION` §6) | respuesta por mensaje | decidido (usuario, 2026-11-13, revisión de planes, R5); **contrato decidido (usuario, 2026-11-14)** |
+| 2 TI-02-DIARIO (despliegue) | quantdesk-network: registro de `ops.export.status` y token; quantdesk-backend: tarea de Windows y sensor | topic y token emitidos | decidido (usuario, 2026-11-14); pendiente |
 | 2 TI-02-DIARIO (código) | (salida) quantdesk SPRINT-03, ola 1, XVA-03-DATA lo espera; backend PUB-05-EXPORT lo programa | entregar antes de la ola 1 | decidido (usuario, 2026-11-09/10; calendario R5) |
 | 3 S02-6 + sonda | quantdesk-backend OC-03 en producción (servida, `cc1811d`) | fecha ≥ 2026-12-11 | servida |
 | 4a, 4b, 4c, 5 | bróker MT5: desbloqueo de la cuenta (lo gestiona el usuario) | cuenta desbloqueada | bloqueada desde el 2026-11-10 |

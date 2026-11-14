@@ -2,8 +2,20 @@
 
 SPRINT-03, fila 1. Consolidado por la raíz `quantdesk-model-4d` el 2026-11-14 a partir del
 [borrador a1](borrador-contrato-a1.md) y de las respuestas de las raíces del backend (`quantdesk-backend-24`),
-`quantdesk` (`quantdesk-f1`) y network (`quantdesk-network-21`), recogidas en ese mismo fichero. **Estado: pendiente
-de aprobación del usuario.** Al aprobarse se escribe en GOBERNANZA, DEPENDENCIAS y PLAN_DATOS_VIA_QN §4.
+`quantdesk` (`quantdesk-f1`) y network (`quantdesk-network-21`), recogidas en ese mismo fichero. **Estado: APROBADO (usuario, 2026-11-14)**,
+con las cuatro respuestas recomendadas:
+- A2, tarea de Windows;
+- sólo OHLCV + history (los JSON siguen con sus productores);
+- topic `ops.export.status` y token combinado;
+- el resto, tal cual.
+
+Escrito en GOBERNANZA, DEPENDENCIAS y PLAN_DATOS_VIA_QN §4.
+
+> **Nota de diseño (raíz, 2026-11-14):** la cuenta MT5 sigue bloqueada y el usuario estudia pagar por datos (lo
+> retransmitió `quantdesk-f1` el 2026-11-14 ~01:30). La fuente del FX diario va en el código como **parámetro versionado
+> de la política de fuentes** (hoy `source=mt5`, igual que `POLITICA_FUENTES` de `descarga_lago.py`), no fija.
+> Cambiar de fuente sigue siendo una decisión del usuario que se registra en este contrato. Mientras no la haya, sin MT5
+> el resultado es `sin_mt5`.
 
 ## 1. Qué hace y qué no
 
