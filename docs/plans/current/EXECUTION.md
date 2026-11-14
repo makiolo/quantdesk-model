@@ -70,6 +70,16 @@ decisiones del usuario, con fecha y hora local (CET).
   Escrito en GOBERNANZA, DEPENDENCIAS, PLAN_DATOS_VIA_QN §4 y SPRINT.md §2/§4.
 - **Aviso de `quantdesk-f1`** (usuario, ~01:30): la cuenta MT5 sigue bloqueada y el usuario estudia pagar por datos. La
   fuente del FX queda como parámetro de la política de fuentes (nota en el contrato); afecta también a las filas 4a–4c y 5.
+- **Network:** su raíz pasó a `quantdesk-network-b2` (SPRINT-02 activo), que registrará `ops.export.status` y emitirá el
+  token con confirmación del usuario. El valor del token va directamente al usuario.
+- **Backend:** contrato registrado en su PUB-05-EXPORT; ha pedido a network su `sub:ops.export.status` (issue `4676dfe`).
+  Registrará la tarea cuando le pasemos la orden exacta. Su sensor mide la frescura con el instante de la salida válida
+  (`ts` del sobre, cuando termina la validación) y asume `sin_mt5` diario mientras MT5 siga bloqueado.
+- **Fila 2, preparación:** el escritor `quantdesk.daily.write_ohlcv` está en la rueda del `.venv`. Se pregunta a `quantdesk`
+  por `FX_DATE_SHIFT = 1` (`daily.py:97`, se aplica en su notebook 28): no se sabe si el `ts_ms` del FX de MT5 en el
+  desktop va sin desplazar. La ficha espera la respuesta (`quantdesk-f1`: su revisor lo contrasta con el notebook 28;
+  piden no encargar el código hasta entonces). Se pregunta a `quantdesk-network-b2` si los tokens van atados a host
+  (docstring de `descarga_lago.py`) y qué `QN_URLS` alcanza el PC por LAN.
 - **Fila 1 cerrada** con el contrato decidido. Siguen: issue/JSON del topic a network, aviso al backend y encargo de la
   fila 2.
 - **Norma nueva de la skill** (usuario, 2026-11-14, retransmitida por `quantdesk-f1`): al preparar un sprint entra todo
