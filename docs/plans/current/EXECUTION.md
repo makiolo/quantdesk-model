@@ -195,3 +195,4 @@ decisiones del usuario, con fecha y hora local (CET).
   - RSC-F3 (exposición pública) no se abre hasta que se acepte la auditoría de autenticación de RSC-F0.
 - **TI-02-DIARIO:** el backend registrará la tarea de Windows en su PUB-05-EXPORT (SPRINT-03), con permiso del usuario.
   Avisará de la hora de la primera ejecución.
+- **Token del exportador instalado** (aviso de `quantdesk-cb`, a petición del usuario, 08:26): `E:/quantdesk-lab/secrets/ti02-diario.env` con una sola línea `QN_TOKEN=…`, comprobada por la raíz sin leer el valor (46 caracteres). La copia de mini se borró tras comprobar el hash. Faltan la tarea de Windows del backend y la primera ejecución (`sin_mt5` mientras MT5 siga bloqueado).
