@@ -7,6 +7,7 @@
 - HEAD al escribir: ad43ba057610b5ea1b9296b4ea836be54f3d0f0c
 - LAUNCH: docs/plans/current/LAUNCH.md · bloque del coordinador: «§8. Prompt de la raíz (relevos y recuperación)»
 - Relevos anteriores: `git log --follow -- docs/plans/current/HANDOFF.md`
+- Aceptado: sesión af8558d2-088f-40cf-acca-a2d87c0c3a37, 2026-11-14T11:26:57+01:00, contexto inicial 17.3 %
 
 ## Arranque
 1. `S:/Projects/quantdesk-model/.venv/Scripts/python.exe -X utf8 C:/Users/makiolo/.claude/skills/sprint/tools/claude_or.py handoff accept docs/plans/current/HANDOFF.md`: valida este archivo y anota tu sesión. Después, pon tu nombre de `ListAgents` en `~/.claude/relevos.json`, clave `quantdesk-model`.
