@@ -180,3 +180,4 @@ decisiones del usuario, con fecha y hora local (CET).
     - el usuario copia el token id 43 a ese `.env`;
     - el backend registra la tarea y el sensor;
     - primera ejecución real. Con la cuenta MT5 bloqueada saldrá `sin_mt5`, que es lo esperado.
+- **Raíz de `quantdesk` cambiada:** `quantdesk-f1` (relevo 56) pasó la raíz a `quantdesk-cb` («quantdesk raiz relevo 57»), que ya tiene el aviso de la fila 2. Los mensajes a `quantdesk` van ahora allí.
