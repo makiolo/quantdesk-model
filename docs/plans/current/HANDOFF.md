@@ -9,6 +9,7 @@
   SKILL.md:171): toda raíz corre en **Fable 5.2 high**; relevar «ahora mismo» en el primer punto tranquilo.
 - LAUNCH: docs/plans/current/LAUNCH.md · bloque del coordinador: «§8. Prompt de la raíz (relevos y recuperación)»
 - Relevos anteriores: `git log --follow -- docs/plans/current/HANDOFF.md`
+- Aceptado: sesión 2ec16109-67c6-4c46-b373-8ea8b7805ec7, 2026-11-14T17:24:50+01:00, contexto inicial 66.6 %
 
 ## Arranque
 1. `S:/Projects/quantdesk-model/.venv/Scripts/python.exe -X utf8 C:/Users/makiolo/.claude/skills/sprint/tools/claude_or.py handoff accept docs/plans/current/HANDOFF.md`: valida este archivo y anota tu sesión. Después, pon tu nombre de `ListAgents` en `~/.claude/relevos.json`, clave `quantdesk-model`.
