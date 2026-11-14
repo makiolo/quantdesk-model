@@ -144,3 +144,4 @@ decisiones del usuario, con fecha y hora local (CET).
   `docs/plans/backlog/PLAN_RSC_BRAIN.md` (dueño del compose y nginx según su GOBERNANZA). Pendiente su confirmación con
   commit. Cinco GAP para el usuario en el plan.
 - **PLAN_RSC_BRAIN adoptado por el backend** (`quantdesk-backend-24`, commit `c01e49d` de su repo): plan en su backlog, línea en su índice y fila de GOBERNANZA «propuesto». Entra al planificar su siguiente sprint, junto a PLAN_RETIRADA_MEM0. GAP 1-5 pendientes del usuario.
+- **Aviso de cambio en la skill** (`quantdesk-network-b2`, usuario 2026-11-14): `sprint_db.py task` y `attempt start/end` ya regeneran `~/.claude/sprint-db/index.html`; `update` sólo hace falta cuando cambian ficheros del repo (`references/sprint-db.md`). Sin acción.
